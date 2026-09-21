@@ -560,7 +560,9 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'newproj':newProject();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
     case 'export':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
-    case 'import':$('#file').click();break;
+    case 'import':{const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Import JSON</span><button type="button" data-x>×</button></div><div class="db"><div class="hint">Buď vyberte soubor .json, nebo vložte text zkopírovaný z prototypu (⋯ → Export JSON → Kopírovat do schránky). Projekty se přidají k existujícím.</div><div><button type="button" class="btn" data-file>Vybrat soubor…</button></div><textarea name="json" rows="8" placeholder="Sem vložte JSON…" style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit"></textarea></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Importovat vložený text</button></div></form>`;
+      const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
+      fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
     case 'logout':DB.signOut();break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
