@@ -108,11 +108,11 @@ const DB = (() => {
       for (const k of ORDER) {
         const ups = Object.values(next[k]).filter(r => !same(r, (old[k] || {})[r.id]));
         // úkoly: rodiče před potomky (pole už je ve stromovém pořadí, jen zachovat)
-        for (const c of chunk(ups)) { const { error } = await sb.from(TABLES[k]).upsert(c); if (error) throw error; }
+        for (const c of chunk(ups)) { const { error } = await sb.from(TABLES[k]).upsert(c); if (error) throw new Error(`[${TABLES[k]}] ${error.message}${error.details ? ' – ' + error.details : ''}`); }
       }
       for (const k of [...ORDER].reverse()) {
         const dels = Object.keys(old[k] || {}).filter(id => !next[k][id]);
-        for (const c of chunk(dels)) { const { error } = await sb.from(TABLES[k]).delete().in('id', c); if (error && error.code !== 'PGRST116') throw error; }
+        for (const c of chunk(dels)) { const { error } = await sb.from(TABLES[k]).delete().in('id', c); if (error && error.code !== 'PGRST116') throw new Error(`[${TABLES[k]} delete] ${error.message}`); }
       }
       prev = next; lastWrite = Date.now();
     })();
