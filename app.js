@@ -564,6 +564,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
       const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
       fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
     case 'logout':DB.signOut();break;
+    case 'diag':DB.debug().then(d=>alert(JSON.stringify(d,null,1))).catch(e=>alert(e.message));break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
     case 'wipe':if(confirm('Opravdu smazat všechna data? Doporučujeme nejdřív export.')){S={projects:[]};V.project='ALL';commit()}break;

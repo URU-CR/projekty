@@ -21,6 +21,7 @@ const DB = (() => {
   const resetPassword = (email) => sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
   const updatePassword = (password) => sb.auth.updateUser({ password });
   const me = () => user;
+  const debug = async () => { const { data: { session } } = await sb.auth.getSession(); const r = await sb.rpc('whoami'); return { jsUser: session?.user?.id, jsEmail: session?.user?.email, db: r.data, dbError: r.error?.message }; };
   const setName = (name) => sb.from('profiles').update({ name }).eq('id', user.id).then(({ error }) => { if (error) throw error; });
 
   /* ---------- načtení ---------- */
@@ -151,5 +152,5 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
