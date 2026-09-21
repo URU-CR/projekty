@@ -1,5 +1,6 @@
 
 /* ---------- helpers ---------- */
+const APP_VERSION='1.0.3';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -564,7 +565,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
       const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
       fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
     case 'logout':DB.signOut();break;
-    case 'diag':DB.debug().then(d=>alert(JSON.stringify(d,null,1))).catch(e=>alert(e.message));break;
+    case 'diag':DB.debug().then(d=>alert('Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1))).catch(e=>alert('Diagnostika selhala: '+e.message));break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
     case 'wipe':if(confirm('Opravdu smazat všechna data? Doporučujeme nejdřív export.')){S={projects:[]};V.project='ALL';commit()}break;
@@ -638,7 +639,7 @@ async function boot(){
 }
 async function start(){
   hideAuth();$('#gantt').innerHTML='<div class="empty">Načítám data…</div>';
-  try{S=await DB.load();$('#who').textContent=S.me||S.meEmail}
+  try{S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
   if(V.by==='todo')V.by='daily';
   if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}
