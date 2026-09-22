@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.6';
+const APP_VERSION='1.0.8';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -561,6 +561,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'newproj':newProject();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
     case 'export':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
+    case 'gpro':$('#xfile').click();break;
     case 'import':{const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Import JSON</span><button type="button" data-x>×</button></div><div class="db"><div class="hint">Buď vyberte soubor .json, nebo vložte text zkopírovaný z prototypu (⋯ → Export JSON → Kopírovat do schránky). Projekty se přidají k existujícím.</div><div><button type="button" class="btn" data-file>Vybrat soubor…</button></div><textarea name="json" rows="8" placeholder="Sem vložte JSON…" style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit"></textarea></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Importovat vložený text</button></div></form>`;
       const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
       fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
@@ -654,3 +655,62 @@ $('#authform').addEventListener('submit',async e=>{e.preventDefault();const f=e.
 $('#authmode').addEventListener('click',()=>{const f=$('#authform');const su=f.dataset.mode!=='signup';f.dataset.mode=su?'signup':'login';$('#authsubmit').textContent=su?'Vytvořit účet':'Přihlásit';$('#authmode').textContent=su?'Mám účet – přihlásit':'Nemám účet – zaregistrovat';$('#unamef').style.display=su?'':'none'});
 $('#authreset').addEventListener('click',async()=>{const em=$('#authform').email.value.trim();if(!em){$('#authmsg').textContent='Zadejte e-mail.';return}const {error}=await DB.resetPassword(em);$('#authmsg').textContent=error?error.message:'Odkaz pro změnu hesla byl odeslán.'});
 boot();
+
+/* ---------- import z GanttPRO (xlsx) ---------- */
+function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('Knihovnu se nepodařilo načíst'));document.head.appendChild(s)})}
+function ganttproToJson(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  const hi=rows.findIndex(r=>r&&r.includes('WBS Number'));if(hi<0)throw new Error('V souboru chybí řádek se sloupci GanttPRO (WBS Number…).');
+  const H=rows[hi];const col=n=>{const c=H.indexOf(n);if(c<0)throw new Error('Chybí sloupec '+n);return c};
+  const wbs=col('WBS Number'),asg=col('Assigned to'),st=col('Planned start date'),en=col('Planned end date'),pr=col('Progress (%)'),pri=col('Priority'),desc=col('Task description'),typ=col('Type'),lvl=col('Level');
+  const pname=(rows[hi-1]&&rows[hi-1][0])||'Projekt';
+  const d=v=>{if(v==null||v==='')return null;if(v&&typeof v.getTime==='function')return iso(new Date(v.getTime()-v.getTimezoneOffset()*6e4));if(typeof v==='number'){const o=XLSX.SSF.parse_date_code(v);return `${o.y}-${String(o.m).padStart(2,'0')}-${String(o.d).padStart(2,'0')}`}const m=String(v).match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;return String(v).slice(0,10)};
+  const groups=[],tasks=[],byw={},team=[];const PH=['#9c5bd6','#2196f3','#f39a1e','#1cb36d','#e6b800','#1fb8c4','#a0522d','#5c6bff','#e67ab0','#607d8b'];
+  for(const r of rows.slice(hi+1)){if(!r||r[wbs]==null||r[wbs]==='')continue;const w=String(r[wbs]);let name='';for(let c=wbs+1;c<asg;c++)if(r[c]){name=String(r[c]).trim();break}
+    const a=String(r[asg]||'').split(',').map(x=>x.trim()).filter(Boolean);a.forEach(x=>{if(!team.includes(x))team.push(x)});
+    const t={id:uid(),name,start:d(r[st]),end:d(r[en]),color:'',group:'',resp:a[0]||'',collab:a.slice(1),critical:r[pri]==='Highest',progress:+(r[pr]||0),parent:null,deps:[],milestone:r[typ]==='milestone',collapsed:false,note:String(r[desc]||'').trim(),links:[],log:[],todos:[],docs:[],autoProg:false};
+    if(!t.start)t.start=TODAY;if(!t.end)t.end=t.start;
+    const level=+(r[lvl]||1);
+    if(level===1){const g={id:uid(),name:name.replace(/^\d+\s*·\s*/,''),color:PH[groups.length%PH.length]};groups.push(g);t.group=g.id;t.progress=0}
+    else{const par=byw[w.split('.').slice(0,-1).join('.')];if(par){t.parent=par.id;t.group=par.group}}
+    byw[w]=t;tasks.push(t)}
+  return {projects:[{id:uid(),name:pname,lead:S.me||'',color:PALETTE[(S.projects.length*5)%PALETTE.length],team,groups,tasks,todos:[]}],todos:[]}
+}
+$('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');const buf=await f.arrayBuffer();const wb=XLSX.read(buf,{cellDates:true});const j=ganttproToJson(wb);
+    if(!confirm(`Importovat projekt „${j.projects[0].name}“ (${j.projects[0].tasks.length} úkolů, tým: ${j.projects[0].team.join(', ')||'—'})?`))return;importJson(j)}
+  catch(err){toast('Import z GanttPRO selhal: '+(err.message||err),true)}};
+
+/* ---------- přesun úkolů tažením v tabulce ---------- */
+(function(){
+  let dr=null;const IND=22;
+  function rowsInfo(){return $$('.lrow[data-id]').map(el=>{const f=findTask(el.dataset.id);return {el,id:el.dataset.id,t:f.t,p:f.p,depth:depth(f.t,f.p),rect:el.getBoundingClientRect()}})}
+  g.addEventListener('pointerdown',e=>{const cn=e.target.closest('.lrow[data-id] .c-n');if(!cn||e.button!==0||V.by!=='project')return;const row=cn.closest('.lrow');
+    dr={id:row.dataset.id,x0:e.clientX,y0:e.clientY,moved:false,rows:null,target:null};e.preventDefault()});
+  document.addEventListener('pointermove',e=>{if(!dr)return;
+    if(!dr.moved){if(Math.abs(e.clientX-dr.x0)<4&&Math.abs(e.clientY-dr.y0)<4)return;dr.moved=true;const f=findTask(dr.id);dr.src=f;dr.sub=[f.t,...descendants(f.t,f.p)];dr.rows=rowsInfo();
+      dr.left=$('.left');dr.line=document.createElement('div');dr.line.className='dropline';dr.left.appendChild(dr.line);dr.ghost=document.createElement('div');dr.ghost.className='dragghost';dr.ghost.textContent=f.t.name||'(bez názvu)';document.body.appendChild(dr.ghost);
+      $(`.lrow[data-id="${dr.id}"]`).classList.add('dragsrc');document.body.style.cursor='grabbing'}
+    dr.ghost.style.left=(e.clientX+14)+'px';dr.ghost.style.top=(e.clientY-12)+'px';
+    // najít řádek pod kurzorem a polovinu
+    const rows=dr.rows.filter(r=>r.p===dr.src.p&&!dr.sub.includes(r.t));let prev=null;let firstRow=dr.rows.find(r=>r.p===dr.src.p);
+    for(const r of rows){if(e.clientY>r.rect.top+r.rect.height/2)prev=r}
+    if(prev===null&&firstRow&&e.clientY<firstRow.rect.top+firstRow.rect.height/2){/* před první */}
+    const leftRect=dr.left.getBoundingClientRect();const baseX=leftRect.left+44+8;
+    let maxD=prev?prev.depth+1:0,d=Math.max(0,Math.min(maxD,Math.round((e.clientX-baseX)/IND)));
+    if(prev&&prev.t.collapsed&&d>prev.depth)d=prev.depth;
+    dr.target={prev,depth:d};
+    const y=(prev?prev.rect.bottom:(firstRow?firstRow.rect.top:leftRect.top))-leftRect.top+dr.left.scrollTop;
+    dr.line.style.display='block';dr.line.style.top=(y-1)+'px';dr.line.style.left=(44+8+d*IND)+'px';dr.line.style.right='6px'});
+  const end=e=>{if(!dr)return;const d=dr;dr=null;if(!d.moved)return;
+    d.line.remove();d.ghost.remove();document.body.style.cursor='';$$('.lrow.dragsrc').forEach(r=>r.classList.remove('dragsrc'));
+    if(e.type!=='pointerup'||!d.target)return;dropTask(d.src,d.sub,d.target)};
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+  function dropTask(src,sub,tg){const p=src.p;const a=p.tasks;const rest=a.filter(x=>!sub.includes(x));const t=src.t;
+    let parent=null,idx=0;
+    if(tg.prev){const P=tg.prev.t;if(tg.depth>tg.prev.depth){parent=P.id;idx=rest.indexOf(P)+1}
+      else{let A=P;while(depth(A,p)>tg.depth){A=rest.find(x=>x.id===A.parent)||A}parent=A.parent||null;const ad=descendants(A,p).filter(x=>!sub.includes(x));idx=rest.indexOf(A)+1;while(idx<rest.length&&ad.includes(rest[idx]))idx++}}
+    if(parent===t.parent&&rest.indexOf(a[a.indexOf(t)])===-1){/* no-op check below */}
+    t.parent=parent;if(parent){const pp=rest.find(x=>x.id===parent);if(pp)pp.collapsed=false}
+    rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit()}
+})();
