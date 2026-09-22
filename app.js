@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.5';
+const APP_VERSION='1.0.6';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -162,7 +162,7 @@ function render(){
       <span class="c-name"><span class="ind"></span><button class="tg ${r.group?'':'none'}" data-act="toggle">${t.collapsed?'▸':'▾'}</button><button class="dot" data-act="edit" title="Barva / skupina – otevře detail" style="border:0;padding:0;cursor:pointer;background:${colorOf(t,p)}"></button><input class="nm" data-f="name" value="${esc(t.name)}" placeholder="Název úkolu" title="${esc(tip)}">${V.by==='person'?`<span class="cl">${esc(p.name)}${r.collab?' · spolupráce':''}</span>`:''}${r.group?'':`<button class="tdc ${tdbad?'bad':''} ${tdn?'':'empty'}" data-act="open" title="ToDo k úkolu">${tdn?tdd+'/'+tdn:'+'} ✓</button>`}${t.note||t.log.length?`<span class="nt" data-act="edit" title="${esc((t.note||'')+(t.log.length?'\n'+t.log.length+' záznamů':''))}">≡${t.log.length||''}</span>`:''}</span>
       <span class="c-resp"><select data-f="resp"><option value="">—</option>${opts}</select></span>
       <span class="c-st">${st.l?`<span class="st ${st.k}">${st.l}</span>`:''}</span>
-      <span class="c-prog">${t.milestone?'':r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="number" data-f="progress" min="0" max="100" step="10" value="${t.progress||0}">`}</span>
+      <span class="c-prog">${t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Milník splněn">`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="number" data-f="progress" min="0" max="100" step="10" value="${t.progress||0}">`}</span>
       <span class="c-act"><button data-act="menu" title="Akce s úkolem">⋯</button></span></div>`;
   }
   L+='</div>';
@@ -359,7 +359,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     <div class="f"><label><input type="checkbox" name="usecolor" ${custom?'checked':''}> Vlastní barva místo barvy skupiny <span class="hint">(kritický úkol je vždy červený)</span></label><div class="sw" style="${custom?'':'display:none'}">${PALETTE.map(c=>`<button type="button" data-c="${c}" class="${c===t.color?'on':''}" style="background:${c}"></button>`).join('')}<input type="hidden" name="color" value="${t.color||colorOf(t,p)}"></div></div>
     <div class="f"><label>Spolupracovníci</label><div class="chips">${p.team.filter(m=>m!==t.resp).map(m=>`<label class="chip ${(t.collab||[]).includes(m)?'on':''}"><input type="checkbox" name="collab" value="${esc(m)}" ${(t.collab||[]).includes(m)?'checked':''}>${esc(m)}</label>`).join('')||'<span class="hint">Tým projektu je prázdný – doplňte lidi v nastavení projektu.</span>'}</div></div>
     <div class="fx"><label><input type="checkbox" name="critical" ${t.critical?'checked':''}> Kritický úkol</label><label><input type="checkbox" name="milestone" ${t.milestone?'checked':''} ${kids?'disabled':''}> Milník (jeden den)</label>
-      <label>Hotovo <input type="number" name="progress" min="0" max="100" step="5" value="${t.progress||0}" ${kids?'disabled':''} style="width:64px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg)"> %</label></div>
+      <label id="progwrap" style="${t.milestone?'display:none':''}">Hotovo <input type="number" name="progress" min="0" max="100" step="5" value="${t.progress||0}" ${kids?'disabled':''} style="width:64px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg)"> %</label><label id="msdonewrap" style="${t.milestone?'':'display:none'}"><input type="checkbox" name="msdone" ${(t.progress||0)>=100?'checked':''}> Milník splněn</label></div>
     <div class="f"><label>ToDo k úkolu (checklist) <span class="hint">· ⛔ = blokuje dokončení</span></label><div class="todol" id="todol"></div><div class="fx" style="margin-top:4px"><button type="button" class="btn" data-tdadd>+ položka</button><label><input type="checkbox" name="autoProg" ${t.autoProg?'checked':''}> Hotovost % počítat z checklistu</label></div></div>
     <div class="f"><label>Zadání a podrobnosti</label><textarea name="note" rows="3" placeholder="Cíl, postup, dohody, na co nezapomenout…">${esc(t.note||'')}</textarea></div>
     <div class="f"><label>Deník úkolu (průběh řešení)</label><div class="logadd"><textarea name="newlog" rows="2" placeholder="Nový záznam k dnešnímu dni… (Ctrl+Enter)"></textarea><button type="button" class="btn" data-lgadd>Zapsat</button></div><div class="log" id="log">${logHtml()}</div></div>
@@ -401,7 +401,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     if(n==='depadd'&&e.target.value){deps.push(e.target.value);e.target.value='';rdep()}
     if(n==='dur'){const v=Math.max(1,+E('dur').value||1);E('end').value=addDays(E('start').value,v-1)}
     if(n==='start'||n==='end'){if(E('end').value<E('start').value)E('end').value=E('start').value;E('dur').value=diff(E('start').value,E('end').value)+1}
-    if(n==='milestone'){E('end').disabled=E('milestone').checked;E('dur').disabled=E('milestone').checked;if(E('milestone').checked){E('end').value=E('start').value;E('dur').value=1}}
+    if(n==='milestone'){const ms=E('milestone').checked;E('end').disabled=ms;E('dur').disabled=ms;if(ms){E('end').value=E('start').value;E('dur').value=1}$('#progwrap',fm).style.display=ms?'none':'';$('#msdonewrap',fm).style.display=ms?'':'none'}
     if(n==='usecolor'){$('.sw',fm).style.display=E('usecolor').checked?'':'none'}
     if(n==='color'){$$('.sw button',fm).forEach(x=>x.classList.toggle('on',x.dataset.c===E('color').value))}
     if(e.target.closest('.chip'))e.target.closest('.chip').classList.toggle('on',e.target.checked);
@@ -412,7 +412,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     if(!kids&&!t.autoProg&&+E('progress').value>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo, nelze ho označit za hotový:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));E('progress').value=t.progress||0}
     t.name=E('name').value.trim();t.color=E('usecolor').checked?E('color').value:'';t.group=E('group').value;t.resp=E('resp').value;t.collab=$$('input[name=collab]:checked',fm).map(x=>x.value);
     t.note=E('note').value.trim();t.links=links.filter(l=>l.url||l.name);t.critical=E('critical').checked;t.milestone=E('milestone').checked;t.deps=deps;
-    if(!kids){t.start=E('start').value||t.start;t.end=t.milestone?t.start:(E('end').value||t.end);if(t.end<t.start)t.end=t.start;t.progress=+E('progress').value||0}
+    if(!kids){t.start=E('start').value||t.start;t.end=t.milestone?t.start:(E('end').value||t.end);if(t.end<t.start)t.end=t.start;t.progress=t.milestone?(E('msdone').checked?100:0):(+E('progress').value||0)}
     const np=E('parent').value||null;if(np!==t.parent){const sub=[t,...descendants(t,p)];t.parent=np;const rest=p.tasks.filter(x=>!sub.includes(x));if(np){const par=rest.find(x=>x.id===np);const pd=descendants(par,p).filter(x=>!sub.includes(x));let j=rest.indexOf(par)+1;while(j<rest.length&&pd.includes(rest[j]))j++;rest.splice(j,0,...sub);par.collapsed=false}else rest.push(...sub);p.tasks=rest}
     commit()});
   dlg.showModal();
@@ -581,7 +581,7 @@ function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
 g.addEventListener('change',e=>{const el=e.target;const row=el.closest('.lrow');if(!row)return;
   if(el.dataset.tf){const f=findTodo(row.dataset.td);if(!f)return;const k=el.dataset.tf;f.td[k]=k==='done'?el.checked:k==='pri'?+el.value:el.value;if(k==='done')f.td.doneAt=el.checked?TODAY:'';commit();return}
   if(!el.dataset.f)return;const f=findTask(row.dataset.id);if(!f)return;const t=f.t;
-  const k=el.dataset.f;let v=el.value;if(k==='progress'){v=Math.min(100,Math.max(0,+v||0));if(v>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}}t[k]=v;commit()});
+  const k=el.dataset.f;let v=el.value;if(k==='msdone'){v=el.checked?100:0;if(v===100&&openBlocking(t).length){alert('Milník má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}t.progress=v;commit();return}if(k==='progress'){v=Math.min(100,Math.max(0,+v||0));if(v>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}}t[k]=v;commit()});
 g.addEventListener('keydown',e=>{const el=e.target;const row=el.closest('.lrow');
   if(el.classList.contains('tt')){
     if(e.key==='Enter'){e.preventDefault();if(el.dataset.new){const v=el.value.trim();if(!v)return;addTodo(row.dataset.key,v);focusTd=row.dataset.key;commit()}else{const f=findTodo(row.dataset.td);if(!f)return;f.td.text=el.value;const i=f.list.indexOf(f.td);const td={id:uid(),text:'',done:false,who:'',due:'',block:false};f.list.splice(i+1,0,td);focusTd='td:'+td.id;commit()}}

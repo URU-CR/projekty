@@ -11,17 +11,17 @@
 :root{
   --bg:#f3f4f6; --panel:#ffffff; --line:#dfe3e8; --line2:#eef0f3; --text:#1b222c; --muted:#6a7381;
   --accent:#1f5fbf; --accent-soft:#e3ecfa; --weekend:rgba(20,30,50,.045); --today:#d6453d;
-  --critical:#e0202e; --shadow:0 1px 2px rgba(0,0,0,.06); --leftw:520px; --rowh:34px;
+  --critical:#e60012; --shadow:0 1px 2px rgba(0,0,0,.06); --leftw:520px; --rowh:34px;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --bg:#15181d; --panel:#1d2128; --line:#2c323b; --line2:#252a32; --text:#e7eaee; --muted:#98a1ad;
-    --accent:#6b9cf0; --accent-soft:#24314a; --weekend:rgba(255,255,255,.045); --today:#f0655b; --critical:#ff3b47;
+    --accent:#6b9cf0; --accent-soft:#24314a; --weekend:rgba(255,255,255,.045); --today:#f0655b; --critical:#ff2e3b;
   }
 }
 :root[data-theme="dark"]{
   --bg:#15181d; --panel:#1d2128; --line:#2c323b; --line2:#252a32; --text:#e7eaee; --muted:#98a1ad;
-  --accent:#6b9cf0; --accent-soft:#24314a; --weekend:rgba(255,255,255,.045); --today:#f0655b; --critical:#ff3b47;
+  --accent:#6b9cf0; --accent-soft:#24314a; --weekend:rgba(255,255,255,.045); --today:#f0655b; --critical:#ff2e3b;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -72,6 +72,7 @@ button{cursor:pointer}
 .lrow input:hover,.lrow select:hover{border-color:var(--line)}
 .lrow input:focus,.lrow select:focus{outline:none;border-color:var(--accent);background:var(--panel)}
 .lrow input[type=date]{font-size:12px}
+.c-prog input[type=checkbox]{width:15px;height:15px;margin:0 4px 0 0;accent-color:var(--accent)}
 .lrow input[type=number]{text-align:right;padding:3px 2px;-moz-appearance:textfield;appearance:textfield}
 .lrow input[type=number]::-webkit-outer-spin-button,.lrow input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .c-prog{text-align:right}
@@ -104,7 +105,7 @@ button{cursor:pointer}
 .rbody{position:relative;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--rowh) - 1px),var(--line2) calc(var(--rowh) - 1px),var(--line2) var(--rowh))}
 .col{position:absolute;top:0;bottom:0}
 .col.we{background:var(--weekend)}
-.col.td{background:none;border-left:2px solid var(--today);z-index:1}
+.col.td{background:none;border-left:1px dashed var(--today);opacity:.8;z-index:1}
 .col.mline{border-left:1px solid var(--line);}
 .prow{position:absolute;left:0;right:0;height:var(--rowh);background:var(--bg)}
 .bar{position:absolute;height:24px;border-radius:2px;top:5px;color:#fff;font-size:12px;cursor:grab;touch-action:none;background:color-mix(in srgb,var(--c) 42%,var(--panel)) !important}
@@ -181,8 +182,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .st.soon{background:var(--accent-soft);color:var(--text)}
 .st.done{color:var(--muted);border:1px solid var(--line)}
 .st.active{color:var(--muted)}
-.bar.late:not(.ms){outline:2px solid var(--critical);outline-offset:1px}
-.bar.late.ms::before{outline:2px solid var(--critical);outline-offset:1px}
+.bar.late:not(.ms){outline:1px dashed var(--critical);outline-offset:2px}
+.bar.late.ms::before{outline:1px dashed var(--critical);outline-offset:2px}
 .bar .lbl i.dt.late{color:var(--critical);font-weight:600}
 .bar.done{}
 .strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
@@ -331,7 +332,7 @@ dialog.wide{width:min(980px,96vw)}
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.0.5">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.0.6">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="daily">Dnes</button><button data-b="person">Podle lidí</button></div>
@@ -372,8 +373,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.0.5"></script>
-<script src="db.js?v=1.0.5"></script>
-<script src="app.js?v=1.0.5"></script>
+<script src="config.js?v=1.0.6"></script>
+<script src="db.js?v=1.0.6"></script>
+<script src="app.js?v=1.0.6"></script>
 </body>
 </html>
