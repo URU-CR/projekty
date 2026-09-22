@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.4';
+const APP_VERSION='1.0.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -25,7 +25,7 @@ let V={project:'ALL',zoom:'week',by:'project',person:'',status:'',group:'',narro
 let focusId=null,focusTd=null,sel=null,clip=null,lastTodoId=null;
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v)V={...V,...v}}catch(e){}return false}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(V));localStorage.setItem(CACHE,JSON.stringify(S))}catch(e){}}
-function toast(msg,err){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=msg;t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',err?6000:2000)}
+function toast(msg,err){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.onclick=()=>t.style.display='none';document.body.appendChild(t)}t.textContent=msg+(err?'  (klepnutím zavřít)':'');t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);if(err){try{const l=JSON.parse(localStorage.getItem('projekty-errors')||'[]');l.push(new Date().toISOString().slice(0,16)+' '+msg);localStorage.setItem('projekty-errors',JSON.stringify(l.slice(-10)))}catch(e){}}else t._h=setTimeout(()=>t.style.display='none',2000)}
 
 function sample(){return {me:'',projects:[],todos:[]}}
 /* ---------- lookups ---------- */
@@ -565,7 +565,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
       const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
       fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
     case 'logout':DB.signOut();break;
-    case 'diag':DB.debug().then(d=>alert('Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1))).catch(e=>alert('Diagnostika selhala: '+e.message));break;
+    case 'diag':DB.debug().then(d=>{const errs=JSON.parse(localStorage.getItem('projekty-errors')||'[]');const txt='Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1)+'\n\nPoslední chyby:\n'+(errs.join('\n')||'žádné');const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Diagnostika</span><button type="button" data-x>×</button></div><div class="db"><textarea rows="14" readonly style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit">${esc(txt)}</textarea></div><div class="df"><button type="button" class="btn" data-clr>Smazat historii chyb</button><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn pri" data-copy>Kopírovat</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-clr]')){localStorage.removeItem('projekty-errors');dlg.close()}if(e.target.closest('[data-copy]')){navigator.clipboard&&navigator.clipboard.writeText(txt);toast('Zkopírováno')}});dlg.showModal()}).catch(e=>alert('Diagnostika selhala: '+e.message));break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
     case 'wipe':if(confirm('Opravdu smazat všechna data? Doporučujeme nejdřív export.')){S={projects:[]};V.project='ALL';commit()}break;
