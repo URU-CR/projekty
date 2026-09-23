@@ -131,6 +131,9 @@ button{cursor:pointer}
 .bar.ms{width:24px !important;height:24px;margin-left:-12px;background:transparent !important;border-radius:0}
 .bar.ms::before{content:"";position:absolute;left:4px;top:4px;width:16px;height:16px;background:color-mix(in srgb,var(--c) 42%,var(--panel));transform:rotate(45deg);border-radius:2px}
 .bar.ms.done::before{background:var(--c)}
+.bar.crit:not(.done):not(.ms):not(.grp){background:var(--critical) !important}
+.bar.crit:not(.done) .prog{background:var(--gc)}
+.bar.crit.ms:not(.done)::before{background:var(--critical)}
 .bar.ms.done::after{content:"✓";position:absolute;left:0;right:0;top:0;line-height:24px;text-align:center;color:#fff;font-size:13px;font-weight:700}
 .bar.ms .h,.bar.ms .prog,.bar.ms .in{display:none}
 .bar.ms .lbl{left:calc(100% + 4px);top:0;line-height:24px}
@@ -142,6 +145,11 @@ button{cursor:pointer}
 .deps path.bad{stroke:var(--critical);opacity:.8}
 .deps polygon{fill:var(--muted);opacity:.55}
 .deps polygon.bad{fill:var(--critical);opacity:.8}
+.gantt.depshi .deps path{stroke:var(--accent);stroke-width:2;stroke-dasharray:none;opacity:.95}
+.gantt.depshi .deps path.bad{stroke:var(--critical)}
+.gantt.depshi .deps polygon{fill:var(--accent);opacity:.95}
+.gantt.depshi .deps polygon.bad{fill:var(--critical)}
+.gantt.depshi .bar .lbl,.gantt.depshi .bar .nml{opacity:.35}
 .empty{padding:40px;color:var(--muted);max-width:480px}
 
 /* dialogs */
@@ -340,7 +348,7 @@ dialog.wide{width:min(980px,96vw)}
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.0.10">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.0.12">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -384,8 +392,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.0.10"></script>
-<script src="db.js?v=1.0.10"></script>
-<script src="app.js?v=1.0.10"></script>
+<script src="config.js?v=1.0.12"></script>
+<script src="db.js?v=1.0.12"></script>
+<script src="app.js?v=1.0.12"></script>
 </body>
 </html>

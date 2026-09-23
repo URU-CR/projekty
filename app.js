@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.10';
+const APP_VERSION='1.0.12';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -37,7 +37,8 @@ const depth=(t,p)=>{let d=0,c=t;while(c&&c.parent){c=p.tasks.find(x=>x.id===c.pa
 const descendants=(t,p)=>{const out=[];const walk=x=>kidsOf(x,p).forEach(k=>{out.push(k);walk(k)});walk(t);return out};
 const wbsOf=(t,p)=>{const parts=[];let c=t;while(c){const sib=p.tasks.filter(x=>x.parent===c.parent);parts.unshift(sib.indexOf(c)+1);c=c.parent?p.tasks.find(x=>x.id===c.parent):null}return parts.join('.')};
 const hiddenByCollapse=(t,p)=>{let c=t;while(c.parent){c=p.tasks.find(x=>x.id===c.parent);if(!c)return false;if(c.collapsed)return true}return false};
-const colorOf=(t,p)=>{if(t.critical&&progressOf(t,p)<100)return CRIT;const g=(p.groups||[]).find(g=>g.id===t.group);return t.color||(g?g.color:p.color)};
+const baseColor=(t,p)=>{const g=(p.groups||[]).find(g=>g.id===t.group);return t.color||(g?g.color:p.color)};
+const colorOf=(t,p)=>{if(t.critical&&progressOf(t,p)<100)return CRIT;return baseColor(t,p)};
 const groupName=(t,p)=>{const g=(p.groups||[]).find(g=>g.id===t.group);return g?g.name:''};
 function span(t,p){const kids=kidsOf(t,p);if(!kids.length)return{start:t.start,end:t.end,group:false};
   const sp=kids.map(k=>span(k,p));return{start:sp.reduce((a,k)=>k.start<a?k.start:a,sp[0].start),end:sp.reduce((a,k)=>k.end>a?k.end:a,sp[0].end),group:true}}
@@ -119,7 +120,7 @@ function renderStrip(){
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
   const stat=[['late','Ve skluzu',cnt('late')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
   let h=`<div class="quick"><button class="btn pri" id="bToggle" title="Přepnout mezi denním ToDo a harmonogramem">${V.by==='daily'?'Harmonogram':'Dnes'}</button><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)" ${V.by==='daily'?'disabled':''}></div>`;
-  h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('');
+  h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1" title="Zvýraznit vazby mezi úkoly">⤳ Vazby</button>`;
   const people=[...new Set(ps.flatMap(p=>p.team))];
   h+=`<span class="sepv"></span><select id="person" class="pill"><option value="">Všichni lidé</option>${people.map(n=>`<option ${V.person===n?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
   const p=proj(V.project);
@@ -130,7 +131,7 @@ function renderStrip(){
 
 function render(){
   renderTabs();renderStrip();
-  const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
+  const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.classList.toggle('depshi',!!V.depsHi);g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
   if(V.by==='daily'){renderDaily(g);return}
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Založte projekt tlačítkem „+ projekt“ nahoře, nebo si načtěte ukázková data v menu ⋯.</p></div>';return}
   const rows=buildRows();
@@ -196,7 +197,7 @@ function render(){
     const dts=(t.milestone?fmts(t.start):`${fmts(sp.start)} – ${fmts(sp.end)}`)+(st.k==='late'?` · ${st.l}`:'');const dtc=st.k==='late'?'dt late':'dt';
     const who=`${esc(t.resp||'')}${t.collab&&t.collab.length?' + '+esc(t.collab.join(', ')):''}`;
     const inside=false;const nol=x<220;
-    B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='done'?'done':''} ${nol?'nol':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col}" title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}">
+    B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='done'?'done':''} ${nol?'nol':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col};--gc:${baseColor(t,p)}" title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}">
       <div class="prog" style="width:${prog}%"></div><span class="h h-l"></span><span class="h h-r"></span>
       <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl"><b>${esc(t.name)} · </b><i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}</span></div>`;
     for(const td of t.todos){if(!td.due||td.due<start||td.due>end)continue;B+=`<div class="tdot ${td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(td.due)+px/2-5}px;top:${top}px" title="${esc(td.text)} · ${fmt(td.due)}${td.who?' · '+esc(td.who):''}"></div>`}
@@ -545,6 +546,7 @@ $('#by').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
 $('#bToday').onclick=scrollToToday;
 $('#narrow').onchange=e=>{V.narrow=e.target.checked;commit()};
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.depshi){V.depsHi=!V.depsHi;save();$('#gantt').classList.toggle('depshi',!!V.depsHi);b.classList.toggle('on',!!V.depsHi);return}
   if(b.dataset.st==='todo'){V.by='daily';V.status='';commit();return}
   if(b.dataset.st){V.status=V.status===b.dataset.st?'':b.dataset.st;commit()}
   if(b.dataset.g){V.group=V.group===b.dataset.g?'':b.dataset.g;commit()}
