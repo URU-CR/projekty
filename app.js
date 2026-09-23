@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.9';
+const APP_VERSION='1.0.10';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -207,7 +207,7 @@ function render(){
       const pred=findTask(did);if(!pred)continue;const pe=span(pred.t,pred.p).end;const bad=pred.t.milestone?pe>t.start:pe>=t.start;
       const x1=a.ms?a.x+12:a.x+a.w, y1=a.top+17, x2=b.ms?b.x-12:b.x, y2=b.top+17;
       const path=x2>=x1+16?`M${x1},${y1} H${x1+8} V${y2} H${x2-4}`:`M${x1},${y1} H${x1+8} V${y1+ROWH/2} H${x2-12} V${y2} H${x2-4}`;
-      P+=`<path class="${bad?'bad':''}" d="${path}"></path><polygon points="${x2},${y2} ${x2-6},${y2-4} ${x2-6},${y2+4}"></polygon>`;
+      P+=`<path class="${bad?'bad':''}" d="${path}"></path><polygon class="${bad?'bad':''}" points="${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}"></polygon>`;
     }}
   const H=rows.length*ROWH;
   g.innerHTML=L+`<div class="right" style="width:${W}px"><div class="rhead"><div class="mrow">${M}</div><div class="drow">${D}</div></div>

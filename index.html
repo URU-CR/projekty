@@ -138,9 +138,10 @@ button{cursor:pointer}
 .bar.psum{height:6px;border-radius:3px;cursor:default;background:var(--c) !important}
 .bar.psum .h,.bar.psum .prog,.bar.psum .in,.bar.psum .lbl{display:none}
 .deps{position:absolute;inset:0;pointer-events:none;overflow:visible}
-.deps path{fill:none;stroke:var(--muted);stroke-width:1.5}
-.deps path.bad{stroke:var(--critical);stroke-dasharray:4 3}
-.deps polygon{fill:var(--muted)}
+.deps path{fill:none;stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3;opacity:.55}
+.deps path.bad{stroke:var(--critical);opacity:.8}
+.deps polygon{fill:var(--muted);opacity:.55}
+.deps polygon.bad{fill:var(--critical);opacity:.8}
 .empty{padding:40px;color:var(--muted);max-width:480px}
 
 /* dialogs */
@@ -339,7 +340,7 @@ dialog.wide{width:min(980px,96vw)}
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.0.9">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.0.10">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -383,8 +384,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.0.9"></script>
-<script src="db.js?v=1.0.9"></script>
-<script src="app.js?v=1.0.9"></script>
+<script src="config.js?v=1.0.10"></script>
+<script src="db.js?v=1.0.10"></script>
+<script src="app.js?v=1.0.10"></script>
 </body>
 </html>
