@@ -344,11 +344,18 @@ dialog.wide{width:min(980px,96vw)}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:9px 16px;border-radius:8px;z-index:300;font-size:13px;display:none;max-width:90vw}
 #toast.err{background:var(--critical);color:#fff}
 .brand .hint{font-weight:400;font-size:12px;margin-left:6px}
+
+.qm{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#d97706;color:#fff;font-size:11px;font-weight:700;flex:none;cursor:help}
+.bar.unclear:not(.ms){outline:2px dotted #d97706;outline-offset:2px}
+.bar.unclear.ms::before{outline:2px dotted #d97706;outline-offset:2px}
+.bar.unclear .nml::before,.bar.unclear .lbl b::before{content:"? ";color:#d97706;font-weight:700}
+.st.unclear{background:#fde68a;color:#1b222c}
+.pill.unclear b{color:#b45309}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.0.12">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.0.13">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -392,8 +399,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.0.12"></script>
-<script src="db.js?v=1.0.12"></script>
-<script src="app.js?v=1.0.12"></script>
+<script src="config.js?v=1.0.13"></script>
+<script src="db.js?v=1.0.13"></script>
+<script src="app.js?v=1.0.13"></script>
 </body>
 </html>

@@ -53,7 +53,7 @@ const DB = (() => {
       const conv = t => { const T = {
         id: t.id, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [],
         critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, autoProg: !!t.auto_prog, collapsed: !!t.collapsed, parent: t.parent_id || null,
-        note: t.note || '', deps: t.deps || [], created_by: t.created_by,
+        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '',
         links: links.filter(l => l.task_id === t.id).map(l => ({ id: l.id, name: l.name, url: l.url })),
         log: log.filter(l => l.task_id === t.id).map(l => ({ id: l.id, d: l.d, text: l.text, author: l.author, authorName: prof[l.author]?.name || '' })),
         docs: docs.filter(d => d.task_id === t.id).map(d => ({ id: d.id, name: d.name, path: d.path, size: d.size, uploaded_by: d.uploaded_by, created_at: d.created_at })),
@@ -83,7 +83,7 @@ const DB = (() => {
       p.groups.forEach((g, i) => { F.groups[g.id] = { id: g.id, project_id: p.id, name: g.name, color: g.color, sort: i }; });
       p.tasks.forEach((t, i) => {
         F.tasks[t.id] = { id: t.id, project_id: p.id, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '',
-          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id };
+          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '' };
         (t.links || []).forEach((l, j) => { l.id ||= uuid(); F.links[l.id] = { id: l.id, task_id: t.id, name: l.name || '', url: l.url || '', sort: j }; });
         (t.log || []).forEach(l => { l.id ||= uuid(); F.log[l.id] = { id: l.id, task_id: t.id, d: l.d, text: l.text, author: l.author || user.id }; });
         (t.todos || []).forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, t.id, j); });
