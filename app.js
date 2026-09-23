@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.0.8';
+const APP_VERSION='1.0.9';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -107,18 +107,18 @@ function renderTabs(){
     S.projects.map(p=>`<button class="tab ${V.project===p.id?'on':''}" data-p="${p.id}"><span class="pd" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')+
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
-  $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
+  $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));if(V.by!=='daily')V.prevBy=V.by;
   $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';
-  $('#tabs').style.display=V.by==='daily'?'none':'';
+
 }
 function renderStrip(){
-  const el=$('#strip');if(V.by==='daily'){el.style.display='none';return}el.style.display='';const ps=curProjects();
+  const el=$('#strip');const ps=curProjects();
   const leafs=ps.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length).map(t=>({t,p})));
   const cnt=k=>leafs.filter(x=>status(x.t,x.p).k===k).length;
   const crit=leafs.filter(x=>x.t.critical&&status(x.t,x.p).k!=='done').length;
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
   const stat=[['late','Ve skluzu',cnt('late')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
-  let h=`<div class="quick"><input id="quick" placeholder="${'Nový úkol do harmonogramu… (Enter)'}"><button class="btn pri" id="bDump" title="Sepsat vše, co máte v hlavě, a pak zatřídit">✎ Seznam</button></div>`;
+  let h=`<div class="quick"><button class="btn pri" id="bToggle" title="Přepnout mezi denním ToDo a harmonogramem">${V.by==='daily'?'Harmonogram':'Dnes'}</button><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)" ${V.by==='daily'?'disabled':''}></div>`;
   h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('');
   const people=[...new Set(ps.flatMap(p=>p.team))];
   h+=`<span class="sepv"></span><select id="person" class="pill"><option value="">Všichni lidé</option>${people.map(n=>`<option ${V.person===n?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -130,7 +130,7 @@ function renderStrip(){
 
 function render(){
   renderTabs();renderStrip();
-  const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);
+  const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
   if(V.by==='daily'){renderDaily(g);return}
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Založte projekt tlačítkem „+ projekt“ nahoře, nebo si načtěte ukázková data v menu ⋯.</p></div>';return}
   const rows=buildRows();
@@ -162,10 +162,10 @@ function render(){
       <span class="c-name"><span class="ind"></span><button class="tg ${r.group?'':'none'}" data-act="toggle">${t.collapsed?'▸':'▾'}</button><button class="dot" data-act="edit" title="Barva / skupina – otevře detail" style="border:0;padding:0;cursor:pointer;background:${colorOf(t,p)}"></button><input class="nm" data-f="name" value="${esc(t.name)}" placeholder="Název úkolu" title="${esc(tip)}">${V.by==='person'?`<span class="cl">${esc(p.name)}${r.collab?' · spolupráce':''}</span>`:''}${r.group?'':`<button class="tdc ${tdbad?'bad':''} ${tdn?'':'empty'}" data-act="open" title="ToDo k úkolu">${tdn?tdd+'/'+tdn:'+'} ✓</button>`}${t.note||t.log.length?`<span class="nt" data-act="edit" title="${esc((t.note||'')+(t.log.length?'\n'+t.log.length+' záznamů':''))}">≡${t.log.length||''}</span>`:''}</span>
       <span class="c-resp"><select data-f="resp"><option value="">—</option>${opts}</select></span>
       <span class="c-st">${st.l?`<span class="st ${st.k}">${st.l}</span>`:''}</span>
-      <span class="c-prog">${t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Milník splněn">`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="number" data-f="progress" min="0" max="100" step="10" value="${t.progress||0}">`}</span>
+      <span class="c-prog">${t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Milník splněn">`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Hotovo"><select data-f="progress" class="prsel">${[0,25,50,75,100].map(v=>`<option value="${v}" ${(t.progress||0)===v?'selected':''}>${v}</option>`).join('')}</select>`}</span>
       <span class="c-act"><button data-act="menu" title="Akce s úkolem">⋯</button></span></div>`;
   }
-  L+='</div>';
+  L+='<div class="splitter" title="Tažením změníte šířku tabulky"></div></div>';
 
   let M='',D='',C='';
   let d=start; let mStart=0;
@@ -359,7 +359,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     <div class="f"><label><input type="checkbox" name="usecolor" ${custom?'checked':''}> Vlastní barva místo barvy skupiny <span class="hint">(kritický úkol je vždy červený)</span></label><div class="sw" style="${custom?'':'display:none'}">${PALETTE.map(c=>`<button type="button" data-c="${c}" class="${c===t.color?'on':''}" style="background:${c}"></button>`).join('')}<input type="hidden" name="color" value="${t.color||colorOf(t,p)}"></div></div>
     <div class="f"><label>Spolupracovníci</label><div class="chips">${p.team.filter(m=>m!==t.resp).map(m=>`<label class="chip ${(t.collab||[]).includes(m)?'on':''}"><input type="checkbox" name="collab" value="${esc(m)}" ${(t.collab||[]).includes(m)?'checked':''}>${esc(m)}</label>`).join('')||'<span class="hint">Tým projektu je prázdný – doplňte lidi v nastavení projektu.</span>'}</div></div>
     <div class="fx"><label><input type="checkbox" name="critical" ${t.critical?'checked':''}> Kritický úkol</label><label><input type="checkbox" name="milestone" ${t.milestone?'checked':''} ${kids?'disabled':''}> Milník (jeden den)</label>
-      <label id="progwrap" style="${t.milestone?'display:none':''}">Hotovo <input type="number" name="progress" min="0" max="100" step="5" value="${t.progress||0}" ${kids?'disabled':''} style="width:64px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg)"> %</label><label id="msdonewrap" style="${t.milestone?'':'display:none'}"><input type="checkbox" name="msdone" ${(t.progress||0)>=100?'checked':''}> Milník splněn</label></div>
+      <label id="progwrap" style="${t.milestone?'display:none':''}">Hotovo <select name="progress" ${kids?'disabled':''} style="border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--bg)">${[0,25,50,75,100].map(v=>`<option value="${v}" ${(t.progress||0)===v?'selected':''}>${v} %</option>`).join('')}</select></label><label id="msdonewrap" style="${t.milestone?'':'display:none'}"><input type="checkbox" name="msdone" ${(t.progress||0)>=100?'checked':''}> Milník splněn</label></div>
     <div class="f"><label>ToDo k úkolu (checklist) <span class="hint">· ⛔ = blokuje dokončení</span></label><div class="todol" id="todol"></div><div class="fx" style="margin-top:4px"><button type="button" class="btn" data-tdadd>+ položka</button><label><input type="checkbox" name="autoProg" ${t.autoProg?'checked':''}> Hotovost % počítat z checklistu</label></div></div>
     <div class="f"><label>Zadání a podrobnosti</label><textarea name="note" rows="3" placeholder="Cíl, postup, dohody, na co nezapomenout…">${esc(t.note||'')}</textarea></div>
     <div class="f"><label>Deník úkolu (průběh řešení)</label><div class="logadd"><textarea name="newlog" rows="2" placeholder="Nový záznam k dnešnímu dni… (Ctrl+Enter)"></textarea><button type="button" class="btn" data-lgadd>Zapsat</button></div><div class="log" id="log">${logHtml()}</div></div>
@@ -541,7 +541,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove
 /* ---------- events ---------- */
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;if(b.dataset.p==='__new'){newProject();return}V.project=b.dataset.p;V.person='';V.group='';commit();scrollToToday()});
 $('#zoom').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.zoom=b.dataset.z;commit();scrollToToday()});
-$('#by').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.by=b.dataset.b;V.status='';commit()});
+$('#by').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.by=b.dataset.b;V.prevBy=V.by;V.status='';commit();scrollToToday()});
 $('#bToday').onclick=scrollToToday;
 $('#narrow').onchange=e=>{V.narrow=e.target.checked;commit()};
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
@@ -550,7 +550,7 @@ $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   if(b.dataset.g){V.group=V.group===b.dataset.g?'':b.dataset.g;commit()}
   if(b.dataset.gsettings){openProj(V.project)}});
 $('#strip').addEventListener('change',e=>{if(e.target.id==='person'){V.person=e.target.value;commit()}});
-$('#strip').addEventListener('click',e=>{if(e.target.id==='bDump')openDump();const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
+$('#strip').addEventListener('click',e=>{if(e.target.id==='bToggle'){V.by=V.by==='daily'?(V.prevBy||'project'):'daily';if(V.by==='daily')V.prevBy=undefined;V.status='';commit();scrollToToday();return}const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
 $('#strip').addEventListener('keydown',e=>{if(e.target.id==='quick'&&e.key==='Enter'){const v=e.target.value.trim();if(!v)return;quickAdd(v);setTimeout(()=>{const q=$('#quick');q.focus()},0)}});
 const menu=$('#menu');
 menu.querySelector(':scope > button').onclick=e=>{menu.classList.toggle('open');e.stopPropagation()};
@@ -559,6 +559,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
   switch(b.dataset.m){
     case 'proj':{const p=proj(V.project)||S.projects[0];if(p)openProj(p.id);else newProject();break}
     case 'newproj':newProject();break;
+    case 'dump':openDump();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
     case 'export':{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
     case 'gpro':$('#xfile').click();break;
@@ -582,7 +583,7 @@ function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
 g.addEventListener('change',e=>{const el=e.target;const row=el.closest('.lrow');if(!row)return;
   if(el.dataset.tf){const f=findTodo(row.dataset.td);if(!f)return;const k=el.dataset.tf;f.td[k]=k==='done'?el.checked:k==='pri'?+el.value:el.value;if(k==='done')f.td.doneAt=el.checked?TODAY:'';commit();return}
   if(!el.dataset.f)return;const f=findTask(row.dataset.id);if(!f)return;const t=f.t;
-  const k=el.dataset.f;let v=el.value;if(k==='msdone'){v=el.checked?100:0;if(v===100&&openBlocking(t).length){alert('Milník má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}t.progress=v;commit();return}if(k==='progress'){v=Math.min(100,Math.max(0,+v||0));if(v>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}}t[k]=v;commit()});
+  const k=el.dataset.f;let v=el.value;if(k==='msdone'){v=el.checked?100:(t.progress>=100?75:t.progress||0);if(v===100&&openBlocking(t).length){alert('Milník má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}t.progress=v;commit();return}if(k==='progress'){v=Math.min(100,Math.max(0,+v||0));if(v>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}}t[k]=v;commit()});
 g.addEventListener('keydown',e=>{const el=e.target;const row=el.closest('.lrow');
   if(el.classList.contains('tt')){
     if(e.key==='Enter'){e.preventDefault();if(el.dataset.new){const v=el.value.trim();if(!v)return;addTodo(row.dataset.key,v);focusTd=row.dataset.key;commit()}else{const f=findTodo(row.dataset.td);if(!f)return;f.td.text=el.value;const i=f.list.indexOf(f.td);const td={id:uid(),text:'',done:false,who:'',due:'',block:false};f.list.splice(i+1,0,td);focusTd='td:'+td.id;commit()}}
@@ -713,4 +714,12 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
     if(parent===t.parent&&rest.indexOf(a[a.indexOf(t)])===-1){/* no-op check below */}
     t.parent=parent;if(parent){const pp=rest.find(x=>x.id===parent);if(pp)pp.collapsed=false}
     rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit()}
+})();
+
+/* ---------- posuvný předěl tabulka / graf ---------- */
+(function(){let sp=null;
+  g.addEventListener('pointerdown',e=>{const h=e.target.closest('.splitter');if(!h)return;e.preventDefault();sp={x0:e.clientX,w0:$('.left').getBoundingClientRect().width,h};h.classList.add('on');document.body.style.cursor='col-resize'});
+  document.addEventListener('pointermove',e=>{if(!sp)return;const w=Math.max(260,Math.min(window.innerWidth*.8,sp.w0+e.clientX-sp.x0));V.leftw=Math.round(w);g.style.setProperty('--leftw',V.leftw+'px')});
+  const end=()=>{if(!sp)return;sp.h.classList.remove('on');sp=null;document.body.style.cursor='';save()};
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
 })();
