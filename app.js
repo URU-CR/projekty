@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.1.2';
+const APP_VERSION='1.1.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -51,6 +51,7 @@ const todoList=key=>key==='me'?S.todos:key.startsWith('p:')?proj(key.slice(2))?.
 const myNames=()=>new Set([S.me,...S.projects.flatMap(p=>Object.entries(p.teamLinks||{}).filter(([n,u])=>u===S.meId).map(([n])=>n))].filter(Boolean));
 const myRole=p=>p.myRole||(p.created_by===S.meId?'lead':'');
 const canEditGroup=(p,gid)=>myRole(p)==='lead'||(p.access||[]).some(x=>x.user_id===S.meId&&x.group_id===gid&&x.can_edit);
+const proposerOnly=()=>!!S.projects.length&&S.projects.every(p=>myRole(p)==='proposer');
 const isRO=p=>myRole(p)==='proposer'&&!p._draft;
 function activeDraft(){for(const p of S.projects)if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)return{p,pr}}return null}
 function exitDraft(){for(const p of S.projects){if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)pr.tasks=p.tasks;p.tasks=p._liveTasks||p.tasks;delete p._liveTasks;delete p._draft}}V.draft=''}
@@ -164,7 +165,7 @@ function render(){
   renderTabs();renderStrip();
   const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('ro',!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
   if(V.by==='daily'){renderDaily(g);return}
-  if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Založte projekt tlačítkem „+ projekt“ nahoře, nebo si načtěte ukázková data v menu ⋯.</p></div>';return}
+  if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Pokud jste byl pozván jako navrhovatel, zkontrolujte, že jste se zaregistroval na stejný e-mail, na který přišla pozvánka, a obnovte stránku. Jinak založte projekt tlačítkem „+ projekt“ nahoře.</p></div>';return}
   const rows=buildRows();
   const px=ZOOM[V.zoom];
   let min=TODAY,max=TODAY;
@@ -687,10 +688,11 @@ async function start(){
   try{const n=await DB.claimInvites();if(n)toast('Byl jste přidán do '+n+' projektu/ů');S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
   if(V.by==='todo')V.by='daily';
-  if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}
+  if(proposerOnly()){V.by='project';V.autoDaily=false;if(!proj(V.project)||myRole(proj(V.project))!=='proposer')V.project=S.projects[0].id;restoreDraft();if(!V.draft){const p0=proj(V.project);const pr=(p0.proposals||[]).find(x=>x.status==='open');if(pr)enterDraft(p0,pr)}}
+  else{if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}
   if(V.project!=='ALL'&&!proj(V.project))V.project='ALL';
-  restoreDraft();
-  if(S.projects.length===1&&myRole(S.projects[0])==='proposer'){V.project=S.projects[0].id;V.by='project';if(!V.draft){const pr=(S.projects[0].proposals||[]).find(x=>x.status==='open');if(pr)enterDraft(S.projects[0],pr)}}
+  restoreDraft()}
+  document.body.classList.toggle('proposer',proposerOnly());
   save();render();scrollToToday();
   DB.subscribe(async()=>{try{const open=$('dialog[open]');if(open)return;S=await DB.load();restoreDraft();render()}catch(e){}});
 }

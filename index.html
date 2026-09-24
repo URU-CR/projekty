@@ -372,11 +372,12 @@ dialog.wide{width:min(980px,96vw)}
 .roles{display:grid;gap:4px;margin:4px 0 0 12px}
 .roles div{display:flex;gap:8px;align-items:center;font-size:12px}
 .roles div span{flex:1;color:var(--muted)}
+body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab[data-p="__new"],body.proposer .tab[data-p="ALL"],body.proposer #menu li:has([data-m="newproj"]),body.proposer #menu li:has([data-m="import"]),body.proposer #menu li:has([data-m="gpro"]),body.proposer #menu li:has([data-m="dump"]),body.proposer #menu li:has([data-m="proj"]),body.proposer #menu li:has([data-m="autodaily"]),body.proposer #menu li:has([data-m="wipe"]),body.proposer #person,body.proposer .strip [data-st]{display:none !important}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.1.2">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.1.4">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -421,8 +422,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.1.2"></script>
-<script src="db.js?v=1.1.2"></script>
-<script src="app.js?v=1.1.2"></script>
+<script src="config.js?v=1.1.4"></script>
+<script src="db.js?v=1.1.4"></script>
+<script src="app.js?v=1.1.4"></script>
 </body>
 </html>
