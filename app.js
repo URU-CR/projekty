@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.1.4';
+const APP_VERSION='1.1.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -139,7 +139,8 @@ function renderTabs(){
   $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';
 
 }
-function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();if(!d||V.by!=='project'){el.className='';el.innerHTML='';return}const{p,pr}=d;const st=draftStats(p,pr);const lead=myRole(p)==='lead';
+function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
+  if(!d||V.by!=='project'){el.className='';el.innerHTML='';return}const{p,pr}=d;const st=draftStats(p,pr);const lead=myRole(p)==='lead';
   el.className='on';el.innerHTML=`<b>NÁVRH</b> skupiny <b>${esc(groupNameOf(p,pr.group))}</b> <span class="stat">· založil ${esc(pr.createdName||'')} ${pr.created_at?fmts(pr.created_at.slice(0,10)):''} · ${st.nw} nových, ${st.chg} změněných, ${st.del} zrušených</span><input id="draftnote" placeholder="Poznámka k návrhu (např. návrh za ICZ po schůzce 24. 9.)" value="${esc(pr.note||'')}">${lead?'<button class="btn pri" data-approve>Schválit a promítnout</button><button class="btn danger" data-reject>Zamítnout</button>':''}<button class="btn" data-leave>Zpět na aktuální</button>`}
 function renderStrip(){
   const el=$('#strip');const ps=curProjects();
@@ -156,7 +157,8 @@ function renderStrip(){
   if(p&&p.groups.length)h+=`<span class="sepv"></span><span class="pill" style="border-color:transparent"><span class="pd" style="background:var(--critical)"></span>kritický</span>${myRole(p)==='lead'?'<button class="lg btn" data-gsettings="1" title="Upravit skupiny a barvy" style="padding:2px 8px">Skupiny ✎</button>':''}`+p.groups.map(g=>`<button class="pill ${V.group===g.id?'on':''}" data-g="${g.id}" title="Filtrovat skupinu"><span class="pd" style="background:${g.color}"></span>${esc(g.name)}</button>`).join('');
   if(p&&V.by==='project'){const props=(p.proposals||[]).filter(x=>x.status==='open');if(props.length||(V.group&&canEditGroup(p,V.group)))h+=`<span class="sepv"></span>`;
     h+=props.map(pr=>`<button class="pill draft ${V.draft===pr.id?'on':''}" data-draft="${pr.id}" title="Otevřít návrh skupiny">✎ Návrh: ${esc(groupNameOf(p,pr.group))}</button>`).join('');
-    if(V.group&&canEditGroup(p,V.group)&&!props.some(x=>x.group===V.group))h+=`<button class="pill draft" data-newdraft="${V.group}">+ Otevřít návrh pro ${esc(groupNameOf(p,V.group))}</button>`}
+    const cand=myRole(p)==='proposer'?p.groups.filter(g=>canEditGroup(p,g.id)):(V.group&&canEditGroup(p,V.group)?[p.groups.find(g=>g.id===V.group)].filter(Boolean):[]);
+    h+=cand.filter(g=>!props.some(x=>x.group===g.id)).map(g=>`<button class="pill draft" data-newdraft="${g.id}">+ Otevřít návrh pro ${esc(g.name)}</button>`).join('')}
   el.innerHTML=h;
   if(V.person&&!people.includes(V.person)){V.person=''}
 }
@@ -378,7 +380,7 @@ function indent(id,on){const f=findTask(id);const a=f.p.tasks;const t=a.find(x=>
 function newProject(){const p={id:uid(),name:'Nový projekt',lead:S.me||'',color:PALETTE[(S.projects.length*5)%PALETTE.length],team:S.me?[S.me]:[],teamLinks:S.me?{[S.me]:S.meId}:{},_teamIds:{},groups:[],tasks:[],todos:[],members:[{user_id:S.meId,role:'lead',email:S.meEmail,name:S.me}],invites:[],access:[],proposals:[],myRole:'lead',created_by:S.meId};S.projects.push(p);V.project=p.id;save();render();openProj(p.id)}
 
 /* ---------- task dialog ---------- */
-function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;const dlg=$('#tdlg');dlg.classList.remove('wide');const kids=kidsOf(t,p).length;const DR=!!p._draft;const orig=DR&&t.orig?(p._liveTasks||[]).find(x=>x.id===t.orig):null;if(DR){t.todos=t.todos||[];t.log=t.log||[];t.links=t.links||[]}
+function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;const dlg=$('#tdlg');dlg.classList.remove('wide');const RO=isRO(p);const kids=kidsOf(t,p).length;const DR=!!p._draft;const orig=DR&&t.orig?(p._liveTasks||[]).find(x=>x.id===t.orig):null;if(DR){t.todos=t.todos||[];t.log=t.log||[];t.links=t.links||[]}
   const others=p.tasks.filter(x=>x.id!==id&&x.parent!==id);
   const custom=!!t.color;
   const logHtml=()=>t.log.length?t.log.slice().reverse().map((e,i)=>`<div><button type="button" data-lgrm="${t.log.length-1-i}" title="Smazat záznam">×</button><b>${fmts(e.d)} ${e.d.slice(0,4)}${e.authorName?' · '+esc(e.authorName):''}</b>${esc(e.text)}</div>`).join(''):'<span class="hint">Zatím žádné záznamy. Sem patří průběh: co se stalo, na co se čeká, kdo co slíbil.</span>';
@@ -451,7 +453,8 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     const np=E('parent').value||null;if(np!==t.parent){const sub=[t,...descendants(t,p)];t.parent=np;const rest=p.tasks.filter(x=>!sub.includes(x));if(np){const par=rest.find(x=>x.id===np);const pd=descendants(par,p).filter(x=>!sub.includes(x));let j=rest.indexOf(par)+1;while(j<rest.length&&pd.includes(rest[j]))j++;rest.splice(j,0,...sub);par.collapsed=false}else rest.push(...sub);p.tasks=rest}
     commit()});
   dlg.showModal();
-  if(focusLog)E('newlog').focus();
+  if(RO){$$('input,select,textarea,button',fm).forEach(el=>{if(!el.hasAttribute('data-x'))el.disabled=true});const s=$('.df .btn.pri',fm);if(s)s.style.display='none';$('.dh span',fm).insertAdjacentHTML('beforeend',' <span class="hint">· jen ke čtení – upravujte v návrhu</span>')}
+  if(focusLog&&!RO)E('newlog').focus();
 }
 
 /* ---------- morning list / triage ---------- */
@@ -591,7 +594,7 @@ $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   if(b.dataset.gsettings){openProj(V.project)}
   if(b.dataset.newdraft){const p=proj(V.project);if(p)createDraft(p,b.dataset.newdraft)}
   if(b.dataset.draft){const p=proj(V.project);const pr=(p.proposals||[]).find(x=>x.id===b.dataset.draft);if(!pr)return;if(V.draft===pr.id){exitDraft();commit()}else{enterDraft(p,pr);commit()}}});
-$('#draftbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-approve'))approveDraft();if(b.hasAttribute('data-reject'))rejectDraft();if(b.hasAttribute('data-leave')){exitDraft();commit()}});
+$('#draftbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const cp=proj(V.project);if(b.dataset.newdraft&&cp){createDraft(cp,b.dataset.newdraft);return}if(b.dataset.enter&&cp){const pr=(cp.proposals||[]).find(x=>x.id===b.dataset.enter);if(pr){enterDraft(cp,pr);commit()}return}if(b.hasAttribute('data-approve'))approveDraft();if(b.hasAttribute('data-reject'))rejectDraft();if(b.hasAttribute('data-leave')){exitDraft();commit()}});
 $('#draftbar').addEventListener('change',e=>{if(e.target.id==='draftnote'){const d=activeDraft();if(d){d.pr.note=e.target.value;save();DB.sync(S).catch(err=>toast(err.message,true))}}});
 $('#strip').addEventListener('change',e=>{if(e.target.id==='person'){V.person=e.target.value;commit()}});
 $('#strip').addEventListener('click',e=>{if(e.target.id==='bToggle'){if(V.draft)exitDraft();V.by=V.by==='daily'?(V.prevBy||'project'):'daily';if(V.by==='daily')V.prevBy=undefined;V.status='';commit();scrollToToday();return}const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
