@@ -376,7 +376,7 @@ dialog.wide{width:min(980px,96vw)}
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.1.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.1.2">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -412,17 +412,17 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="tdlg"></dialog>
 <div class="ctx" id="ctx"></div>
 <div id="auth" style="display:none"><form id="authform" data-mode="login"><h1>Projekty</h1><p class="hint">Řízení projektů ÚRÚ ČR — harmonogramy a ToDo</p>
-  <div class="f" id="unamef" style="display:none"><label>Jméno (jak je uvedeno v týmech projektů)</label><input type="text" name="uname"></div>
+  <div class="f" id="unamef" style="display:none"><label>Jméno (jak chcete být uvedeni v týmech projektů)</label><input type="text" name="uname"></div>
   <div class="f"><label>E-mail</label><input type="email" name="email" required autocomplete="username"></div>
-  <div class="f"><label>Heslo</label><input type="password" name="password" required autocomplete="current-password"></div>
+  <div class="f"><label id="pwlabel">Heslo</label><input type="password" name="password" required autocomplete="current-password" minlength="6"></div>
   <button type="submit" class="btn pri" id="authsubmit">Přihlásit</button>
   <div class="fx" style="justify-content:space-between;margin-top:6px"><button type="button" class="btn" id="authmode" style="border:0">Nemám účet – zaregistrovat</button><button type="button" class="btn" id="authreset" style="border:0">Zapomenuté heslo</button></div>
   <div class="hint" id="authmsg"></div></form></div>
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.1.1"></script>
-<script src="db.js?v=1.1.1"></script>
-<script src="app.js?v=1.1.1"></script>
+<script src="config.js?v=1.1.2"></script>
+<script src="db.js?v=1.1.2"></script>
+<script src="app.js?v=1.1.2"></script>
 </body>
 </html>

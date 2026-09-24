@@ -25,6 +25,7 @@ const DB = (() => {
   const setName = (name) => sb.from('profiles').update({ name }).eq('id', user.id).then(({ error }) => { if (error) throw error; });
 
   /* ---------- načtení ---------- */
+  async function claimInvites() { try { const { data } = await sb.rpc('claim_invites'); return data || 0; } catch (e) { return 0; } }
   async function load() {
     const q = async (t, sel = '*', order) => { let r = sb.from(t).select(sel); if (order) r = r.order(order); const { data, error } = await r; if (error) throw error; return data || []; };
     const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks] = await Promise.all([
@@ -178,5 +179,5 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();

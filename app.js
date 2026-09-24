@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.1.1';
+const APP_VERSION='1.1.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -684,7 +684,7 @@ async function boot(){
 }
 async function start(){
   hideAuth();$('#gantt').innerHTML='<div class="empty">Načítám data…</div>';
-  try{S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
+  try{const n=await DB.claimInvites();if(n)toast('Byl jste přidán do '+n+' projektu/ů');S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
   if(V.by==='todo')V.by='daily';
   if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}
@@ -697,8 +697,8 @@ async function start(){
 $('#authform').addEventListener('submit',async e=>{e.preventDefault();const f=e.target;const em=f.email.value.trim(),pw=f.password.value;$('#authmsg').textContent='';
   try{if(f.dataset.mode==='signup'){const {error}=await DB.signUp(em,pw,f.uname.value.trim());if(error)throw error;$('#authmsg').textContent='Účet vytvořen. Pokud je zapnuté potvrzení e-mailu, potvrďte ho a přihlaste se.'}
     else{const {error}=await DB.signIn(em,pw);if(error)throw error}}
-  catch(err){$('#authmsg').textContent=err.message==='Invalid login credentials'?'Nesprávný e-mail nebo heslo.':err.message}});
-$('#authmode').addEventListener('click',()=>{const f=$('#authform');const su=f.dataset.mode!=='signup';f.dataset.mode=su?'signup':'login';$('#authsubmit').textContent=su?'Vytvořit účet':'Přihlásit';$('#authmode').textContent=su?'Mám účet – přihlásit':'Nemám účet – zaregistrovat';$('#unamef').style.display=su?'':'none'});
+  catch(err){const m=err.message||'';$('#authmsg').textContent=m==='Invalid login credentials'?'Nesprávný e-mail nebo heslo.':m.includes('Database error saving new user')?'Účet se nepodařilo založit (chyba databáze). Zkuste to znovu za chvíli, nebo požádejte správce o založení účtu.':m.includes('already registered')?'Tento e-mail už účet má – použijte „Mám účet – přihlásit“.':m}});
+$('#authmode').addEventListener('click',()=>{const f=$('#authform');const su=f.dataset.mode!=='signup';f.dataset.mode=su?'signup':'login';$('#pwlabel').textContent=su?'Heslo, kterým se budete přihlašovat (min. 6 znaků)':'Heslo';$('#authsubmit').textContent=su?'Vytvořit účet':'Přihlásit';$('#authmode').textContent=su?'Mám účet – přihlásit':'Nemám účet – zaregistrovat';$('#unamef').style.display=su?'':'none'});
 $('#authreset').addEventListener('click',async()=>{const em=$('#authform').email.value.trim();if(!em){$('#authmsg').textContent='Zadejte e-mail.';return}const {error}=await DB.resetPassword(em);$('#authmsg').textContent=error?error.message:'Odkaz pro změnu hesla byl odeslán.'});
 boot();
 
