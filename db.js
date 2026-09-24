@@ -27,10 +27,10 @@ const DB = (() => {
   /* ---------- načtení ---------- */
   async function load() {
     const q = async (t, sel = '*', order) => { let r = sb.from(t).select(sel); if (order) r = r.order(order); const { data, error } = await r; if (error) throw error; return data || []; };
-    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos] = await Promise.all([
+    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks] = await Promise.all([
       q('profiles'), q('projects', '*', 'created_at'), q('project_members'), q('project_invites'), q('project_team', '*', 'sort'),
       q('task_groups', '*', 'sort'), q('tasks', '*', 'sort'), q('task_links', '*', 'sort'), q('task_log', '*', 'created_at'),
-      q('documents', '*', 'created_at'), q('todos', '*', 'sort')]);
+      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort')]);
     const prof = Object.fromEntries(profiles.map(p => [p.id, p]));
     const myProfile = prof[user.id] || { name: user.email.split('@')[0], email: user.email };
     const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, profiles: prof, projects: [], todos: [] };
@@ -43,7 +43,9 @@ const DB = (() => {
         groups: groups.filter(g => g.project_id === p.id).map(g => ({ id: g.id, name: g.name, color: g.color })),
         members: members.filter(m => m.project_id === p.id).map(m => ({ user_id: m.user_id, role: m.role, email: prof[m.user_id]?.email || '?', name: prof[m.user_id]?.name || '' })),
         invites: invites.filter(i => i.project_id === p.id).map(i => ({ email: i.email, role: i.role })),
-        tasks: [], todos: []
+        access: access.filter(a => a.project_id === p.id).map(a => ({ user_id: a.user_id, group_id: a.group_id, can_edit: !!a.can_edit })),
+        myRole: (members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).role || (p.created_by === user.id ? 'lead' : ''),
+        proposals: [], tasks: [], todos: []
       };
       const rows = tasks.filter(t => t.project_id === p.id);
       // seřadit do stromového pořadí (rodič → potomci) podle sort
@@ -59,6 +61,13 @@ const DB = (() => {
         docs: docs.filter(d => d.task_id === t.id).map(d => ({ id: d.id, name: d.name, path: d.path, size: d.size, uploaded_by: d.uploaded_by, created_at: d.created_at })),
         todos: [] }; tMap[t.id] = T; return T; };
       walk('root');
+      for (const pr of proposals.filter(x => x.project_id === p.id && x.status === 'open')) {
+        const rows2 = ptasks.filter(t => t.proposal_id === pr.id); const k2 = {}; rows2.forEach(t => { (k2[t.parent_id || 'root'] ||= []).push(t); });
+        Object.values(k2).forEach(a => a.sort((x, y) => x.sort - y.sort));
+        const PT = []; const walk2 = (pid) => (k2[pid] || []).forEach(t => { PT.push({ id: t.id, orig: t.orig_task_id || null, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, collapsed: !!t.collapsed, parent: t.parent_id || null, note: t.note || '', deps: t.deps || [], unclear: !!t.unclear, question: t.question || '', links: [], log: [], docs: [], todos: [], _draft: true }); walk2(t.id); });
+        walk2('root');
+        P.proposals.push({ id: pr.id, group: pr.group_id, status: pr.status, note: pr.note || '', created_by: pr.created_by, createdName: prof[pr.created_by]?.name || '', created_at: pr.created_at, tasks: PT });
+      }
       S.projects.push(P);
     }
     const pMap = Object.fromEntries(S.projects.map(p => [p.id, p]));
@@ -74,14 +83,15 @@ const DB = (() => {
 
   /* ---------- rozložení stavu na řádky tabulek ---------- */
   function flatten(S) {
-    const F = { projects: {}, team: {}, groups: {}, tasks: {}, links: {}, log: {}, todos: {} };
+    const F = { projects: {}, team: {}, groups: {}, tasks: {}, links: {}, log: {}, todos: {}, proposals: {}, ptasks: {} };
     let sortT = 0;
     for (const p of S.projects) {
       F.projects[p.id] = { id: p.id, name: p.name, lead_name: p.lead || '', color: p.color, archived: !!p.archived, created_by: p.created_by || user.id };
       p._teamIds ||= {}; p.teamLinks ||= {};
       p.team.forEach((name, i) => { const id = p._teamIds[name] ||= uuid(); F.team[id] = { id, project_id: p.id, name, user_id: p.teamLinks[name] || null, sort: i }; });
       p.groups.forEach((g, i) => { F.groups[g.id] = { id: g.id, project_id: p.id, name: g.name, color: g.color, sort: i }; });
-      p.tasks.forEach((t, i) => {
+      const live = p._draft ? p._liveTasks : p.tasks;
+      live.forEach((t, i) => {
         F.tasks[t.id] = { id: t.id, project_id: p.id, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '',
           resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '' };
         (t.links || []).forEach((l, j) => { l.id ||= uuid(); F.links[l.id] = { id: l.id, task_id: t.id, name: l.name || '', url: l.url || '', sort: j }; });
@@ -89,6 +99,12 @@ const DB = (() => {
         (t.todos || []).forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, t.id, j); });
       });
       p.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, null, j); });
+      for (const pr of (p.proposals || [])) {
+        F.proposals[pr.id] = { id: pr.id, project_id: p.id, group_id: pr.group, status: pr.status || 'open', note: pr.note || '', created_by: pr.created_by || user.id };
+        if (pr.status !== 'open') continue;
+        const pts = p._draft === pr.id ? p.tasks : pr.tasks;
+        pts.forEach((t, i) => { F.ptasks[t.id] = { id: t.id, proposal_id: pr.id, project_id: p.id, orig_task_id: t.orig || null, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '', resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], unclear: !!t.unclear, question: t.question || '' }; });
+      }
     }
     S.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, null, null, j); });
     return F;
@@ -96,8 +112,8 @@ const DB = (() => {
   const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 2, imp: !!td.imp, sort });
 
   /* ---------- synchronizace rozdílů ---------- */
-  const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos' };
-  const ORDER = ['projects', 'team', 'groups', 'tasks', 'links', 'log', 'todos'];
+  const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };
+  const ORDER = ['projects', 'team', 'groups', 'tasks', 'links', 'log', 'todos', 'proposals', 'ptasks'];
   let syncing = null;
   async function sync(S) {
     if (!user) return;
@@ -129,6 +145,12 @@ const DB = (() => {
   async function removeMember(projectId, userId) { const { error } = await sb.from('project_members').delete().match({ project_id: projectId, user_id: userId }); if (error) throw error; }
   async function removeInvite(projectId, email) { const { error } = await sb.from('project_invites').delete().match({ project_id: projectId, email }); if (error) throw error; }
 
+  async function setAccess(projectId, groupId, userId, mode) { // mode: '' | 'read' | 'edit'
+    if (!mode) { const { error } = await sb.from('group_access').delete().match({ group_id: groupId, user_id: userId }); if (error) throw error; return; }
+    const { error } = await sb.from('group_access').upsert({ project_id: projectId, group_id: groupId, user_id: userId, can_edit: mode === 'edit' }); if (error) throw error;
+  }
+  async function decideProposal(id, status) { const { error } = await sb.from('proposals').update({ status, decided_by: user.id, decided_at: new Date().toISOString() }).eq('id', id); if (error) throw error; }
+
   /* ---------- dokumenty ---------- */
   async function uploadDoc(projectId, taskId, file) {
     const path = `${projectId}/${taskId || 'inbox'}/${uuid()}-${file.name.replace(/[^\w.\-]+/g, '_')}`;
@@ -149,8 +171,10 @@ const DB = (() => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_log' }, handler)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposal_tasks' }, handler)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, handler)
       .subscribe();
   }
 
-  return { debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { setAccess, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();

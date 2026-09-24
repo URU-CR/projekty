@@ -351,11 +351,32 @@ dialog.wide{width:min(980px,96vw)}
 .bar.unclear .nml::before,.bar.unclear .lbl b::before{content:"? ";color:#d97706;font-weight:700}
 .st.unclear{background:#fde68a;color:#1b222c}
 .pill.unclear b{color:#b45309}
+
+#draftbar{display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 12px;background:#eef2ff;border-bottom:2px solid #3f51b5;font-size:13px}
+#draftbar.on{display:flex}
+#draftbar b{color:#3f51b5}
+#draftbar input{flex:1;min-width:200px;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px}
+#draftbar .stat{color:var(--muted)}
+:root[data-theme="dark"] #draftbar{background:#232a44}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #draftbar{background:#232a44}}
+.gantt.draft .left{border-right-color:#3f51b5}
+.lrow.pnew .nm{color:#1a7f3c}
+.pmark{font-size:10px;border-radius:3px;padding:0 4px;flex:none;font-weight:600}
+.pmark.new{background:#d1fae5;color:#166534}
+.pmark.chg{background:#fef3c7;color:#92400e}
+.gantt.ro input,.gantt.ro select,.gantt.ro .tg,.gantt.ro .tdc,.gantt.ro .c-n{pointer-events:none}
+.gantt.ro .bar{cursor:default}
+.gantt.ro .c-act{visibility:hidden}
+.pill.draft{border-color:#3f51b5;color:#3f51b5}
+.pill.draft.on{background:#3f51b5;color:#fff}
+.roles{display:grid;gap:4px;margin:4px 0 0 12px}
+.roles div{display:flex;gap:8px;align-items:center;font-size:12px}
+.roles div span{flex:1;color:var(--muted)}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.0.13">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.1.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -385,6 +406,7 @@ dialog.wide{width:min(980px,96vw)}
   </div>
 </header>
 <div class="strip" id="strip"></div>
+<div id="draftbar"></div>
 <main class="gantt" id="gantt"></main>
 
 <dialog id="tdlg"></dialog>
@@ -399,8 +421,8 @@ dialog.wide{width:min(980px,96vw)}
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.0.13"></script>
-<script src="db.js?v=1.0.13"></script>
-<script src="app.js?v=1.0.13"></script>
+<script src="config.js?v=1.1.0"></script>
+<script src="db.js?v=1.1.0"></script>
+<script src="app.js?v=1.1.0"></script>
 </body>
 </html>
