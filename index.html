@@ -373,11 +373,16 @@ dialog.wide{width:min(980px,96vw)}
 .roles div{display:flex;gap:8px;align-items:center;font-size:12px}
 .roles div span{flex:1;color:var(--muted)}
 body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab[data-p="__new"],body.proposer .tab[data-p="ALL"],body.proposer #menu li:has([data-m="newproj"]),body.proposer #menu li:has([data-m="import"]),body.proposer #menu li:has([data-m="gpro"]),body.proposer #menu li:has([data-m="dump"]),body.proposer #menu li:has([data-m="proj"]),body.proposer #menu li:has([data-m="autodaily"]),body.proposer #menu li:has([data-m="wipe"]),body.proposer #person,body.proposer .strip [data-st]{display:none !important}
+.vers{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 6px;font-size:12px;max-width:260px}
+.vdiff{display:grid;gap:4px;font-size:13px}
+.vdiff div{padding:4px 8px;border-radius:5px;background:var(--bg)}
+.vdiff .add{border-left:3px solid #1a7f3c}.vdiff .del{border-left:3px solid var(--critical)}.vdiff .chg{border-left:3px solid #d97706}
+.gantt.viewver .left{border-right-color:#d97706}
 </style>
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.1.5">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.2.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -422,8 +427,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.1.5"></script>
-<script src="db.js?v=1.1.5"></script>
-<script src="app.js?v=1.1.5"></script>
+<script src="config.js?v=1.2.1"></script>
+<script src="db.js?v=1.2.1"></script>
+<script src="app.js?v=1.2.1"></script>
 </body>
 </html>
