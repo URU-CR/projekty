@@ -42,7 +42,7 @@ const DB = (() => {
         team: pt.map(x => x.name), _teamIds: Object.fromEntries(pt.map(x => [x.name, x.id])), teamLinks: Object.fromEntries(pt.filter(x => x.user_id).map(x => [x.name, x.user_id])),
         groups: groups.filter(g => g.project_id === p.id).map(g => ({ id: g.id, name: g.name, color: g.color })),
         members: members.filter(m => m.project_id === p.id).map(m => ({ user_id: m.user_id, role: m.role, email: prof[m.user_id]?.email || '?', name: prof[m.user_id]?.name || '' })),
-        invites: invites.filter(i => i.project_id === p.id).map(i => ({ email: i.email, role: i.role })),
+        invites: invites.filter(i => i.project_id === p.id).map(i => ({ email: i.email, role: i.role, access: i.access || [] })),
         access: access.filter(a => a.project_id === p.id).map(a => ({ user_id: a.user_id, group_id: a.group_id, can_edit: !!a.can_edit })),
         myRole: (members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).role || (p.created_by === user.id ? 'lead' : ''),
         proposals: [], tasks: [], todos: []
@@ -149,6 +149,8 @@ const DB = (() => {
     if (!mode) { const { error } = await sb.from('group_access').delete().match({ group_id: groupId, user_id: userId }); if (error) throw error; return; }
     const { error } = await sb.from('group_access').upsert({ project_id: projectId, group_id: groupId, user_id: userId, can_edit: mode === 'edit' }); if (error) throw error;
   }
+  async function setInviteAccess(projectId, email, access) { const { error } = await sb.from('project_invites').update({ access }).match({ project_id: projectId, email }); if (error) throw error; }
+  async function setInviteRole(projectId, email, role) { const { error } = await sb.from('project_invites').update({ role }).match({ project_id: projectId, email }); if (error) throw error; }
   async function decideProposal(id, status) { const { error } = await sb.from('proposals').update({ status, decided_by: user.id, decided_at: new Date().toISOString() }).eq('id', id); if (error) throw error; }
 
   /* ---------- dokumenty ---------- */
@@ -176,5 +178,5 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { setAccess, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
