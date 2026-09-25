@@ -16,9 +16,10 @@ const DB = (() => {
     return user;
   }
   const signIn = (email, password) => sb.auth.signInWithPassword({ email, password });
-  const signUp = (email, password, name) => sb.auth.signUp({ email, password, options: { data: { name } } });
+  const appUrl = () => location.origin + location.pathname;
+  const signUp = (email, password, name) => sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: appUrl() } });
   const signOut = () => sb.auth.signOut();
-  const resetPassword = (email) => sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  const resetPassword = (email) => sb.auth.resetPasswordForEmail(email, { redirectTo: appUrl() });
   const updatePassword = (password) => sb.auth.updateUser({ password });
   const me = () => user;
   const debug = async () => { const { data: { session } } = await sb.auth.getSession(); const r = await sb.rpc('whoami'); return { jsUser: session?.user?.id, jsEmail: session?.user?.email, db: r.data, dbError: r.error?.message }; };
@@ -28,10 +29,10 @@ const DB = (() => {
   async function claimInvites() { try { const { data } = await sb.rpc('claim_invites'); return data || 0; } catch (e) { return 0; } }
   async function load() {
     const q = async (t, sel = '*', order) => { let r = sb.from(t).select(sel); if (order) r = r.order(order); const { data, error } = await r; if (error) throw error; return data || []; };
-    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks] = await Promise.all([
+    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks, versions] = await Promise.all([
       q('profiles'), q('projects', '*', 'created_at'), q('project_members'), q('project_invites'), q('project_team', '*', 'sort'),
       q('task_groups', '*', 'sort'), q('tasks', '*', 'sort'), q('task_links', '*', 'sort'), q('task_log', '*', 'created_at'),
-      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort')]);
+      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort'), q('proposal_versions', 'id,proposal_id,project_id,name,kind,author,created_at', 'created_at')]);
     const prof = Object.fromEntries(profiles.map(p => [p.id, p]));
     const myProfile = prof[user.id] || { name: user.email.split('@')[0], email: user.email };
     const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, profiles: prof, projects: [], todos: [] };
@@ -67,7 +68,7 @@ const DB = (() => {
         Object.values(k2).forEach(a => a.sort((x, y) => x.sort - y.sort));
         const PT = []; const walk2 = (pid) => (k2[pid] || []).forEach(t => { PT.push({ id: t.id, orig: t.orig_task_id || null, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, collapsed: !!t.collapsed, parent: t.parent_id || null, note: t.note || '', deps: t.deps || [], unclear: !!t.unclear, question: t.question || '', links: [], log: [], docs: [], todos: [], _draft: true }); walk2(t.id); });
         walk2('root');
-        P.proposals.push({ id: pr.id, group: pr.group_id, status: pr.status, note: pr.note || '', created_by: pr.created_by, createdName: prof[pr.created_by]?.name || '', created_at: pr.created_at, tasks: PT });
+        P.proposals.push({ id: pr.id, group: pr.group_id, status: pr.status, note: pr.note || '', created_by: pr.created_by, createdName: prof[pr.created_by]?.name || '', created_at: pr.created_at, tasks: PT, versions: versions.filter(v => v.proposal_id === pr.id).map(v => ({ id: v.id, name: v.name, kind: v.kind, author: v.author, authorName: prof[v.author]?.name || '', created_at: v.created_at })) });
       }
       S.projects.push(P);
     }
@@ -152,6 +153,8 @@ const DB = (() => {
   }
   async function setInviteAccess(projectId, email, access) { const { error } = await sb.from('project_invites').update({ access }).match({ project_id: projectId, email }); if (error) throw error; }
   async function setInviteRole(projectId, email, role) { const { error } = await sb.from('project_invites').update({ role }).match({ project_id: projectId, email }); if (error) throw error; }
+  async function saveVersion(projectId, proposalId, name, kind, tasks) { const row = { id: uuid(), proposal_id: proposalId, project_id: projectId, name, kind, author: user.id, snapshot: { tasks } }; const { error } = await sb.from('proposal_versions').insert(row); if (error) throw error; return { id: row.id, name, kind, author: user.id, authorName: '', created_at: new Date().toISOString() }; }
+  async function getVersion(id) { const { data, error } = await sb.from('proposal_versions').select('snapshot').eq('id', id).single(); if (error) throw error; return data.snapshot; }
   async function decideProposal(id, status) { const { error } = await sb.from('proposals').update({ status, decided_by: user.id, decided_at: new Date().toISOString() }).eq('id', id); if (error) throw error; }
 
   /* ---------- dokumenty ---------- */
@@ -179,5 +182,5 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
