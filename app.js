@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.2.1';
+const APP_VERSION='1.2.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -762,7 +762,8 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
       dr.left=$('.left');dr.line=document.createElement('div');dr.line.className='dropline';dr.left.appendChild(dr.line);dr.ghost=document.createElement('div');dr.ghost.className='dragghost';dr.ghost.textContent=f.t.name||'(bez názvu)';document.body.appendChild(dr.ghost);
       $(`.lrow[data-id="${dr.id}"]`).classList.add('dragsrc');document.body.style.cursor='grabbing'}
     dr.ghost.style.left=(e.clientX+14)+'px';dr.ghost.style.top=(e.clientY-12)+'px';
-    // najít řádek pod kurzorem a polovinu
+    const gr=g.getBoundingClientRect();if(e.clientY<gr.top+60)g.scrollTop-=12;else if(e.clientY>gr.bottom-40)g.scrollTop+=12;
+    dr.rows=rowsInfo();
     const rows=dr.rows.filter(r=>r.p===dr.src.p&&!dr.sub.includes(r.t));let prev=null;let firstRow=dr.rows.find(r=>r.p===dr.src.p);
     for(const r of rows){if(e.clientY>r.rect.top+r.rect.height/2)prev=r}
     if(prev===null&&firstRow&&e.clientY<firstRow.rect.top+firstRow.rect.height/2){/* před první */}
@@ -770,8 +771,8 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
     let maxD=prev?prev.depth+1:0,d=Math.max(0,Math.min(maxD,Math.round((e.clientX-baseX)/IND)));
     if(prev&&prev.t.collapsed&&d>prev.depth)d=prev.depth;
     dr.target={prev,depth:d};
-    const y=(prev?prev.rect.bottom:(firstRow?firstRow.rect.top:leftRect.top))-leftRect.top+dr.left.scrollTop;
-    dr.line.style.display='block';dr.line.style.top=(y-1)+'px';dr.line.style.left=(44+8+d*IND)+'px';dr.line.style.right='6px'});
+    const y=(prev?prev.rect.bottom:(firstRow?firstRow.rect.top:leftRect.top))-leftRect.top;
+    dr.line.style.display='block';dr.line.style.top=(y-1)+'px';dr.lastY=e.clientY;dr.lastX=e.clientX;dr.line.style.left=(44+8+d*IND)+'px';dr.line.style.right='6px'});
   const end=e=>{if(!dr)return;const d=dr;dr=null;if(!d.moved)return;
     d.line.remove();d.ghost.remove();document.body.style.cursor='';$$('.lrow.dragsrc').forEach(r=>r.classList.remove('dragsrc'));
     if(e.type!=='pointerup'||!d.target)return;dropTask(d.src,d.sub,d.target)};
@@ -782,7 +783,7 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
       else{let A=P;while(depth(A,p)>tg.depth){A=rest.find(x=>x.id===A.parent)||A}parent=A.parent||null;const ad=descendants(A,p).filter(x=>!sub.includes(x));idx=rest.indexOf(A)+1;while(idx<rest.length&&ad.includes(rest[idx]))idx++}}
     if(parent===t.parent&&rest.indexOf(a[a.indexOf(t)])===-1){/* no-op check below */}
     t.parent=parent;if(parent){const pp=rest.find(x=>x.id===parent);if(pp)pp.collapsed=false}
-    rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit()}
+    rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit();const r=$(`.lrow[data-id="${t.id}"]`);if(r){r.scrollIntoView({block:'nearest'});r.classList.add('sel')}}
 })();
 
 /* ---------- posuvný předěl tabulka / graf ---------- */
