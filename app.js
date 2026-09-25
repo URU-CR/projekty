@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.2.2';
+const APP_VERSION='1.2.3';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -690,7 +690,7 @@ g.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x0;
   else if(drag.mode==='r'){const d=Math.max(1,diff(drag.start,drag.end)+1+dd);drag.bar.style.width=d*px+'px';drag.ns=drag.start;drag.ne=addDays(drag.start,d-1)}
   else{const d=Math.max(1,diff(drag.start,drag.end)+1-dd);const ns=addDays(drag.end,-(d-1));drag.bar.style.left=(drag.left+diff(drag.start,ns)*px)+'px';drag.bar.style.width=d*px+'px';drag.ns=ns;drag.ne=drag.end}
   drag.bar.title=`${t.name}: ${fmt(drag.ns)} – ${fmt(drag.ne)}`});
-const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r){r.scrollIntoView({block:'nearest'});r.classList.add('sel')}}};
+const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r){if(r.scrollIntoView)r.scrollIntoView({block:"nearest"});r.classList.add("sel")}}};
 g.addEventListener('pointerup',endDrag);g.addEventListener('pointercancel',endDrag);
 document.addEventListener('keydown',e=>{if(e.key==='l'&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!$('dialog[open]')){e.preventDefault();openDump()}
   if(e.key==='n'&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!$('dialog[open]')){e.preventDefault();$('#quick').focus()}});
@@ -767,8 +767,10 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
     const rows=dr.rows.filter(r=>r.p===dr.src.p&&!dr.sub.includes(r.t));let prev=null;let firstRow=dr.rows.find(r=>r.p===dr.src.p);
     for(const r of rows){if(e.clientY>r.rect.top+r.rect.height/2)prev=r}
     if(prev===null&&firstRow&&e.clientY<firstRow.rect.top+firstRow.rect.height/2){/* před první */}
-    const leftRect=dr.left.getBoundingClientRect();const baseX=leftRect.left+44+8;
-    let maxD=prev?prev.depth+1:0,d=Math.max(0,Math.min(maxD,Math.round((e.clientX-baseX)/IND)));
+    const leftRect=dr.left.getBoundingClientRect();
+    // přirozená hloubka = podle místa dopadu; vodorovný posun myši od začátku tažení ji mění po úrovních
+    let natural=0;if(prev){const after=rows[rows.indexOf(prev)+1];natural=(after&&after.t.parent===prev.t.id)?prev.depth+1:prev.depth}
+    let maxD=prev?prev.depth+1:0,d=Math.max(0,Math.min(maxD,natural+Math.round((e.clientX-dr.x0)/IND)));
     if(prev&&prev.t.collapsed&&d>prev.depth)d=prev.depth;
     dr.target={prev,depth:d};
     const y=(prev?prev.rect.bottom:(firstRow?firstRow.rect.top:leftRect.top))-leftRect.top;
@@ -783,7 +785,7 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
       else{let A=P;while(depth(A,p)>tg.depth){A=rest.find(x=>x.id===A.parent)||A}parent=A.parent||null;const ad=descendants(A,p).filter(x=>!sub.includes(x));idx=rest.indexOf(A)+1;while(idx<rest.length&&ad.includes(rest[idx]))idx++}}
     if(parent===t.parent&&rest.indexOf(a[a.indexOf(t)])===-1){/* no-op check below */}
     t.parent=parent;if(parent){const pp=rest.find(x=>x.id===parent);if(pp)pp.collapsed=false}
-    rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit();const r=$(`.lrow[data-id="${t.id}"]`);if(r){r.scrollIntoView({block:'nearest'});r.classList.add('sel')}}
+    rest.splice(idx,0,...sub);p.tasks=rest;sel=t.id;commit();const r=$(`.lrow[data-id="${t.id}"]`);if(r){if(r.scrollIntoView)r.scrollIntoView({block:"nearest"});r.classList.add("sel")}}
 })();
 
 /* ---------- posuvný předěl tabulka / graf ---------- */
