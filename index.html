@@ -192,7 +192,11 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .st.late{background:var(--critical);color:#fff}
 .st.stalled{background:#f59e0b;color:#1b222c}
 .st.soon{background:var(--accent-soft);color:var(--text)}
-.st.done{color:var(--muted);border:1px solid var(--line)}
+.st.done{color:#1a7f3c;border:1px solid #6fcf97;background:color-mix(in srgb,#6fcf97 14%,transparent)}
+.lrow.done .nm{color:var(--muted)}
+.lrow.done .c-n{color:color-mix(in srgb,var(--muted) 60%,transparent)}
+.ic{color:var(--muted);font-size:11px;flex:none;cursor:pointer;opacity:.8}
+.ic:hover{opacity:1}
 .st.active{color:var(--muted)}
 .bar.late:not(.ms){outline:1px dashed var(--critical);outline-offset:2px}
 .bar.late.ms::before{outline:1px dashed var(--critical);outline-offset:2px}
@@ -382,7 +386,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.2.5">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.2.6">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -427,8 +431,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.2.5"></script>
-<script src="db.js?v=1.2.5"></script>
-<script src="app.js?v=1.2.5"></script>
+<script src="config.js?v=1.2.6"></script>
+<script src="db.js?v=1.2.6"></script>
+<script src="app.js?v=1.2.6"></script>
 </body>
 </html>
