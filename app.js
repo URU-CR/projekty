@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.2.6';
+const APP_VERSION='1.2.7';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -359,7 +359,7 @@ function quickAdd(text){
   name=name.replace(/(^|\s)#(\S+)/,(m,a,w)=>{const g=p.groups.find(x=>x.name.toLowerCase().startsWith(w.toLowerCase()));if(g)init.group=g.id;else{const ng={id:uid(),name:w,color:PALETTE[(p.groups.length*4+3)%PALETTE.length]};p.groups.push(ng);init.group=ng.id}return a}).trim();
   init.name=name.replace(/\s+/g,' ');
   if(init.start&&!init.end)init.end=addDays(init.start,4);
-  p.tasks.push({...blankTask(p),...init});focusId=null;commit();
+  const nt={...blankTask(p),...init};p.tasks.push(nt);focusId=null;commit();openTask(nt.id);
 }
 function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:2,imp:false,...o};list.push(td);return td}
 function quickTodo(text){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
@@ -424,7 +424,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     <div class="f"><label>Zařadit pod (nadřazený úkol)</label><select name="parent"><option value="">— žádný —</option>${(()=>{const ds=descendants(t,p);return p.tasks.filter(x=>x.id!==id&&!ds.includes(x)).map(x=>`<option value="${x.id}" ${t.parent===x.id?'selected':''}>${'\u00a0'.repeat(depth(x,p)*3)+esc(x.name)}</option>`).join('')})()}</select></div>
     <div class="f"><label>Navazuje na (předchůdci)</label><div class="deplist" id="deplist"></div><div class="fx" style="margin-top:4px"><select name="depadd" style="flex:1;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px"><option value="">+ přidat předchůdce…</option>${others.map(x=>`<option value="${x.id}">${'\u00a0'.repeat(depth(x,p)*3)+wbsOf(x,p)+' '+esc(x.name||'bez názvu')}</option>`).join('')}</select></div></div>
     </div><div class="df"><div class="left-actions"><button type="button" class="btn" data-mv="-1" title="Posunout nahoru">↑</button><button type="button" class="btn" data-mv="1" title="Posunout dolů">↓</button><button type="button" class="btn" data-ind="1" ${t.parent?'disabled':''}>Zanořit</button><button type="button" class="btn" data-ind="0" ${t.parent?'':'disabled'}>Vynořit</button><button type="button" class="btn danger" data-del>Smazat</button></div>
-    <button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Uložit</button></div></form>`;
+    <button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn" data-next title="Uložit a založit další úkol pod tímto">Uložit a další úkol</button><button type="submit" class="btn pri">Uložit</button></div></form>`;
   const fm=$('form',dlg),E=n=>fm.elements[n];let links=(LT.links||[]).map(l=>({...l}));let todos=(LT.todos||[]).map(x=>({...x}));let deps=[...(t.deps||[])];
   const rdocs=()=>{$('#docs',fm).innerHTML=(LT.docs||[]).map(d=>`<div><span><a href="#" data-doc="${d.id}">${esc(d.name)}</a> <span class="hint">${d.size?Math.round(d.size/1024)+' kB':''}</span></span><button type="button" data-docrm="${d.id}" title="Smazat">×</button></div>`).join('')||'<span class="hint">Zatím žádné soubory.</span>'};rdocs();
   const rdep=()=>{$('#deplist',fm).innerHTML=deps.map(d=>{const x=p.tasks.find(y=>y.id===d);return x?`<div><span>${wbsOf(x,p)} ${esc(x.name)} <span class="hint">${fmts(span(x,p).end)}</span></span><button type="button" data-deprm="${d}" title="Odebrat">×</button></div>`:''}).join('')||'<span class="hint">Žádné vazby.</span>';const s=E('depadd');[...s.options].forEach(o=>o.disabled=deps.includes(o.value))};rdep();
@@ -463,6 +463,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     if(n==='color'){$$('.sw button',fm).forEach(x=>x.classList.toggle('on',x.dataset.c===E('color').value))}
     if(e.target.closest('.chip'))e.target.closest('.chip').classList.toggle('on',e.target.checked);
   });
+  let andNext=false;fm.addEventListener('click',e=>{const b=e.target.closest('button[type=submit]');if(b)andNext=b.hasAttribute('data-next')});
   fm.addEventListener('submit',()=>{
     if(!HIDE){addLog();LT.todos=todos.filter(x=>x.text.trim());if(!DR)t.autoProg=E('autoProg').checked}
     if(!DR&&!kids&&!t.autoProg&&+E('progress').value>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo, nelze ho označit za hotový:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));E('progress').value=t.progress||0}
@@ -470,6 +471,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
     t.unclear=E('unclear').checked;t.question=E('question').value.trim();t.note=E('note').value.trim();if(!HIDE)LT.links=links.filter(l=>l.url||l.name);t.critical=E('critical').checked;t.milestone=E('milestone').checked;t.deps=deps;
     if(!kids){t.start=E('start').value||t.start;t.end=t.milestone?t.start:(E('end').value||t.end);if(t.end<t.start)t.end=t.start;if(!DR)t.progress=t.milestone?(E('msdone').checked?100:0):(+E('progress').value||0)}
     const np=E('parent').value||null;if(np!==t.parent){const sub=[t,...descendants(t,p)];t.parent=np;const rest=p.tasks.filter(x=>!sub.includes(x));if(np){const par=rest.find(x=>x.id===np);const pd=descendants(par,p).filter(x=>!sub.includes(x));let j=rest.indexOf(par)+1;while(j<rest.length&&pd.includes(rest[j]))j++;rest.splice(j,0,...sub);par.collapsed=false}else rest.push(...sub);p.tasks=rest}
+    if(andNext){andNext=false;save();addTask(id);return}
     commit()});
   dlg.showModal();
   if(RO){$$('input,select,textarea,button',fm).forEach(el=>{if(!el.hasAttribute('data-x'))el.disabled=true});const s=$('.df .btn.pri',fm);if(s)s.style.display='none';$('.dh span',fm).insertAdjacentHTML('beforeend',' <span class="hint">· jen ke čtení – upravujte v návrhu</span>')}
@@ -659,7 +661,7 @@ g.addEventListener('keydown',e=>{const el=e.target;const row=el.closest('.lrow')
     if(e.key==='Backspace'&&el.value===''&&!el.dataset.new){e.preventDefault();const f=findTodo(row.dataset.td);if(f){f.list.splice(f.list.indexOf(f.td),1);commit()}}
     return}
   if(!el.classList.contains('nm'))return;
-  if(e.key==='Enter'){e.preventDefault();findTask(row.dataset.id).t.name=el.value;addTask(row.dataset.id)}
+  if(e.key==='Enter'){e.preventDefault();const f=findTask(row.dataset.id);f.t.name=el.value;save();if(el.value.trim()&&!isRO(f.p))openTask(row.dataset.id);else commit()}
   if(e.key==='Escape')el.blur();
   if(e.key==='Tab'&&e.altKey){e.preventDefault();findTask(row.dataset.id).t.name=el.value;indent(row.dataset.id,!e.shiftKey)}
   if(e.key==='ArrowDown'&&e.altKey){e.preventDefault();moveTask(row.dataset.id,1)}
