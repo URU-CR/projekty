@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.2.7';
+const APP_VERSION='1.3.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -213,7 +213,7 @@ function render(){
     const tip=(t.milestone?fmt(t.start):fmt(sp.start)+' – '+fmt(sp.end)+' ('+(diff(sp.start,sp.end)+1)+' dní)')+(groupName(t,p)?' · '+groupName(t,p):'')+(t.unclear?'\n? K UPŘESNĚNÍ: '+(t.question||''):'')+(t.note?'\n'+t.note:'')+(t.log.length?'\nPoslední záznam '+fmts(t.log[t.log.length-1].d)+': '+t.log[t.log.length-1].text:'');
     L+=`<div class="lrow lvl${r.level} ${r.group?'grp':''} ${t.critical?'crit':''} ${t.milestone?'ms':''} ${p._draft&&!t.orig?'pnew':''} ${st.k==='done'?'done':''}" style="--lv:${r.level}" data-id="${t.id}" data-pid="${p.id}">
       <span class="c-n" title="${wbs}">${wbs}</span>
-      <span class="c-name"><span class="ind"></span><button class="tg ${r.group?'':'none'}" data-act="toggle">${t.collapsed?'▸':'▾'}</button><button class="dot" data-act="edit" title="Barva / skupina – otevře detail" style="border:0;padding:0;cursor:pointer;background:${colorOf(t,p)}"></button><input class="nm" data-f="name" value="${esc(t.name)}" placeholder="Název úkolu" title="${esc(tip)}">${V.by==='person'?`<span class="cl">${esc(p.name)}${r.collab?' · spolupráce':''}</span>`:''}${pmark}${t.unclear?`<span class="qm" data-act="edit" title="K upřesnění: ${esc(t.question||'')}">?</span>`:''}${r.group||(p._draft&&!t.orig)?'':`<button class="tdc ${tdbad?'bad':''} ${tdn?'':'empty'}" data-act="open" data-tkey="${ot.id}" title="ToDo k úkolu${p._draft?' (platí pro aktuální harmonogram)':''}">${tdn?tdd+'/'+tdn:'+'} ✓</button>`}${ot.note?`<span class="ic" data-act="edit" title="Zadání: ${esc(ot.note.slice(0,200))}">≡</span>`:''}${(ot.log||[]).length?`<span class="ic" data-act="edit" title="Deník: ${ot.log.length} záznamů">✎${ot.log.length}</span>`:''}${(ot.docs||[]).length?`<span class="ic" data-act="edit" title="Soubory: ${(ot.docs||[]).map(x=>esc(x.name)).join(', ')}">📎${ot.docs.length}</span>`:''}${(ot.links||[]).length?`<span class="ic" data-act="edit" title="Odkazy: ${(ot.links||[]).map(x=>esc(x.name||x.url)).join(', ')}">🔗</span>`:''}</span>
+      <span class="c-name"><span class="ind"></span>${r.group?`<button class="tg" data-act="toggle">${t.collapsed?'▸':'▾'}</button>`:(ot.todos||[]).length?`<button class="tg" data-act="open" data-tkey="${ot.id}" title="Podúkoly (checklist)">${isOpen(ot.id)?'▾':'▸'}</button>`:`<button class="tg none"></button>`}<button class="dot" data-act="edit" title="Barva / skupina – otevře detail" style="border:0;padding:0;cursor:pointer;background:${colorOf(t,p)}"></button><input class="nm" data-f="name" value="${esc(t.name)}" placeholder="Název úkolu" title="${esc(tip)}">${V.by==='person'?`<span class="cl">${esc(p.name)}${r.collab?' · spolupráce':''}</span>`:''}${pmark}${t.unclear?`<span class="qm" data-act="edit" title="K upřesnění: ${esc(t.question||'')}">?</span>`:''}${r.group||(p._draft&&!t.orig)?'':`<button class="tdc ${tdbad?'bad':''} ${tdn?'':'empty'}" data-act="open" data-tkey="${ot.id}" title="ToDo k úkolu${p._draft?' (platí pro aktuální harmonogram)':''}">${tdn?tdd+'/'+tdn:'+'} ✓</button>`}${ot.note?`<span class="ic" data-act="edit" title="Zadání: ${esc(ot.note.slice(0,200))}">≡</span>`:''}${(ot.log||[]).length?`<span class="ic" data-act="edit" title="Deník: ${ot.log.length} záznamů">✎${ot.log.length}</span>`:''}${(ot.docs||[]).length?`<span class="ic" data-act="edit" title="Soubory: ${(ot.docs||[]).map(x=>esc(x.name)).join(', ')}">📎${ot.docs.length}</span>`:''}${(ot.links||[]).length?`<span class="ic" data-act="edit" title="Odkazy: ${(ot.links||[]).map(x=>esc(x.name||x.url)).join(', ')}">🔗</span>`:''}</span>
       <span class="c-resp"><select data-f="resp"><option value="">—</option>${opts}</select></span>
       <span class="c-st">${st.l?`<span class="st ${st.k}">${st.l}</span>`:''}</span>
       <span class="c-prog">${p._draft?`<span class="hint">${t.milestone?(t.progress>=100?'✓':''):progressOf(t,p)}</span>`:t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Milník splněn">`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''} title="Hotovo"><select data-f="progress" class="prsel">${[0,25,50,75,100].map(v=>`<option value="${v}" ${(t.progress||0)===v?'selected':''}>${v}</option>`).join('')}</select>`}</span>
@@ -238,7 +238,7 @@ function render(){
   for(const r of rows){
     const top=ri*ROWH;
     if(r.type==='inbox'||r.type==='todoadd'){ri++;continue}
-    if(r.type==='todo'){const td=r.td;if(td.due&&td.due>=start&&td.due<=end){B+=`<div class="tdot ${td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(td.due)+px/2-5}px;top:${top+11}px" title="${esc(td.text)} · ${fmt(td.due)}"></div>`}ri++;continue}
+    if(r.type==='todo'){const td=r.td;const dd=td.due||(r.t?span(r.t,r.p).end:'');if(dd&&dd>=start&&dd<=end){B+=`<div class="tdot sub ${td.due&&td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(dd)+px/2-6}px;top:${top+10}px" title="${esc(td.text)}${td.due?' · '+fmt(td.due):' · bez termínu'}"></div><span class="sublbl ${td.done?'done':''}" style="left:${X(dd)+px/2+10}px;top:${top}px">${esc(td.text)}</span>`}ri++;continue}
     if(r.type==='head'){C+=`<div class="prow" style="top:${top}px"></div>`;
       const ts=r.p?r.p.tasks:rows.filter(x=>x.type==='task').map(x=>x.t);
       if(r.p&&ts.length){const s=ts.reduce((a,t)=>t.start<a?t.start:a,ts[0].start),e=ts.reduce((a,t)=>t.end>a?t.end:a,ts[0].end);B+=`<div class="bar psum" style="left:${X(s)}px;top:${top+14}px;--c:${r.p.color};width:${(diff(s,e)+1)*px}px;background:${r.p.color}"></div>`}
@@ -277,7 +277,7 @@ function scrollToToday(){if(V.by==='daily')return;const x=diff(g.dataset.start,T
 const DAYS=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
 function ctxOf(x){return x.t?`${esc(x.t.name)}${x.p?' · '+esc(x.p.name):''}`:x.p?esc(x.p.name):'mimo projekty'}
 function renderDaily(g){
-  const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}));p.tasks.forEach(t=>t.todos.forEach(td=>all.push({td,p,t})))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
+  const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
   const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;
   const open=all.filter(x=>!x.td.done&&mine(x));const TOM=addDays(TODAY,1);
   const doneToday=all.filter(x=>x.td.done&&x.td.doneAt===TODAY&&mine(x));
@@ -585,7 +585,7 @@ function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('
     <button data-op="del" class="danger">Smazat <kbd>Delete</kbd></button>`;
   ctx.classList.add('open');const w=ctx.offsetWidth||220,hh=ctx.offsetHeight||360;ctx.style.left=Math.min(x,innerWidth-w-8)+'px';ctx.style.top=Math.min(y,innerHeight-hh-8)+'px';ctx.dataset.id=id}
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=ctx.dataset.id;ctx.classList.remove('open');
-  ({unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
+  ({addtodo:()=>{const f=findTask(id);if(!f)return;S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
 document.addEventListener('click',e=>{if(!e.target.closest('#ctx,[data-act=menu]'))ctx.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove('open');
   if(!sel||$('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
@@ -679,7 +679,8 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
   if(b.dataset.tact==='tri'){openDump(null,[f.td.id])}
   if(b.dataset.tf==='block'){f.td.block=!f.td.block;commit()}
   if(b.dataset.tf==='imp'){f.td.imp=!f.td.imp;commit()}});
-g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(bar&&bar.dataset.id)openTask(bar.dataset.id)});
+g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id)return;const f=findTask(bar.dataset.id);if(!f)return;const id=bar.dataset.id;
+  ctx.innerHTML=`<button data-op="edit">Detail úkolu</button><button data-op="addtodo">Přidat do ToDo: „Kontrola ${esc(f.t.name)}“</button>`;ctx.classList.add('open');ctx.style.left=Math.min(e.clientX,innerWidth-240)+'px';ctx.style.top=Math.min(e.clientY,innerHeight-90)+'px';ctx.dataset.id=id});
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('click',e=>{if(e.target.closest('button,input,select,.bar'))return;const row=e.target.closest('.lrow[data-id]');if(!row)return;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=row.dataset.id;row.classList.add('sel')});
 let drag=null;
