@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.4.6';
+const APP_VERSION='1.4.7';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -224,7 +224,7 @@ function render(){
       L+=`<div class="lrow todo ${td.done?'done':''} ${over?'over':''}" style="--lv:${r.level}" data-td="${td.id}"><span class="c-n"></span><span class="c-name">${r.ctx?'':'<span class="ind2"></span>'}<input type="checkbox" data-tf="done" ${td.done?'checked':''}><input class="tt" data-tf="text" value="${esc(td.text)}" placeholder="Co je třeba udělat">${r.ctx?`<span class="cl">${esc(r.t?r.t.name:'inbox')}${r.p?' · '+esc(r.p.name):''}</span>`:''}<button class="imp ${td.imp?'on':''}" data-tf="imp" title="Důležité">★</button><button class="blk ${td.block?'on':''}" data-tf="block" title="Blokuje dokončení úkolu">⛔</button></span>
         <span class="c-resp"><select data-tf="who"><option value="">—</option>${[...new Set([...team,...(td.who?[td.who]:[])])].map(m=>`<option ${td.who===m?'selected':''}>${esc(m)}</option>`).join('')}</select></span>
         <span class="c-st"><input type="date" data-tf="due" value="${td.due||''}" title="Do kdy"></span><span class="c-prog"><select class="prs" data-tf="pri" title="Priorita"><option value="1" ${td.pri==1?'selected':''}>A</option><option value="2" ${!td.pri||td.pri==2?'selected':''}>B</option><option value="3" ${td.pri==3?'selected':''}>C</option></select></span><span class="c-act">${r.ctx?`<button data-tact="tri" title="Zatřídit / upravit">⋯</button>`:`<button data-tact="del" title="Smazat">×</button>`}</span></div>`;continue}
-    const {t,p}=r,sp=span(t,p),st=status(t,p);n++;const wbs=V.by==='project'?wbsOf(t,p):String(n);const dch=p._draft?draftChange(p,t):null;const uc=p._draft?[]:unreadOf(p,t.id);const chgtag=uc.length?`<span class="chgtag" data-act="ack" title="${esc(uc.map(c=>c.authorName+' · '+fmts(c.at.slice(0,10))+': '+chgText(c)).join('\n'))}\n(klepnutím vzít na vědomí)">✎ ${uc.length>1?uc.length+' změn':'změna'} · ${esc(uc[uc.length-1].authorName)}</span>`:'';const pmark=p._draft?(!t.orig?'<span class="pmark new" title="Nový úkol v návrhu">nový</span>':dch?`<span class="pmark chg" title="Původně – ${esc(dch.join(', '))}">≠</span>`:''):'';
+    const {t,p}=r,sp=span(t,p),st=status(t,p);n++;const wbs=V.by==='project'?wbsOf(t,p):String(n);const dch=p._draft?draftChange(p,t):null;const uc=p._draft?[]:unreadOf(p,t.id);const chgtag=uc.length?`<span class="chgtag" data-act="ack" data-tip="${esc(uc.map(c=>'<b>'+esc(c.authorName)+' · '+fmtDT(c.at)+'</b>\n'+esc(chgText(c))).join('\n\n'))}\n\nKlepnutím vzít na vědomí">✎ ${uc.length>1?uc.length+' změn':'změna'} · ${esc(uc[uc.length-1].authorName)}</span>`:'';const pmark=p._draft?(!t.orig?'<span class="pmark new" title="Nový úkol v návrhu">nový</span>':dch?`<span class="pmark chg" title="Původně – ${esc(dch.join(', '))}">≠</span>`:''):'';
     const ot=origOf(t,p)||t;const tdn=(ot.todos||[]).length,tdd=(ot.todos||[]).filter(x=>x.done).length,tdbad=overdueBlocking(ot).length>0;
     const opts=p.team.map(m=>`<option ${t.resp===m?'selected':''}>${esc(m)}</option>`).join('');
     const tip=(t.milestone?fmt(t.start):fmt(sp.start)+' – '+fmt(sp.end)+' ('+(diff(sp.start,sp.end)+1)+' dní)')+(groupName(t,p)?' · '+groupName(t,p):'')+(t.unclear?'\n? K UPŘESNĚNÍ: '+(t.question||''):'')+(t.note?'\n'+t.note:'')+(t.log.length?'\nPoslední záznam '+fmts(t.log[t.log.length-1].d)+': '+t.log[t.log.length-1].text:'');
@@ -843,4 +843,14 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
   document.addEventListener('pointermove',e=>{if(!sp)return;const w=Math.max(260,Math.min(window.innerWidth*.8,sp.w0+e.clientX-sp.x0));V.leftw=Math.round(w);g.style.setProperty('--leftw',V.leftw+'px')});
   const end=()=>{if(!sp)return;sp.h.classList.remove('on');sp=null;document.body.style.cursor='';save()};
   document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+})();
+
+/* ---------- okamžitá bublina ---------- */
+(function(){const tip=document.createElement('div');tip.id='tip';document.body.appendChild(tip);
+  const show=(el,e)=>{tip.innerHTML=el.dataset.tip;tip.style.display='block';move(e)};
+  const move=e=>{const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+16;if(x+r.width>innerWidth-8)x=e.clientX-r.width-10;if(y+r.height>innerHeight-8)y=e.clientY-r.height-10;tip.style.left=x+'px';tip.style.top=y+'px'};
+  document.addEventListener('pointerover',e=>{const el=e.target.closest('[data-tip]');if(el)show(el,e)});
+  document.addEventListener('pointermove',e=>{if(tip.style.display==='block'){if(!e.target.closest('[data-tip]'))tip.style.display='none';else move(e)}});
+  document.addEventListener('pointerout',e=>{if(e.target.closest&&e.target.closest('[data-tip]')&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('[data-tip]')))tip.style.display='none'});
+  document.addEventListener('pointerdown',()=>tip.style.display='none');
 })();
