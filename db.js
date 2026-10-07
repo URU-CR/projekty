@@ -43,10 +43,11 @@ const DB = (() => {
         id: p.id, name: p.name, lead: p.lead_name || '', color: p.color, archived: p.archived, created_by: p.created_by,
         team: pt.map(x => x.name), _teamIds: Object.fromEntries(pt.map(x => [x.name, x.id])), teamLinks: Object.fromEntries(pt.filter(x => x.user_id).map(x => [x.name, x.user_id])),
         groups: groups.filter(g => g.project_id === p.id).map(g => ({ id: g.id, name: g.name, color: g.color })),
-        members: members.filter(m => m.project_id === p.id).map(m => ({ user_id: m.user_id, role: m.role, email: prof[m.user_id]?.email || '?', name: prof[m.user_id]?.name || '' })),
-        invites: invites.filter(i => i.project_id === p.id).map(i => ({ email: i.email, role: i.role, access: i.access || [] })),
+        members: members.filter(m => m.project_id === p.id).map(m => ({ user_id: m.user_id, role: m.role, scoped: !!m.scoped, email: prof[m.user_id]?.email || '?', name: prof[m.user_id]?.name || '' })),
+        invites: invites.filter(i => i.project_id === p.id).map(i => ({ email: i.email, role: i.role, scoped: !!i.scoped, access: i.access || [] })),
         access: access.filter(a => a.project_id === p.id).map(a => ({ user_id: a.user_id, group_id: a.group_id, can_edit: !!a.can_edit })),
         myRole: (members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).role || (p.created_by === user.id ? 'lead' : ''),
+        myScoped: !!(members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).scoped,
         proposals: [], tasks: [], todos: []
       };
       const rows = tasks.filter(t => t.project_id === p.id);
@@ -151,6 +152,8 @@ const DB = (() => {
     if (!mode) { const { error } = await sb.from('group_access').delete().match({ group_id: groupId, user_id: userId }); if (error) throw error; return; }
     const { error } = await sb.from('group_access').upsert({ project_id: projectId, group_id: groupId, user_id: userId, can_edit: mode === 'edit' }); if (error) throw error;
   }
+  async function setScoped(projectId, userId, scoped) { const { error } = await sb.from('project_members').update({ scoped }).match({ project_id: projectId, user_id: userId }); if (error) throw error; }
+  async function setInviteScoped(projectId, email, scoped) { const { error } = await sb.from('project_invites').update({ scoped }).match({ project_id: projectId, email }); if (error) throw error; }
   async function setInviteAccess(projectId, email, access) { const { error } = await sb.from('project_invites').update({ access }).match({ project_id: projectId, email }); if (error) throw error; }
   async function setInviteRole(projectId, email, role) { const { error } = await sb.from('project_invites').update({ role }).match({ project_id: projectId, email }); if (error) throw error; }
   async function saveVersion(projectId, proposalId, name, kind, tasks) { const row = { id: uuid(), proposal_id: proposalId, project_id: projectId, name, kind, author: user.id, snapshot: { tasks } }; const { error } = await sb.from('proposal_versions').insert(row); if (error) throw error; return { id: row.id, name, kind, author: user.id, authorName: '', created_at: new Date().toISOString() }; }
@@ -182,5 +185,5 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
