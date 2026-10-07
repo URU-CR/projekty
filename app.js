@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.3.3';
+const APP_VERSION='1.3.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -9,7 +9,10 @@ const iso=d=>d.toISOString().slice(0,10);
 const parse=s=>new Date(s+'T00:00:00Z');
 const addDays=(s,n)=>iso(new Date(parse(s).getTime()+n*DAY));
 const diff=(a,b)=>Math.round((parse(b)-parse(a))/DAY);
-const TODAY=iso(new Date(Date.now()-new Date().getTimezoneOffset()*6e4));
+const todayIso=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+let TODAY=todayIso();
+function checkDate(){const t=todayIso();if(t!==TODAY){TODAY=t;if(typeof render==='function'&&S){if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}render()}}}
+setInterval(checkDate,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDate()});window.addEventListener('focus',checkDate);
 const uid=()=>crypto.randomUUID();
 const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
 const fmt=s=>{const d=parse(s);return d.getUTCDate()+'. '+(d.getUTCMonth()+1)+'. '+d.getUTCFullYear()};
@@ -87,7 +90,7 @@ async function saveDraftVersion(kind,name){const d=activeDraft();if(!d)return;co
 function diffTasks(A,B){const ab=Object.fromEntries(A.map(t=>[t.orig||t.id,t])),bb=Object.fromEntries(B.map(t=>[t.orig||t.id,t]));const out=[];
   for(const t of B){const o=ab[t.orig||t.id];if(!o){out.push({k:'add',t:t.name});continue}const ch=[];if(o.name!==t.name)ch.push(`název „${o.name}“ → „${t.name}“`);if(o.start!==t.start)ch.push(`od ${fmts(o.start)} → ${fmts(t.start)}`);if(o.end!==t.end)ch.push(`do ${fmts(o.end)} → ${fmts(t.end)}`);if(o.resp!==t.resp)ch.push(`odp. ${o.resp||'—'} → ${t.resp||'—'}`);if(!!o.milestone!==!!t.milestone)ch.push(t.milestone?'nově milník':'už ne milník');if(!!o.critical!==!!t.critical)ch.push(t.critical?'nově kritický':'už ne kritický');if(!!o.unclear!==!!t.unclear)ch.push(t.unclear?'k upřesnění':'upřesněno');if(ch.length)out.push({k:'chg',t:t.name,ch})}
   for(const t of A){if(!bb[t.orig||t.id])out.push({k:'del',t:t.name})}return out}
-function showDiff(title,A,B){const df=diffTasks(A,B);const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>${esc(title)}</span><button type="button" data-x>×</button></div><div class="db"><div class="vdiff">${df.length?df.map(x=>`<div class="${x.k}">${x.k==='add'?'➕ nový: ':x.k==='del'?'➖ zrušen: ':'✎ '}<b>${esc(x.t)}</b>${x.ch?' – '+esc(x.ch.join('; ')):''}</div>`).join(''):'<span class="hint">Žádné rozdíly.</span>'}</div></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close()});dlg.showModal()}
+function showDiff(title,A,B){const df=diffTasks(A,B);const dlg=$('#pdlg');dlg.classList.remove('proj');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>${esc(title)}</span><button type="button" data-x>×</button></div><div class="db"><div class="vdiff">${df.length?df.map(x=>`<div class="${x.k}">${x.k==='add'?'➕ nový: ':x.k==='del'?'➖ zrušen: ':'✎ '}<b>${esc(x.t)}</b>${x.ch?' – '+esc(x.ch.join('; ')):''}</div>`).join(''):'<span class="hint">Žádné rozdíly.</span>'}</div></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close()});dlg.showModal()}
 async function versionAction(op,vid){const d=activeDraft();if(!d)return;const{p,pr}=d;const v=(pr.versions||[]).find(x=>x.id===vid);if(!v)return;
   let snap;try{snap=await DB.getVersion(vid)}catch(e){toast(e.message,true);return}const vt=(snap.tasks||[]).map(t=>({...t,links:[],log:[],docs:[],todos:[],_draft:true}));
   if(op==='diff'){showDiff(`Verze „${v.name}“ → současný stav návrhu`,vt,p._verTasks||p.tasks);return}
@@ -387,7 +390,7 @@ function pasteTask(afterId,asChild){if(!clip){alert('Schránka je prázdná – 
   else{root.parent=null;p.tasks.push(...items)}
   sel=root.id;commit()}
 function duplicateTask(id){copyTask(id);pasteTask(id,false)}
-function setGroupForSubtree(id){const f=findTask(id);if(!f)return;const{t,p}=f;const dlg=$('#pdlg');
+function setGroupForSubtree(id){const f=findTask(id);if(!f)return;const{t,p}=f;const dlg=$('#pdlg');dlg.classList.remove('proj');
   dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Skupina pro fázi „${esc(t.name)}“</span><button type="button" data-x>×</button></div><div class="db">
     <div class="hint">Nastaví skupinu (a tím barvu) této fázi a všem jejím ${descendants(t,p).length} podúkolům. Vlastní barvy jednotlivých úkolů zůstanou.</div>
     <div class="f"><label>Skupina</label><select name="g"><option value="__new">+ nová skupina „${esc(t.name)}“</option>${p.groups.map(g=>`<option value="${g.id}" ${t.group===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}</select></div>
@@ -548,7 +551,7 @@ function openDump(lines,existingIds){
 }
 
 /* ---------- project dialog ---------- */
-function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');
+function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');dlg.classList.add('proj');
   dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Projekt</span><button type="button" data-x>×</button></div><div class="db">
     <div class="f"><label>Název projektu</label><input type="text" name="name" value="${esc(p.name)}"></div>
     <div class="f"><label>Vedoucí projektu</label><input type="text" name="lead" value="${esc(p.lead||'')}" list="ppl"><datalist id="ppl">${p.team.map(m=>`<option value="${esc(m)}">`).join('')}</datalist></div>
@@ -647,13 +650,13 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'newproj':newProject();break;
     case 'dump':openDump();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
-    case 'export':{exitDraft();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
+    case 'export':{exitDraft();$('#pdlg').classList.remove('proj');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
     case 'gpro':$('#xfile').click();break;
-    case 'import':{const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Import JSON</span><button type="button" data-x>×</button></div><div class="db"><div class="hint">Buď vyberte soubor .json, nebo vložte text zkopírovaný z prototypu (⋯ → Export JSON → Kopírovat do schránky). Projekty se přidají k existujícím.</div><div><button type="button" class="btn" data-file>Vybrat soubor…</button></div><textarea name="json" rows="8" placeholder="Sem vložte JSON…" style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit"></textarea></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Importovat vložený text</button></div></form>`;
+    case 'import':{const dlg=$('#pdlg');dlg.classList.remove('proj');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Import JSON</span><button type="button" data-x>×</button></div><div class="db"><div class="hint">Buď vyberte soubor .json, nebo vložte text zkopírovaný z prototypu (⋯ → Export JSON → Kopírovat do schránky). Projekty se přidají k existujícím.</div><div><button type="button" class="btn" data-file>Vybrat soubor…</button></div><textarea name="json" rows="8" placeholder="Sem vložte JSON…" style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit"></textarea></div><div class="df"><button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Importovat vložený text</button></div></form>`;
       const fm=dlg.querySelector('form');fm.addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-file]')){dlg.close();$('#file').click()}});
       fm.addEventListener('submit',e=>{e.preventDefault();try{const j=JSON.parse(fm.elements.json.value.trim());if(!j.projects)throw 0;dlg.close();importJson(j)}catch(err){alert('Text není platný export z aplikace.')}});dlg.showModal();break}
     case 'logout':DB.signOut();break;
-    case 'diag':DB.debug().then(d=>{const errs=JSON.parse(localStorage.getItem('projekty-errors')||'[]');const txt='Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1)+'\n\nPoslední chyby:\n'+(errs.join('\n')||'žádné');const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Diagnostika</span><button type="button" data-x>×</button></div><div class="db"><textarea rows="14" readonly style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit">${esc(txt)}</textarea></div><div class="df"><button type="button" class="btn" data-clr>Smazat historii chyb</button><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn pri" data-copy>Kopírovat</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-clr]')){localStorage.removeItem('projekty-errors');dlg.close()}if(e.target.closest('[data-copy]')){navigator.clipboard&&navigator.clipboard.writeText(txt);toast('Zkopírováno')}});dlg.showModal()}).catch(e=>alert('Diagnostika selhala: '+e.message));break;
+    case 'diag':DB.debug().then(d=>{const errs=JSON.parse(localStorage.getItem('projekty-errors')||'[]');$('#pdlg').classList.remove('proj');const txt='Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1)+'\n\nPoslední chyby:\n'+(errs.join('\n')||'žádné');const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Diagnostika</span><button type="button" data-x>×</button></div><div class="db"><textarea rows="14" readonly style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit">${esc(txt)}</textarea></div><div class="df"><button type="button" class="btn" data-clr>Smazat historii chyb</button><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn pri" data-copy>Kopírovat</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-clr]')){localStorage.removeItem('projekty-errors');dlg.close()}if(e.target.closest('[data-copy]')){navigator.clipboard&&navigator.clipboard.writeText(txt);toast('Zkopírováno')}});dlg.showModal()}).catch(e=>alert('Diagnostika selhala: '+e.message));break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
     case 'wipe':if(confirm('Opravdu smazat všechna data? Doporučujeme nejdřív export.')){S={projects:[]};V.project='ALL';commit()}break;
