@@ -108,7 +108,7 @@ button{cursor:pointer}
 .rbody{position:relative;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(var(--rowh) - 1px),var(--line2) calc(var(--rowh) - 1px),var(--line2) var(--rowh))}
 .col{position:absolute;top:0;bottom:0}
 .col.we{background:var(--weekend)}
-.col.td{background:none;border-left:1px dashed var(--today);opacity:.8;z-index:1}
+.col.td{background:none;border-left:2px dashed var(--today);opacity:.9;z-index:3}
 .col.mline{border-left:1px solid var(--line);}
 .prow{position:absolute;left:0;right:0;height:var(--rowh);background:var(--bg)}
 .bar{position:absolute;height:24px;border-radius:2px;top:5px;color:#fff;font-size:12px;cursor:grab;touch-action:none;background:color-mix(in srgb,var(--c) 42%,var(--panel)) !important}
@@ -391,7 +391,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.3.0">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.3.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -436,8 +436,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.3.0"></script>
-<script src="db.js?v=1.3.0"></script>
-<script src="app.js?v=1.3.0"></script>
+<script src="config.js?v=1.3.1"></script>
+<script src="db.js?v=1.3.1"></script>
+<script src="app.js?v=1.3.1"></script>
 </body>
 </html>
