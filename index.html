@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.5.2">
+<meta name="app-version" content="1.5.4">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
@@ -420,7 +420,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 .chgold{position:absolute;height:24px;border:1.5px dashed #d97706;border-radius:2px;box-sizing:border-box;z-index:3;pointer-events:none;background:transparent}
 .chgcut{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-radius:2px;background:repeating-linear-gradient(135deg,rgba(217,119,6,.55) 0 3px,transparent 3px 7px);pointer-events:none}
 .chgadd{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-top:3px solid #d97706;border-bottom:3px solid #d97706;background:transparent;pointer-events:none}
-.bar .lbl i.chgd{color:#b45309;font-weight:600;background:#fff3c4;border-radius:4px;padding:0 5px}
+.bar .lbl i.chgd{pointer-events:auto;cursor:help;color:#b45309;font-weight:600;background:#fff3c4;border-radius:4px;padding:0 5px}
 :root[data-theme="dark"] .bar .lbl i.chgd{background:#4a3d12;color:#ffd666}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar .lbl i.chgd{background:#4a3d12;color:#ffd666}}
 .pill.chg b{color:#b45309}
@@ -436,7 +436,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.5.2">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.5.4">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -448,6 +448,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
         <li><button data-m="proj">Nastavení projektu, tým a skupiny</button></li>
         <li><button data-m="newproj">Nový projekt</button></li>
         <li><button data-m="autodaily">Ráno otevírat přehled Dnes: <b id="autodailyL"></b></button></li>
+        <li><button data-m="bartip">Bublina s údaji při najetí na bar: <b id="bartipL"></b></button></li>
         <li><button data-m="track">Sledování změn: <b id="trackL"></b></button></li>
         <li class="sep"></li>
         <li><button data-m="export">Export JSON (záloha)</button></li>
@@ -482,8 +483,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.5.2"></script>
-<script src="db.js?v=1.5.2"></script>
-<script src="app.js?v=1.5.2"></script>
+<script src="config.js?v=1.5.4"></script>
+<script src="db.js?v=1.5.4"></script>
+<script src="app.js?v=1.5.4"></script>
 </body>
 </html>

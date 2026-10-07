@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.5.2';
+const APP_VERSION='1.5.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -171,7 +171,7 @@ function renderTabs(){
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
   $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));if(V.by!=='daily')V.prevBy=V.by;
-  $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
+  $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
 function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
@@ -278,9 +278,9 @@ function render(){
     const dts=(t.milestone?fmts(t.start):`${fmts(sp.start)} – ${fmts(sp.end)}`)+(st.k==='late'||st.k==='behind'?` · ${st.l}`:'');const dtc=st.k==='late'?'dt late':st.k==='behind'?'dt behind':'dt';
     const who=`${esc(t.resp||'')}${t.collab&&t.collab.length?' + '+esc(t.collab.join(', ')):''}`;
     const inside=false;const nol=x<220;
-    B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='behind'?'behind':''} ${st.k==='done'?'done':''} ${nol?'nol':''} ${t.unclear?'unclear':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col};--gc:${baseColor(t,p)}" title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}${chtip?' · '+esc(chtip):''}">
+    B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='behind'?'behind':''} ${st.k==='done'?'done':''} ${nol?'nol':''} ${t.unclear?'unclear':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col};--gc:${baseColor(t,p)}"${V.barTip===false?'':` title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}${who?' · '+who:''}${chtip?'\n'+esc(chtip):''}"`}>
       <div class="prog" style="width:${prog}%"></div><span class="h h-l"></span><span class="h h-r"></span>
-      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl"><b>${esc(t.name)} · </b>${dmark(t,p)}<i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd">⟲ ${chd}</i>`:''}</span></div>`+CH;
+      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl"><b>${esc(t.name)} · </b>${dmark(t,p)}<i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd" title="${esc(chtip)}">⟲ ${chd}</i>`:''}</span></div>`+CH;
     for(const td of t.todos){if(!td.due||td.due<start||td.due>end)continue;B+=`<div class="tdot ${td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(td.due)+px/2-5}px;top:${top}px" title="${esc(td.text)} · ${fmt(td.due)}${td.who?' · '+esc(td.who):''}"></div>`}
     ri++;
   }
@@ -683,6 +683,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'newproj':newProject();break;
     case 'dump':openDump();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
+    case 'bartip':V.barTip=V.barTip===false;save();render();toast(V.barTip?'Bublina u barů zapnuta':'Bublina u barů vypnuta');break;
     case 'track':S.trackChanges=!S.trackChanges;DB.setTrack(S.trackChanges).catch(e=>toast(e.message,true));render();break;
     case 'export':{exitDraft();$('#pdlg').classList.remove('proj');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
     case 'gpro':$('#xfile').click();break;
@@ -761,7 +762,7 @@ g.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x0;
   if(drag.mode==='m'){drag.bar.style.left=(drag.left+dd*px)+'px';drag.ns=addDays(drag.start,dd);drag.ne=addDays(drag.end,dd)}
   else if(drag.mode==='r'){const d=Math.max(1,diff(drag.start,drag.end)+1+dd);drag.bar.style.width=d*px+'px';drag.ns=drag.start;drag.ne=addDays(drag.start,d-1)}
   else{const d=Math.max(1,diff(drag.start,drag.end)+1-dd);const ns=addDays(drag.end,-(d-1));drag.bar.style.left=(drag.left+diff(drag.start,ns)*px)+'px';drag.bar.style.width=d*px+'px';drag.ns=ns;drag.ne=drag.end}
-  drag.bar.title=`${t.name}: ${fmt(drag.ns)} – ${fmt(drag.ne)}`});
+  const dl=drag.bar.querySelector('.lbl i.dt');if(dl)dl.textContent=`${fmts(drag.ns)} – ${fmts(drag.ne)}`});
 const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r){if(r.scrollIntoView)r.scrollIntoView({block:"nearest"});r.classList.add("sel")}}};
 g.addEventListener('pointerup',endDrag);g.addEventListener('pointercancel',endDrag);document.addEventListener('pointerup',e=>{if(drag&&!e.target.closest('.gantt'))drag=null});
 document.addEventListener('keydown',e=>{if(e.key==='l'&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!$('dialog[open]')){e.preventDefault();openDump()}
