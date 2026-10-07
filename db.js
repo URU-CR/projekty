@@ -60,7 +60,7 @@ const DB = (() => {
       const conv = t => { const T = {
         id: t.id, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [],
         critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, autoProg: !!t.auto_prog, collapsed: !!t.collapsed, parent: t.parent_id || null,
-        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '',
+        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '', checked: t.checked_on || '',
         links: links.filter(l => l.task_id === t.id).map(l => ({ id: l.id, name: l.name, url: l.url })),
         log: log.filter(l => l.task_id === t.id).map(l => ({ id: l.id, d: l.d, text: l.text, author: l.author, authorName: prof[l.author]?.name || '' })),
         docs: docs.filter(d => d.task_id === t.id).map(d => ({ id: d.id, name: d.name, path: d.path, size: d.size, uploaded_by: d.uploaded_by, created_at: d.created_at })),
@@ -77,7 +77,7 @@ const DB = (() => {
     }
     const pMap = Object.fromEntries(S.projects.map(p => [p.id, p]));
     for (const td of todos) {
-      const T = { id: td.id, owner: td.owner, text: td.text, who: td.who || '', done: !!td.done, doneAt: td.done_at || '', due: td.due || '', block: !!td.block, pri: td.pri || 2, imp: !!td.imp };
+      const T = { id: td.id, owner: td.owner, text: td.text, who: td.who || '', done: !!td.done, doneAt: td.done_at || '', due: td.due || '', block: !!td.block, pri: td.pri || 2, imp: !!td.imp, taskRef: td.task_ref || '' };
       if (td.task_id && tMap[td.task_id]) tMap[td.task_id].todos.push(T);
       else if (td.project_id && pMap[td.project_id]) pMap[td.project_id].todos.push(T);
       else if (td.owner === user.id) S.todos.push(T);
@@ -98,7 +98,7 @@ const DB = (() => {
       const live = p._draft ? p._liveTasks : p.tasks;
       live.forEach((t, i) => {
         F.tasks[t.id] = { id: t.id, project_id: p.id, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '',
-          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '' };
+          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '', checked_on: t.checked || null };
         (t.links || []).forEach((l, j) => { l.id ||= uuid(); F.links[l.id] = { id: l.id, task_id: t.id, name: l.name || '', url: l.url || '', sort: j }; });
         (t.log || []).forEach(l => { l.id ||= uuid(); F.log[l.id] = { id: l.id, task_id: t.id, d: l.d, text: l.text, author: l.author || user.id }; });
         (t.todos || []).forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, t.id, j); });
@@ -114,7 +114,7 @@ const DB = (() => {
     S.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, null, null, j); });
     return F;
   }
-  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 2, imp: !!td.imp, sort });
+  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 2, imp: !!td.imp, sort, task_ref: td.taskRef || null });
 
   /* ---------- synchronizace rozdílů ---------- */
   const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };
@@ -190,5 +190,6 @@ const DB = (() => {
       .subscribe();
   }
 
-  return { markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  const SCHEMA = 18; // poslední potřebná migrace
+  return { SCHEMA, markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
