@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.4.11">
+<meta name="app-version" content="1.5.1">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
@@ -207,6 +207,13 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .bar.late:not(.ms){outline:1px dashed var(--critical);outline-offset:2px}
 .bar.late.ms::before{outline:1px dashed var(--critical);outline-offset:2px}
 .bar .lbl i.dt.late{color:var(--critical);font-weight:600}
+/* denní stav na konci baru: ☐ = je v mém ToDo (modře; červeně po termínu), ✓ = dnes zkontrolováno */
+.bar .lbl i.dm{display:inline-block;font-style:normal;font-weight:700;font-size:12px;line-height:16px;margin-right:5px;padding:0 4px;border-radius:4px;vertical-align:-1px;pointer-events:auto;cursor:help}
+.bar .lbl i.dm.todo{background:var(--accent);color:#fff}
+.bar .lbl i.dm.todo.over{background:var(--critical)}
+.bar .lbl i.dm.chk{background:#d1fae5;color:#047857}
+:root[data-theme="dark"] .bar .lbl i.dm.chk{background:#114d3a;color:#6ee7b7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar .lbl i.dm.chk{background:#114d3a;color:#6ee7b7}}
 .bar.done{}
 .strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
 .strip .lg{color:var(--muted);font-size:12px;margin-right:2px}
@@ -429,7 +436,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.4.11">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.5.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -475,8 +482,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.4.11"></script>
-<script src="db.js?v=1.4.11"></script>
-<script src="app.js?v=1.4.11"></script>
+<script src="config.js?v=1.5.1"></script>
+<script src="db.js?v=1.5.1"></script>
+<script src="app.js?v=1.5.1"></script>
 </body>
 </html>
