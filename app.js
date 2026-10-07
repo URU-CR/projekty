@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.3.1';
+const APP_VERSION='1.3.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -383,6 +383,18 @@ function pasteTask(afterId,asChild){if(!clip){alert('Schránka je prázdná – 
   else{root.parent=null;p.tasks.push(...items)}
   sel=root.id;commit()}
 function duplicateTask(id){copyTask(id);pasteTask(id,false)}
+function setGroupForSubtree(id){const f=findTask(id);if(!f)return;const{t,p}=f;const dlg=$('#pdlg');
+  dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Skupina pro fázi „${esc(t.name)}“</span><button type="button" data-x>×</button></div><div class="db">
+    <div class="hint">Nastaví skupinu (a tím barvu) této fázi a všem jejím ${descendants(t,p).length} podúkolům. Vlastní barvy jednotlivých úkolů zůstanou.</div>
+    <div class="f"><label>Skupina</label><select name="g"><option value="__new">+ nová skupina „${esc(t.name)}“</option>${p.groups.map(g=>`<option value="${g.id}" ${t.group===g.id?'selected':''}>${esc(g.name)}</option>`).join('')}</select></div>
+    <div class="f" id="newg"><label>Barva nové skupiny</label><div class="sw">${PALETTE.map((c,k)=>`<button type="button" data-c="${c}" class="${k===(p.groups.length*4+3)%PALETTE.length?'on':''}" style="background:${c}"></button>`).join('')}<input type="hidden" name="color" value="${PALETTE[(p.groups.length*4+3)%PALETTE.length]}"></div></div>
+    </div><div class="df"><button type="button" class="btn" data-x>Zavřít</button><button type="submit" class="btn pri">Použít</button></div></form>`;
+  const fm=$('form',dlg);const E=n=>fm.elements[n];
+  fm.addEventListener('change',e=>{if(e.target.name==='g')$('#newg',fm).style.display=e.target.value==='__new'?'':'none'});
+  fm.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.c){$$('.sw button',fm).forEach(x=>x.classList.remove('on'));b.classList.add('on');E('color').value=b.dataset.c}if(b.hasAttribute('data-x'))dlg.close()});
+  fm.addEventListener('submit',()=>{let gid=E('g').value;if(gid==='__new'){const g={id:uid(),name:t.name,color:E('color').value};p.groups.push(g);gid=g.id}
+    [t,...descendants(t,p)].forEach(x=>x.group=gid);commit();toast('Skupina nastavena pro fázi i podúkoly')});
+  dlg.showModal()}
 function addChild(id){const f=findTask(id);if(!f)return;const t={...blankTask(f.p)};t.parent=id;t.group=f.t.group;f.t.collapsed=false;const pd=descendants(f.t,f.p);let j=f.p.tasks.indexOf(f.t)+1;while(j<f.p.tasks.length&&pd.includes(f.p.tasks[j]))j++;f.p.tasks.splice(j,0,t);focusId=t.id;commit()}
 function delTask(id,quiet){const f=findTask(id);if(!f)return;const kids=descendants(f.t,f.p);if(!quiet&&!confirm(`Smazat úkol „${f.t.name||'bez názvu'}“${kids.length?' včetně '+kids.length+' podúkolů':''}?`))return;
   if(sel===id)sel=null;f.p.tasks=f.p.tasks.filter(x=>x.id!==id&&!kids.includes(x));f.p.tasks.forEach(x=>x.deps=(x.deps||[]).filter(d=>d!==id));commit()}
@@ -578,14 +590,14 @@ function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');
 const ctx=$('#ctx');
 function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('Aktuální harmonogram je pro vás jen ke čtení – upravujte v návrhu.');return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
   const t=f.t;const sibs=f.p.tasks.filter(x=>x.parent===t.parent);const k=sibs.indexOf(t);
-  ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button><button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button><div class="sep"></div>
+  ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button><button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button>${kidsOf(t,f.p).length&&myRole(f.p)==='lead'?'<button data-op="grp">Skupina (barva) pro celou fázi…</button>':''}<div class="sep"></div>
     <button data-op="add">Přidat úkol pod tento</button><button data-op="child">Přidat podúkol</button><div class="sep"></div>
     <button data-op="copy">Kopírovat <kbd>Ctrl+C</kbd></button><button data-op="paste" ${clip?'':'disabled'}>Vložit pod tento <kbd>Ctrl+V</kbd></button><button data-op="pastechild" ${clip?'':'disabled'}>Vložit jako podúkol</button><button data-op="dup">Duplikovat <kbd>Ctrl+D</kbd></button><div class="sep"></div>
     <button data-op="up" ${k>0?'':'disabled'}>Posunout nahoru <kbd>Alt+↑</kbd></button><button data-op="down" ${k<sibs.length-1?'':'disabled'}>Posunout dolů <kbd>Alt+↓</kbd></button><button data-op="in" ${k>0?'':'disabled'}>Zanořit <kbd>Alt+Tab</kbd></button><button data-op="out" ${t.parent?'':'disabled'}>Vynořit <kbd>Alt+Shift+Tab</kbd></button><div class="sep"></div>
     <button data-op="del" class="danger">Smazat <kbd>Delete</kbd></button>`;
   ctx.classList.add('open');const w=ctx.offsetWidth||220,hh=ctx.offsetHeight||360;ctx.style.left=Math.min(x,innerWidth-w-8)+'px';ctx.style.top=Math.min(y,innerHeight-hh-8)+'px';ctx.dataset.id=id}
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=ctx.dataset.id;ctx.classList.remove('open');
-  ({addtodo:()=>{const f=findTask(id);if(!f)return;S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
+  ({grp:()=>setGroupForSubtree(id),addtodo:()=>{const f=findTask(id);if(!f)return;S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
 document.addEventListener('click',e=>{if(!e.target.closest('#ctx,[data-act=menu]'))ctx.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove('open');
   if(!sel||$('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
