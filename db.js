@@ -29,13 +29,14 @@ const DB = (() => {
   async function claimInvites() { try { const { data } = await sb.rpc('claim_invites'); return data || 0; } catch (e) { return 0; } }
   async function load() {
     const q = async (t, sel = '*', order) => { let r = sb.from(t).select(sel); if (order) r = r.order(order); const { data, error } = await r; if (error) throw error; return data || []; };
-    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks, versions] = await Promise.all([
+    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks, versions, changes, reads] = await Promise.all([
       q('profiles'), q('projects', '*', 'created_at'), q('project_members'), q('project_invites'), q('project_team', '*', 'sort'),
       q('task_groups', '*', 'sort'), q('tasks', '*', 'sort'), q('task_links', '*', 'sort'), q('task_log', '*', 'created_at'),
-      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort'), q('proposal_versions', 'id,proposal_id,project_id,name,kind,author,created_at', 'created_at')]);
+      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort'), q('proposal_versions', 'id,proposal_id,project_id,name,kind,author,created_at', 'created_at'), q('task_changes', '*', 'created_at'), q('change_reads')]);
     const prof = Object.fromEntries(profiles.map(p => [p.id, p]));
     const myProfile = prof[user.id] || { name: user.email.split('@')[0], email: user.email };
-    const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, profiles: prof, projects: [], todos: [] };
+    const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, trackChanges: myProfile.track_changes !== false, profiles: prof, projects: [], todos: [] };
+    const readSet = new Set(reads.filter(r => r.user_id === user.id).map(r => r.change_id));
     const byTask = {}; const tMap = {};
     for (const p of projects) {
       const pt = team.filter(x => x.project_id === p.id);
@@ -48,7 +49,8 @@ const DB = (() => {
         access: access.filter(a => a.project_id === p.id).map(a => ({ user_id: a.user_id, group_id: a.group_id, can_edit: !!a.can_edit })),
         myRole: (members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).role || (p.created_by === user.id ? 'lead' : ''),
         myScoped: !!(members.find(m => m.project_id === p.id && m.user_id === user.id) || {}).scoped,
-        proposals: [], tasks: [], todos: []
+        proposals: [], tasks: [], todos: [],
+        changes: changes.filter(c => c.project_id === p.id).map(c => ({ id: c.id, task_id: c.task_id, task_name: c.task_name || '', kind: c.kind, field: c.field || '', old: c.old_value, new: c.new_value, author: c.author, authorName: prof[c.author]?.name || '?', at: c.created_at, read: readSet.has(c.id) }))
       };
       const rows = tasks.filter(t => t.project_id === p.id);
       // seřadit do stromového pořadí (rodič → potomci) podle sort
@@ -152,6 +154,8 @@ const DB = (() => {
     if (!mode) { const { error } = await sb.from('group_access').delete().match({ group_id: groupId, user_id: userId }); if (error) throw error; return; }
     const { error } = await sb.from('group_access').upsert({ project_id: projectId, group_id: groupId, user_id: userId, can_edit: mode === 'edit' }); if (error) throw error;
   }
+  async function markRead(ids) { if (!ids.length) return 0; const { data, error } = await sb.rpc('mark_changes_read', { ids }); if (error) throw error; return data; }
+  async function setTrack(on) { const { error } = await sb.from('profiles').update({ track_changes: on }).eq('id', user.id); if (error) throw error; }
   async function setScoped(projectId, userId, scoped) { const { error } = await sb.from('project_members').update({ scoped }).match({ project_id: projectId, user_id: userId }); if (error) throw error; }
   async function setInviteScoped(projectId, email, scoped) { const { error } = await sb.from('project_invites').update({ scoped }).match({ project_id: projectId, email }); if (error) throw error; }
   async function setInviteAccess(projectId, email, access) { const { error } = await sb.from('project_invites').update({ access }).match({ project_id: projectId, email }); if (error) throw error; }
@@ -182,8 +186,9 @@ const DB = (() => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_log' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposal_tasks' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, handler)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_changes' }, handler)
       .subscribe();
   }
 
-  return { setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  return { markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
