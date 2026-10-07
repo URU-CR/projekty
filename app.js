@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.6.1';
+const APP_VERSION='1.6.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -376,21 +376,19 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
 });
 /* přetahování položek v denním seznamu (⠿): změní pořadí i den */
 (function(){let dd=null;
-  // skupina = nadpis + položky pod ním až po další nadpis (v rámci sekce, bez hotových)
-  const groupOf=box=>{const out=[box];if(!box.classList.contains('head'))return out;let n=box.nextElementSibling;while(n&&n.classList.contains('di')&&!n.classList.contains('head')&&!n.classList.contains('done')){out.push(n);n=n.nextElementSibling}return out};
-  g.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||e.button!==0)return;const box=h.closest('.di[data-td]');if(!box)return;e.preventDefault();dd={id:box.dataset.td,box,grp:groupOf(box),y0:e.clientY,moved:false,pid:e.pointerId,line:null,ghost:null,before:null,sec:null};h.setPointerCapture(e.pointerId)});
-  g.addEventListener('pointermove',e=>{if(!dd)return;if(!dd.moved){if(Math.abs(e.clientY-dd.y0)<4)return;dd.moved=true;dd.grp.forEach(x=>x.classList.add('dragsrc'));dd.line=document.createElement('div');dd.line.className='dropline';$('.daily').appendChild(dd.line);dd.ghost=document.createElement('div');dd.ghost.className='dragghost';dd.ghost.textContent=(dd.box.querySelector('.dtext').value||'(bez textu)')+(dd.grp.length>1?` (+${dd.grp.length-1})`:'');document.body.appendChild(dd.ghost);document.body.style.cursor='grabbing'}
+  g.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||e.button!==0)return;const box=h.closest('.di[data-td]');if(!box)return;e.preventDefault();dd={id:box.dataset.td,box,y0:e.clientY,moved:false,pid:e.pointerId,line:null,ghost:null,before:null,sec:null};h.setPointerCapture(e.pointerId)});
+  g.addEventListener('pointermove',e=>{if(!dd)return;if(!dd.moved){if(Math.abs(e.clientY-dd.y0)<4)return;dd.moved=true;dd.box.classList.add('dragsrc');dd.line=document.createElement('div');dd.line.className='dropline';$('.daily').appendChild(dd.line);dd.ghost=document.createElement('div');dd.ghost.className='dragghost';dd.ghost.textContent=dd.box.querySelector('.dtext').value||'(bez textu)';document.body.appendChild(dd.ghost);document.body.style.cursor='grabbing'}
     dd.ghost.style.left=(e.clientX+14)+'px';dd.ghost.style.top=(e.clientY-12)+'px';
     // cíl: sekce pod kurzorem (nebo nejbližší), uvnitř první položka, jejíž střed je pod kurzorem
     const secs=$$('.daily .dsec');let sec=null;for(const s of secs){const r=s.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom){sec=s;break}}
     if(!sec){let best=1e9;for(const s of secs){const r=s.getBoundingClientRect();const d=Math.min(Math.abs(e.clientY-r.top),Math.abs(e.clientY-r.bottom));if(d<best){best=d;sec=s}}}
-    if(!sec)return;dd.sec=sec;const items=[...sec.querySelectorAll('.di[data-td]')].filter(x=>!dd.grp.includes(x)&&!x.classList.contains('done'));let before=null;for(const it of items){const r=it.getBoundingClientRect();if(e.clientY<r.top+r.height/2){before=it;break}}
+    if(!sec)return;dd.sec=sec;const items=[...sec.querySelectorAll('.di[data-td]')].filter(x=>x!==dd.box&&!x.classList.contains('done'));let before=null;for(const it of items){const r=it.getBoundingClientRect();if(e.clientY<r.top+r.height/2){before=it;break}}
     dd.before=before;const dr=$('.daily').getBoundingClientRect();let y;if(before)y=before.getBoundingClientRect().top;else if(items.length)y=items[items.length-1].getBoundingClientRect().bottom;else y=sec.querySelector('.dh2').getBoundingClientRect().bottom+2;
     dd.line.style.display='block';dd.line.style.left='34px';dd.line.style.right='8px';dd.line.style.top=(y-dr.top-1)+'px'});
-  const end=e=>{if(!dd)return;const d=dd;dd=null;if(!d.moved)return;d.grp.forEach(x=>x.classList.remove('dragsrc'));d.line.remove();d.ghost.remove();document.body.style.cursor='';if(e.type!=='pointerup'||!d.sec)return;
-    const tds=d.grp.map(x=>findTodo(x.dataset.td)).filter(Boolean).map(f=>f.td);if(!tds.length)return;const ddv=d.sec.dataset.dd;const n=tds.length;
-    let base;if(d.before){const bf=findTodo(d.before.dataset.td);base=(bf?bf.td.ord||0:0)-1}else{let mx=0;d.sec.querySelectorAll('.di[data-td]').forEach(x=>{const o=findTodo(x.dataset.td);if(o&&!tds.includes(o.td)&&o.td.ord>mx)mx=o.td.ord});base=mx}
-    tds.forEach((td,i)=>{if(ddv==='0'){if(!td.due||td.due>TODAY)td.due=TODAY}else td.due=addDays(TODAY,+ddv);td.ord=base+(i+1)/(n+1)});
+  const end=e=>{if(!dd)return;const d=dd;dd=null;if(!d.moved)return;d.box.classList.remove('dragsrc');d.line.remove();d.ghost.remove();document.body.style.cursor='';if(e.type!=='pointerup'||!d.sec)return;
+    const f=findTodo(d.id);if(!f)return;const td=f.td;const ddv=d.sec.dataset.dd;const TOM=addDays(TODAY,1);
+    if(ddv==='0'){if(!td.due||td.due>TODAY)td.due=TODAY}else td.due=addDays(TODAY,+ddv);
+    if(d.before){const bf=findTodo(d.before.dataset.td);td.ord=(bf?bf.td.ord||0:0)-0.5}else{let mx=0;d.sec.querySelectorAll('.di[data-td]').forEach(x=>{const o=findTodo(x.dataset.td);if(o&&o.td.ord>mx)mx=o.td.ord});td.ord=mx+1}
     commit()};
   g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
 })();
