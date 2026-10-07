@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.5.5">
+<meta name="app-version" content="1.6.1">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
@@ -332,42 +332,66 @@ dialog.proj{width:min(760px,96vw)}
 .deplist div span{flex:1}
 .deplist div button{border:0;background:none;color:var(--muted)}
 
-.daily{max-width:680px;margin:0 auto;padding:10px 22px 80px;width:100%}
+/* denní seznam – vzhled Poznámek: kulaté zaškrtávátko, nadpisy skupin, ★ a priorita přímo v řádku, ⠿ pro přetažení */
+.daily{max-width:680px;margin:0 auto;padding:10px 22px 80px;width:100%;position:relative}
 .daily .sub{color:var(--muted);font-size:12px;margin:6px 0 18px}
 .daily .sub a{color:var(--accent);text-decoration:none;cursor:pointer}
-.dh2{display:flex;align-items:center;justify-content:space-between;margin:26px 0 6px}
-.dh2:first-of-type{margin-top:6px}
+.dsec{margin-bottom:4px}
+.dh2{display:flex;align-items:center;justify-content:space-between;margin:26px 0 4px}
+.dsec:first-of-type .dh2{margin-top:6px}
 .dh2 h2{font-size:24px;font-weight:700;margin:0;letter-spacing:-.01em}
+.dhb{display:flex;align-items:center;gap:10px}
 .dh2 button{border:0;background:none;color:var(--muted);font-size:26px;line-height:1;padding:0 4px;cursor:pointer}
 .dh2 button:hover{color:var(--text)}
-.dadd{display:flex;gap:8px;margin:2px 0 6px 34px}
+.dh2 button.hb{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;line-height:16px}
+.dadd{display:flex;gap:8px;margin:2px 0 6px 102px}
+.dadd.head{margin-left:30px}
 .dadd input{flex:1;border:0;border-bottom:1px solid var(--line);background:transparent;padding:8px 2px;font-size:16px}
+.dadd.head input{font-weight:700}
 .dadd input:focus{outline:none;border-color:var(--accent)}
-.di{display:flex;align-items:flex-start;gap:12px;padding:10px 4px 8px;position:relative}
-.di .chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);flex:none;margin-top:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;background:var(--panel);transition:.15s}
-.di .chk:hover{border-color:var(--muted)}
-.di.done .chk{background:var(--muted);border-color:var(--muted);color:#fff}
-.di .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.di{display:flex;align-items:center;gap:6px;padding:6px 4px;position:relative;border-radius:6px}
+.di:hover{background:color-mix(in srgb,var(--panel) 60%,transparent)}
+.di .grab{width:16px;flex:none;color:transparent;cursor:grab;font-size:15px;line-height:1;text-align:center;user-select:none;touch-action:none}
+.di:hover .grab{color:var(--line)}
+.di .grab:hover{color:var(--muted)}
+.di.dragsrc{opacity:.35}
+.di .star,.di .pri{border:0;background:none;padding:0;width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px}
+.di .star{font-size:17px;color:var(--line)}
+.di .star:hover{color:#c99400}
+.di .star.on{color:#e6a700}
+.di .pri{color:#e0881a}
+.di.p1 .pri{color:var(--critical)}
+.di.p3 .pri{color:#3aa355}
+.di .pri:hover{background:var(--accent-soft)}
+.di .chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;font-weight:700;background:var(--panel);margin:0 4px 0 2px}
+.di .chk:hover{border-color:#e6a700}
+.di.done .chk{background:#f2b335;border-color:#f2b335;color:#fff}
+.di .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .di .line{display:flex;align-items:center;gap:8px;min-width:0}
 .di .dtext{flex:0 1 auto;min-width:40px;max-width:100%;border:1px solid transparent;background:transparent;border-radius:4px;padding:1px 4px;margin-left:-4px;font-size:16px;line-height:1.35}
 .di .dtext:focus{outline:none;border-color:var(--accent);background:var(--panel)}
 .di.done .dtext{text-decoration:line-through;color:var(--muted)}
-.di.done .body{opacity:.7}
+.di.done .body{opacity:.75}
+.di.done .star,.di.done .pri{opacity:.35;pointer-events:none}
+.di.head{margin-top:14px;padding-bottom:2px}
+.di.head .dtext{font-weight:700;font-size:16px}
+.di.head .grab{margin-right:72px}
 .di .pill{padding:2px 8px;font-size:11px;color:var(--muted);flex:none}
 .di .pill.over{color:var(--critical);border-color:var(--critical)}
 .di .tag{font-size:11px;color:var(--muted);flex:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.di .bars{display:flex;gap:4px;height:4px;margin-left:0}
-.di .bars i{display:block;width:20px;height:4px;border-radius:2px}
-.di .dopt{border:0;background:none;color:var(--line);padding:2px 6px;border-radius:4px;flex:none;font-size:16px;margin-top:2px;cursor:pointer}
+.di .ring{flex:none}
+.di .pdot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.di .dopt{border:0;background:none;color:var(--line);padding:2px 6px;border-radius:4px;flex:none;font-size:16px;cursor:pointer}
 .di:hover .dopt,.di.open .dopt{color:var(--muted)}
 .di .dopt.x{font-size:14px}
 .di.open .dopt{color:var(--text)}
-.dopts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:4px 4px 12px 38px;margin-bottom:6px;font-size:12px}
+.dopts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:4px 4px 12px 106px;margin-bottom:6px;font-size:12px}
 .dopts label{color:var(--muted);display:flex;align-items:center;gap:5px}
 .dopts select,.dopts input[type=date]{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:4px 6px;font-size:12px;max-width:190px}
 .dopts .seg button{padding:3px 9px;font-size:12px}
 .dopts .btn{padding:3px 8px;font-size:12px}
-.dempty{color:var(--muted);padding:6px 4px 10px 38px;font-size:14px}
+.dempty{color:var(--muted);padding:6px 4px 10px 106px;font-size:14px}
+.lrow.todo.thead .tt{font-weight:700}
 
 #auth{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
 #auth form{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 28px;width:min(400px,100%);display:grid;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
@@ -436,7 +460,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.5.5">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.6.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -483,8 +507,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.5.5"></script>
-<script src="db.js?v=1.5.5"></script>
-<script src="app.js?v=1.5.5"></script>
+<script src="config.js?v=1.6.1"></script>
+<script src="db.js?v=1.6.1"></script>
+<script src="app.js?v=1.6.1"></script>
 </body>
 </html>

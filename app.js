@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.5.5';
+const APP_VERSION='1.6.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -49,7 +49,7 @@ function span(t,p){const kids=kidsOf(t,p);if(!kids.length)return{start:t.start,e
 function progressOf(t,p){const kids=kidsOf(t,p);if(!kids.length){if(t.autoProg&&t.todos&&t.todos.length)return Math.round(t.todos.filter(x=>x.done).length/t.todos.length*100);return t.progress||0}return Math.round(kids.reduce((a,k)=>a+progressOf(k,p),0)/kids.length)}
 const openBlocking=t=>(t.todos||[]).filter(x=>!x.done&&x.block);
 const overdueBlocking=t=>openBlocking(t).filter(x=>x.due&&x.due<TODAY);
-function allTodos(){const out=[];for(const p of curProjects()){p.todos.forEach(td=>out.push({td,p,t:null}));p.tasks.forEach(t=>t.todos.forEach(td=>out.push({td,p,t})))}if(V.project==='ALL')S.todos.forEach(td=>out.push({td,p:null,t:null}));return out}
+function allTodos(){const out=[];for(const p of curProjects()){p.todos.forEach(td=>{if(!td.heading)out.push({td,p,t:null})});p.tasks.forEach(t=>t.todos.forEach(td=>out.push({td,p,t})))}if(V.project==='ALL')S.todos.forEach(td=>{if(!td.heading)out.push({td,p:null,t:null})});return out}
 function findTodo(id){for(const p of S.projects){let td=p.todos.find(x=>x.id===id);if(td)return{td,list:p.todos,p,t:null};for(const t of [...p.tasks,...(p._liveTasks||[])]){td=(t.todos||[]).find(x=>x.id===id);if(td)return{td,list:t.todos,p,t}}}const td=S.todos.find(x=>x.id===id);return td?{td,list:S.todos,p:null,t:null}:null}
 const todoList=key=>key==='me'?S.todos:key.startsWith('p:')?proj(key.slice(2))?.todos:findTask(key)?.t.todos;
 const linkedNames=p=>Object.entries(p.teamLinks||{}).filter(([n,u])=>u===S.meId).map(([n])=>n);
@@ -219,9 +219,10 @@ function render(){
   let n=0;
   for(const r of rows){
     if(r.type==='head'){L+=`<div class="lrow head" ${r.p?`data-pid="${r.p.id}"`:''}><span class="c-n"></span><span class="c-name">${r.color?`<span class="dot" style="background:${r.color}"></span>`:''}<span class="nm">${esc(r.label)}</span><span class="hint">${esc(r.hint)}</span></span><span class="c-resp"></span><span class="c-st"></span><span class="c-prog"></span><span class="c-act">${r.p?'<button data-act="proj" title="Nastavení projektu">⚙</button>':''}</span></div>`;continue}
-    if(r.type==='inbox'){const open=r.list.filter(x=>!x.done).length,over=r.list.some(x=>!x.done&&x.due&&x.due<TODAY);
-      L+=`<div class="lrow inbox" data-key="${r.key}"><span class="c-n"></span><span class="c-name"><button class="tg" data-act="open">${isOpen(r.key)?'▾':'▸'}</button><span class="nm">${esc(r.label)}</span><button class="tdc ${over?'bad':open?'open':''} ${r.list.length?'':'empty'}" data-act="open">${r.list.length?(open?'☐ ':'✓ ')+(r.list.length-open)+'/'+r.list.length:'+ ToDo'}</button></span><span class="c-resp"></span><span class="c-st"></span><span class="c-prog"></span><span class="c-act"></span></div>`;continue}
+    if(r.type==='inbox'){const items=r.list.filter(x=>!x.heading);const open=items.filter(x=>!x.done).length,over=items.some(x=>!x.done&&x.due&&x.due<TODAY);
+      L+=`<div class="lrow inbox" data-key="${r.key}"><span class="c-n"></span><span class="c-name"><button class="tg" data-act="open">${isOpen(r.key)?'▾':'▸'}</button><span class="nm">${esc(r.label)}</span><button class="tdc ${over?'bad':open?'open':''} ${r.list.length?'':'empty'}" data-act="open">${items.length?(open?'☐ ':'✓ ')+(items.length-open)+'/'+items.length:'+ ToDo'}</button></span><span class="c-resp"></span><span class="c-st"></span><span class="c-prog"></span><span class="c-act"></span></div>`;continue}
     if(r.type==='todoadd'){L+=`<div class="lrow todo todoadd" style="--lv:${r.level}" data-key="${r.key}"><span class="c-n"></span><span class="c-name"><span class="ind2"></span><input class="tt" data-new="1" placeholder="+ položka… (Enter)"></span><span class="c-resp"></span><span class="c-st"></span><span class="c-prog"></span><span class="c-act"></span></div>`;continue}
+    if(r.type==='todo'&&r.td.heading){L+=`<div class="lrow todo thead" style="--lv:${r.level}" data-td="${r.td.id}"><span class="c-n"></span><span class="c-name"><span class="ind2"></span><input class="tt" data-tf="text" value="${esc(r.td.text)}" placeholder="Nadpis skupiny"></span><span class="c-resp"></span><span class="c-st"></span><span class="c-prog"></span><span class="c-act"></span></div>`;continue}
     if(r.type==='todo'){const td=r.td,over=td.due&&td.due<TODAY&&!td.done;const team=r.p?r.p.team:allPeople();
       L+=`<div class="lrow todo ${td.done?'done':''} ${over?'over':''}" style="--lv:${r.level}" data-td="${td.id}"><span class="c-n"></span><span class="c-name">${r.ctx?'':'<span class="ind2"></span>'}<input type="checkbox" data-tf="done" ${td.done?'checked':''}><input class="tt" data-tf="text" value="${esc(td.text)}" placeholder="Co je třeba udělat">${r.ctx?`<span class="cl">${esc(r.t?r.t.name:'inbox')}${r.p?' · '+esc(r.p.name):''}</span>`:''}<button class="imp ${td.imp?'on':''}" data-tf="imp" title="Důležité">★</button><button class="blk ${td.block?'on':''}" data-tf="block" title="Blokuje dokončení úkolu">⛔</button></span>
         <span class="c-resp"><select data-tf="who"><option value="">—</option>${[...new Set([...team,...(td.who?[td.who]:[])])].map(m=>`<option ${td.who===m?'selected':''}>${esc(m)}</option>`).join('')}</select></span>
@@ -306,53 +307,61 @@ const DAYS=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobot
 function ctxOf(x){return x.t?`${esc(x.t.name)}${x.p?' · '+esc(x.p.name):''}`:x.p?esc(x.p.name):'mimo projekty'}
 function renderDaily(g){
   const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
-  const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;
-  const open=all.filter(x=>!x.td.done&&mine(x));const TOM=addDays(TODAY,1);
-  const doneToday=all.filter(x=>x.td.done&&x.td.doneAt===TODAY&&mine(x));
+  const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;const vis=all.filter(mine);
+  const open=vis.filter(x=>!x.td.done&&!x.td.heading);const TOM=addDays(TODAY,1);
+  const doneToday=vis.filter(x=>x.td.done&&x.td.doneAt===TODAY&&!x.td.heading);
   const lateTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='late')).length;const behindTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='behind')).length;
   const endToday=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&span(t,p).end===TODAY&&progressOf(t,p)<100)).length;
   const dt=parse(TODAY);
+  const PRI={1:'Vysoká priorita',2:'Střední priorita',3:'Nízká priorita'};
+  const TRI=`<svg viewBox="0 0 20 18" width="18" height="16" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
+  const ring=(t,p)=>{const pr=progressOf(t,p),r=7,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 20 20" width="18" height="18" title="${esc(t.name)}: ${pr} %"><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="3"/><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 10 10)"/></svg>`};
   const item=x=>{const td=x.td,over=td.due&&td.due<TODAY&&!td.done,o=V.dopen===td.id;
+    if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab title="Přetáhnout">⠿</span><div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny" size="${Math.max(6,Math.min(60,td.text.length+1))}"></div></div><button class="dopt x" data-ddel-q title="Odstranit nadpis (položky zůstanou)">✕</button></div>`;
     const pOpts=`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${x.p&&x.p.id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
     const tOpts=x.p?`<option value="">— inbox projektu —</option>`+x.p.tasks.filter(t=>!kidsOf(t,x.p).length&&progressOf(t,x.p)<100).map(t=>`<option value="${t.id}" ${x.t&&x.t.id===t.id?'selected':''}>${wbsOf(t,x.p)} ${esc(t.name)}</option>`).join(''):'';
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?'po termínu · '+fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
-    const bars=(x.p?`<i style="background:${x.p.color}"></i>`:'')+(td.pri==1?`<i style="background:var(--critical)"></i>`:'')+(td.imp?`<i style="background:#e6b800"></i>`:'');
-    return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''}" data-td="${td.id}"><button class="chk" data-df="done" title="${td.done?'Vrátit mezi otevřené':'Hotovo'}">✓</button>
-      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" size="${Math.max(6,Math.min(60,td.text.length+1))}">${pill}${x.t?`<span class="tag" title="${esc(x.t.name)}">⤷ ${esc(x.t.name)}</span>`:''}</div>${bars?`<div class="bars">${bars}</div>`:''}</div>
-      ${td.done?`<button class="dopt x" data-ddel-q title="Odstranit ze seznamu">✕</button>`:`<button class="dopt" data-dopt="${td.id}" title="Termín, projekt, priorita">⋯</button>`}</div>
+    const pri=+td.pri||2;const ref=td.taskRef?findTask(td.taskRef):null;
+    return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab title="Přetáhnout">⠿</span><button class="star ${td.imp?'on':''}" data-dimp title="${td.imp?'Důležité – klepnutím zrušíte':'Označit jako důležité'}">★</button><button class="pri" data-dpri title="${PRI[pri]} – klepnutím změníte">${TRI}</button><button class="chk" data-df="done" title="${td.done?'Vrátit mezi otevřené':'Hotovo'}">✓</button>
+      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" size="${Math.max(6,Math.min(60,td.text.length+1))}">${pill}${x.t?`<span class="tag" title="${esc(x.t.name)}">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="tag" title="Kontrola úkolu ${esc(ref.t.name)}">⤷ ${esc(ref.t.name)}</span>${ring(ref.t,ref.p)}`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      ${td.done?`<button class="dopt x" data-ddel-q title="Odstranit ze seznamu">✕</button>`:`<button class="dopt" data-dopt="${td.id}" title="Termín, projekt, vazba">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
-      <label>Priorita <div class="seg"><button data-dp="1" class="${td.pri==1?'on':''}">A</button><button data-dp="2" class="${!td.pri||td.pri==2?'on':''}">B</button><button data-dp="3" class="${td.pri==3?'on':''}">C</button></div></label>
-      <button type="button" class="btn ${td.imp?'on':''}" data-dimp>★ důležité</button>${x.t?`<button type="button" class="btn" data-dblk>${td.block?'⛔ blokuje úkol':'blokuje úkol?'}</button>`:''}<button type="button" class="btn danger" data-ddel>Smazat</button></div>`:''}`};
+      ${x.t?`<button type="button" class="btn" data-dblk>${td.block?'⛔ blokuje úkol':'blokuje úkol?'}</button>`:''}<button type="button" class="btn danger" data-ddel>Smazat</button></div>`:''}`};
   const wk=addDays(TODAY,7);const dow=dt.getUTCDay();const fri=dow>=5||dow===0?addDays(TODAY,((5-dow)+7)%7||7):addDays(TODAY,5-dow);const wkDue=fri<=TOM?addDays(TOM,1):fri;
   const secs=[['Dnes','0',x=>!x.td.due||x.td.due<=TODAY],['Zítra','1',x=>x.td.due===TOM],['Tento týden',String(diff(TODAY,wkDue)),x=>x.td.due>TOM&&x.td.due<=wk],['Nadcházející','14',x=>x.td.due>wk]];
   let h=`<div class="daily"><div class="sub">${DAYS[dt.getUTCDay()]} ${fmt(TODAY)} · ${open.length} otevřených${doneToday.length?`, ${doneToday.length} hotovo`:''}${endToday||lateTasks||behindTasks?` · harmonogram: ${[endToday?endToday+' končí dnes':'',lateTasks?`<a data-golate>${lateTasks} po termínu</a>`:'',behindTasks?`<a data-gobehind>${behindTasks} ve skluzu</a>`:''].filter(Boolean).join(', ')}`:''}${(()=>{const n=S.projects.reduce((s,p)=>s+unreadAll(p).length,0);return n?` · <a data-gochg>${n} ${n===1?'nová změna':n<5?'nové změny':'nových změn'} od kolegů</a>`:''})()}</div>`;
-  for(const [label,dd,f] of secs){const l=open.filter(f).sort((a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)});
-    h+=`<div class="dh2"><h2>${label}</h2><button data-dnew="${dd}" title="Přidat">+</button></div>`;
-    if(V.dnew===dd)h+=`<div class="dadd"><input id="dadd" placeholder="Co je třeba udělat… (Enter)" autocomplete="off"></div>`;
+  for(const [label,dd,f] of secs){
+    // pořadí v sekci: ručně (ord); položky bez ord se zařadí podle starého pravidla (po termínu, priorita) a ord dostanou
+    const l=vis.filter(x=>!x.td.done&&f(x));const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
+    l.sort((a,b)=>{const ao=a.td.ord||0,bo=b.td.ord||0;if(ao&&bo)return ao-bo;if(ao||bo)return ao?-1:1;return legacy(a,b)});l.forEach((x,i)=>x.td.ord=i+1);
+    h+=`<div class="dsec" data-dd="${dd}"><div class="dh2"><h2>${label}</h2><span class="dhb"><button class="hb" data-dhead="${dd}" title="Přidat nadpis skupiny">Nadpis</button><button data-dnew="${dd}" title="Přidat položku">+</button></span></div>`;
+    if(V.dnew===dd)h+=`<div class="dadd ${V.dhead?'head':''}"><input id="dadd" placeholder="${V.dhead?'Nadpis skupiny… (Enter)':'Co je třeba udělat… (Enter)'}" autocomplete="off"></div>`;
     h+=l.map(item).join('');
     if(label==='Dnes'){if(!l.length&&!doneToday.length&&V.dnew!==dd)h+=`<div class="dempty">Nic na dnešek. Klepněte na + a napište, co je potřeba.</div>`;h+=doneToday.map(item).join('')}
-    else if(!l.length&&V.dnew!==dd)h+=`<div class="dempty">—</div>`}
-  h+=`<div class="sub" style="margin-top:28px">Enter v položce založí další pod ní · vložení víceřádkového textu do řádku vytvoří položku z každého řádku · ⋯ u položky nastaví termín, projekt a prioritu</div>`;
+    else if(!l.length&&V.dnew!==dd)h+=`<div class="dempty">—</div>`;
+    h+=`</div>`}
+  h+=`<div class="sub" style="margin-top:28px">Enter v položce založí další pod ní · ⠿ přetáhne položku (i do jiného dne) · ★ důležité · trojúhelník = priorita (klepnutím A → C → B) · ⋯ termín a projekt · vložení víceřádkového textu vytvoří položku z každého řádku</div>`;
   h+=`</div>`;g.innerHTML=h;
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=$(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
 g.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
-    if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:2,imp:false};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
+    if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:2,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
     if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();f.list.splice(f.list.indexOf(f.td),1);commit()}
     if(e.key==='Escape')e.target.blur();return}
-  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f&&dd!=='')f.td.due=addDays(TODAY,+dd);focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;render()}}});
+  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=Date.now();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=2;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
 g.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
   else if(df==='due')td.due=el.value;
   else if(df==='pid'||df==='tid'){const pid=df==='pid'?el.value:(f.p?f.p.id:'');const tid=df==='tid'?el.value:'';const key=tid||(pid?'p:'+pid:'me');const list=todoList(key);if(list){f.list.splice(f.list.indexOf(td),1);list.push(td);const p=proj(pid);if(p&&td.who&&!p.team.includes(td.who))p.team.push(td.who)}}
   commit()});
-g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;for(const l of lines){quickTodo(l);const f=findTodo(lastTodoId);if(f&&dd!=='')f.td.due=addDays(TODAY,+dd)}focusTd='dadd';commit()});
+g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;for(const l of lines){quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=Date.now()+lines.indexOf(l)}}V.dhead=false;focusTd='dadd';commit()});
 g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const box=b.closest('[data-td]');
   if(b.dataset.dopt!==undefined){V.dopen=V.dopen===b.dataset.dopt?'':b.dataset.dopt;save();render();return}
-  if(b.dataset.dnew!==undefined){V.dnew=V.dnew===b.dataset.dnew?null:b.dataset.dnew;focusTd='dadd';render();return}
+  if(b.dataset.dnew!==undefined){const same=V.dnew===b.dataset.dnew&&!V.dhead;V.dnew=same?null:b.dataset.dnew;V.dhead=false;focusTd='dadd';render();return}
+  if(b.dataset.dhead!==undefined){const same=V.dnew===b.dataset.dhead&&V.dhead;V.dnew=same?null:b.dataset.dhead;V.dhead=!same;focusTd='dadd';render();return}
   if(box&&b.dataset.df==='done'){const f=findTodo(box.dataset.td);if(!f)return;f.td.done=!f.td.done;f.td.doneAt=f.td.done?TODAY:'';commit();return}
   if(box&&b.hasAttribute('data-ddel-q')){const f=findTodo(box.dataset.td);if(!f)return;f.list.splice(f.list.indexOf(f.td),1);commit();return}
   if(b.hasAttribute('data-dlater')){V.laterOpen=!V.laterOpen;commit();return}
@@ -360,11 +369,31 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
   if(b.hasAttribute('data-gochg')){V.by='project';V.status='changes';const pp=S.projects.find(p=>unreadAll(p).length);if(pp)V.project=pp.id;commit();return}
   if(!box)return;const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(b.dataset.dd!==undefined){td.due=b.dataset.dd===''?'':addDays(TODAY,+b.dataset.dd);commit()}
-  if(b.dataset.dp){td.pri=+b.dataset.dp;commit()}
+  if(b.hasAttribute('data-dpri')){td.pri=({2:1,1:3,3:2})[+td.pri||2];commit()}
   if(b.hasAttribute('data-dimp')){td.imp=!td.imp;commit()}
   if(b.hasAttribute('data-dblk')){td.block=!td.block;commit()}
   if(b.hasAttribute('data-ddel')){f.list.splice(f.list.indexOf(td),1);V.dopen='';commit()}
 });
+/* přetahování položek v denním seznamu (⠿): změní pořadí i den */
+(function(){let dd=null;
+  // skupina = nadpis + položky pod ním až po další nadpis (v rámci sekce, bez hotových)
+  const groupOf=box=>{const out=[box];if(!box.classList.contains('head'))return out;let n=box.nextElementSibling;while(n&&n.classList.contains('di')&&!n.classList.contains('head')&&!n.classList.contains('done')){out.push(n);n=n.nextElementSibling}return out};
+  g.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||e.button!==0)return;const box=h.closest('.di[data-td]');if(!box)return;e.preventDefault();dd={id:box.dataset.td,box,grp:groupOf(box),y0:e.clientY,moved:false,pid:e.pointerId,line:null,ghost:null,before:null,sec:null};h.setPointerCapture(e.pointerId)});
+  g.addEventListener('pointermove',e=>{if(!dd)return;if(!dd.moved){if(Math.abs(e.clientY-dd.y0)<4)return;dd.moved=true;dd.grp.forEach(x=>x.classList.add('dragsrc'));dd.line=document.createElement('div');dd.line.className='dropline';$('.daily').appendChild(dd.line);dd.ghost=document.createElement('div');dd.ghost.className='dragghost';dd.ghost.textContent=(dd.box.querySelector('.dtext').value||'(bez textu)')+(dd.grp.length>1?` (+${dd.grp.length-1})`:'');document.body.appendChild(dd.ghost);document.body.style.cursor='grabbing'}
+    dd.ghost.style.left=(e.clientX+14)+'px';dd.ghost.style.top=(e.clientY-12)+'px';
+    // cíl: sekce pod kurzorem (nebo nejbližší), uvnitř první položka, jejíž střed je pod kurzorem
+    const secs=$$('.daily .dsec');let sec=null;for(const s of secs){const r=s.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom){sec=s;break}}
+    if(!sec){let best=1e9;for(const s of secs){const r=s.getBoundingClientRect();const d=Math.min(Math.abs(e.clientY-r.top),Math.abs(e.clientY-r.bottom));if(d<best){best=d;sec=s}}}
+    if(!sec)return;dd.sec=sec;const items=[...sec.querySelectorAll('.di[data-td]')].filter(x=>!dd.grp.includes(x)&&!x.classList.contains('done'));let before=null;for(const it of items){const r=it.getBoundingClientRect();if(e.clientY<r.top+r.height/2){before=it;break}}
+    dd.before=before;const dr=$('.daily').getBoundingClientRect();let y;if(before)y=before.getBoundingClientRect().top;else if(items.length)y=items[items.length-1].getBoundingClientRect().bottom;else y=sec.querySelector('.dh2').getBoundingClientRect().bottom+2;
+    dd.line.style.display='block';dd.line.style.left='34px';dd.line.style.right='8px';dd.line.style.top=(y-dr.top-1)+'px'});
+  const end=e=>{if(!dd)return;const d=dd;dd=null;if(!d.moved)return;d.grp.forEach(x=>x.classList.remove('dragsrc'));d.line.remove();d.ghost.remove();document.body.style.cursor='';if(e.type!=='pointerup'||!d.sec)return;
+    const tds=d.grp.map(x=>findTodo(x.dataset.td)).filter(Boolean).map(f=>f.td);if(!tds.length)return;const ddv=d.sec.dataset.dd;const n=tds.length;
+    let base;if(d.before){const bf=findTodo(d.before.dataset.td);base=(bf?bf.td.ord||0:0)-1}else{let mx=0;d.sec.querySelectorAll('.di[data-td]').forEach(x=>{const o=findTodo(x.dataset.td);if(o&&!tds.includes(o.td)&&o.td.ord>mx)mx=o.td.ord});base=mx}
+    tds.forEach((td,i)=>{if(ddv==='0'){if(!td.due||td.due>TODAY)td.due=TODAY}else td.due=addDays(TODAY,+ddv);td.ord=base+(i+1)/(n+1)});
+    commit()};
+  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+})();
 
 /* ---------- mutations ---------- */
 function commit(){if(V.viewVer)leaveVersionView();const d=activeDraft();if(d)d.pr.tasks=d.p.tasks;save();render();DB.sync(S).catch(e=>{console.error(e);toast('Nepodařilo se uložit do databáze: '+(e.message||e)+(/\[tasks\].*row-level/.test(e.message||'')?' — úkol musí mít vás jako odpovědného/spolupracovníka a ležet ve skupině, kde smíte zapisovat.':''),true)})}
@@ -774,7 +803,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=18))miss.push('SCHEMA 18');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=19))miss.push('SCHEMA 19');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
