@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.4.4';
+const APP_VERSION='1.4.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -355,13 +355,14 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
 });
 
 /* ---------- mutations ---------- */
-function commit(){if(V.viewVer)leaveVersionView();const d=activeDraft();if(d)d.pr.tasks=d.p.tasks;save();render();DB.sync(S).catch(e=>{console.error(e);toast('Nepodařilo se uložit do databáze: '+(e.message||e),true)})}
+function commit(){if(V.viewVer)leaveVersionView();const d=activeDraft();if(d)d.pr.tasks=d.p.tasks;save();render();DB.sync(S).catch(e=>{console.error(e);toast('Nepodařilo se uložit do databáze: '+(e.message||e)+(/\[tasks\].*row-level/.test(e.message||'')?' — úkol musí mít vás jako odpovědného/spolupracovníka a ležet ve skupině, kde smíte zapisovat.':''),true)})}
 function blankTask(p){const wg=(!p._draft&&myRole(p)==='editor'&&hasScope(p))?(p.groups.find(g=>groupWritable(p,g.id))||{}).id:null;return{id:uid(),name:'',start:TODAY,end:addDays(TODAY,4),color:'',group:p._draft?((p.proposals||[]).find(x=>x.id===p._draft)||{}).group||'':(wg||p.groups[0]?.id||''),_draft:!!p._draft,resp:(myRole(p)==='editor'?(Object.entries(p.teamLinks||{}).find(([n,u])=>u===S.meId)||[p.team.includes(S.me)?S.me:''])[0]:''),collab:[],critical:false,progress:0,parent:null,deps:[],milestone:false,collapsed:false,note:'',links:[],log:[],todos:[],docs:[],autoProg:false}}
 function targetProject(afterId){let p=proj(V.project);if(!p){const f=afterId&&findTask(afterId);p=f?f.p:S.projects[0]}return p}
 function addTask(afterId,init={}){
   const p=targetProject(afterId);if(!p){newProject();return}
   const t={...blankTask(p),...init};
-  if(afterId){const i=p.tasks.findIndex(x=>x.id===afterId);const prev=p.tasks[i];if(prev){t.parent=prev.parent;if(!init.group)t.group=prev.group;if(!init.resp&&V.by==='person')t.resp=prev.resp;const ds=descendants(prev,p);let j=i+1;while(j<p.tasks.length&&ds.includes(p.tasks[j]))j++;p.tasks.splice(j,0,t)}else p.tasks.push(t)}
+  if(!p._draft&&myRole(p)==='editor'){if(!t.resp){toast('Nový úkol můžete založit, jen když je vaše jméno v týmu spojené s vaším účtem (vedoucí: Nastavení projektu → Tým → Uložit).',true);return}if(!groupWritable(p,t.group)){toast('Do této skupiny nemáte právo zapisovat.',true);return}}
+  if(afterId){const i=p.tasks.findIndex(x=>x.id===afterId);const prev=p.tasks[i];if(prev){t.parent=prev.parent;if(!init.group&&(p._draft||groupWritable(p,prev.group)))t.group=prev.group;if(!init.resp&&V.by==='person')t.resp=prev.resp;const ds=descendants(prev,p);let j=i+1;while(j<p.tasks.length&&ds.includes(p.tasks[j]))j++;p.tasks.splice(j,0,t)}else p.tasks.push(t)}
   else p.tasks.push(t);
   focusId=t.id;commit();return t;
 }
@@ -413,7 +414,7 @@ function setGroupForSubtree(id){const f=findTask(id);if(!f)return;const{t,p}=f;c
   fm.addEventListener('submit',()=>{let gid=E('g').value;if(gid==='__new'){const g={id:uid(),name:t.name,color:E('color').value};p.groups.push(g);gid=g.id}
     [t,...descendants(t,p)].forEach(x=>x.group=gid);commit();toast('Skupina nastavena pro fázi i podúkoly')});
   dlg.showModal()}
-function addChild(id){const f=findTask(id);if(!f)return;const t={...blankTask(f.p)};t.parent=id;t.group=f.t.group;f.t.collapsed=false;const pd=descendants(f.t,f.p);let j=f.p.tasks.indexOf(f.t)+1;while(j<f.p.tasks.length&&pd.includes(f.p.tasks[j]))j++;f.p.tasks.splice(j,0,t);focusId=t.id;commit()}
+function addChild(id){const f=findTask(id);if(!f)return;const t={...blankTask(f.p)};t.parent=id;if(f.p._draft||groupWritable(f.p,f.t.group))t.group=f.t.group;f.t.collapsed=false;const pd=descendants(f.t,f.p);let j=f.p.tasks.indexOf(f.t)+1;while(j<f.p.tasks.length&&pd.includes(f.p.tasks[j]))j++;f.p.tasks.splice(j,0,t);focusId=t.id;commit()}
 function delTask(id,quiet){const f=findTask(id);if(!f)return;const kids=descendants(f.t,f.p);if(!quiet&&!confirm(`Smazat úkol „${f.t.name||'bez názvu'}“${kids.length?' včetně '+kids.length+' podúkolů':''}?`))return;
   if(sel===id)sel=null;f.p.tasks=f.p.tasks.filter(x=>x.id!==id&&!kids.includes(x));f.p.tasks.forEach(x=>x.deps=(x.deps||[]).filter(d=>d!==id));commit()}
 function moveTask(id,dir){const f=findTask(id);if(!f)return;const a=f.p.tasks;const t=a.find(x=>x.id===id);
