@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.4.10';
+const APP_VERSION='1.4.11';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -627,9 +627,9 @@ function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');dlg.cla
 
 /* ---------- context menu ---------- */
 const ctx=$('#ctx');
-function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('Aktuální harmonogram je pro vás jen ke čtení – upravujte v návrhu.');return}if(!f.p._draft&&!taskWritable(f.t,f.p)){toast(groupWritable(f.p,f.t.group)?'Můžete upravovat jen úkoly, kde jste odpovědný nebo spolupracovník (jméno v týmu musí být spojené s vaším účtem).':'Tuto skupinu máte jen ke čtení.');return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
+function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)||(!f.p._draft&&!taskWritable(f.t,f.p))){barMenu(id,x,y);return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
   const t=f.t;const sibs=f.p.tasks.filter(x=>x.parent===t.parent);const k=sibs.indexOf(t);
-  ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button><button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button>${kidsOf(t,f.p).length&&myRole(f.p)==='lead'?'<button data-op="grp">Skupina (barva) pro celou fázi…</button>':''}<div class="sep"></div>
+  ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button>${f.p._draft?'':`<button data-op="addtodo">Přidat do ToDo: „Kontrola ${esc(t.name)}“</button>`}<button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button>${kidsOf(t,f.p).length&&myRole(f.p)==='lead'?'<button data-op="grp">Skupina (barva) pro celou fázi…</button>':''}<div class="sep"></div>
     <button data-op="add">Přidat úkol pod tento</button><button data-op="child">Přidat podúkol</button><div class="sep"></div>
     <button data-op="copy">Kopírovat <kbd>Ctrl+C</kbd></button><button data-op="paste" ${clip?'':'disabled'}>Vložit pod tento <kbd>Ctrl+V</kbd></button><button data-op="pastechild" ${clip?'':'disabled'}>Vložit jako podúkol</button><button data-op="dup">Duplikovat <kbd>Ctrl+D</kbd></button><div class="sep"></div>
     <button data-op="up" ${k>0?'':'disabled'}>Posunout nahoru <kbd>Alt+↑</kbd></button><button data-op="down" ${k<sibs.length-1?'':'disabled'}>Posunout dolů <kbd>Alt+↓</kbd></button><button data-op="in" ${k>0?'':'disabled'}>Zanořit <kbd>Alt+Tab</kbd></button><button data-op="out" ${t.parent?'':'disabled'}>Vynořit <kbd>Alt+Shift+Tab</kbd></button><div class="sep"></div>
@@ -637,7 +637,7 @@ function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('
   ctx.classList.add('open');const w=ctx.offsetWidth||220,hh=ctx.offsetHeight||360;ctx.style.left=Math.min(x,innerWidth-w-8)+'px';ctx.style.top=Math.min(y,innerHeight-hh-8)+'px';ctx.dataset.id=id}
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=ctx.dataset.id;ctx.classList.remove('open');
   ({grp:()=>setGroupForSubtree(id),addtodo:()=>{const f=findTask(id);if(!f)return;S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
-document.addEventListener('click',e=>{if(!e.target.closest('#ctx,[data-act=menu]'))ctx.classList.remove('open')});
+document.addEventListener('click',e=>{if(Date.now()-(+ctx.dataset.t||0)<500)return;if(!e.target.closest('#ctx,[data-act=menu]'))ctx.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove('open');
   if(!sel||$('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   const id=sel;const c=e.ctrlKey||e.metaKey;
@@ -736,10 +736,10 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
   if(b.dataset.tact==='tri'){openDump(null,[f.td.id])}
   if(b.dataset.tf==='block'){f.td.block=!f.td.block;commit()}
   if(b.dataset.tf==='imp'){f.td.imp=!f.td.imp;commit()}});
-function barMenu(id,x,y){const f=findTask(id);if(!f)return;
+function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button><button data-op="addtodo">Přidat do ToDo: „Kontrola ${esc(f.t.name)}“</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
 let lastBarDown={id:null,t:0};
-g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp'))return;lastBarDown.t=0;barMenu(bar.dataset.id,e.clientX,e.clientY)});
+g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp'))return;e.preventDefault();lastBarDown.t=0;barMenu(bar.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('click',e=>{if(e.target.closest('button,input,select,.bar'))return;const row=e.target.closest('.lrow[data-id]');if(!row)return;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=row.dataset.id;row.classList.add('sel')});
 let drag=null;
