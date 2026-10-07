@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.4.5';
+const APP_VERSION='1.4.6';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -52,13 +52,15 @@ const overdueBlocking=t=>openBlocking(t).filter(x=>x.due&&x.due<TODAY);
 function allTodos(){const out=[];for(const p of curProjects()){p.todos.forEach(td=>out.push({td,p,t:null}));p.tasks.forEach(t=>t.todos.forEach(td=>out.push({td,p,t})))}if(V.project==='ALL')S.todos.forEach(td=>out.push({td,p:null,t:null}));return out}
 function findTodo(id){for(const p of S.projects){let td=p.todos.find(x=>x.id===id);if(td)return{td,list:p.todos,p,t:null};for(const t of [...p.tasks,...(p._liveTasks||[])]){td=(t.todos||[]).find(x=>x.id===id);if(td)return{td,list:t.todos,p,t}}}const td=S.todos.find(x=>x.id===id);return td?{td,list:S.todos,p:null,t:null}:null}
 const todoList=key=>key==='me'?S.todos:key.startsWith('p:')?proj(key.slice(2))?.todos:findTask(key)?.t.todos;
-const myNames=()=>new Set([S.me,...S.projects.flatMap(p=>Object.entries(p.teamLinks||{}).filter(([n,u])=>u===S.meId).map(([n])=>n))].filter(Boolean));
+const linkedNames=p=>Object.entries(p.teamLinks||{}).filter(([n,u])=>u===S.meId).map(([n])=>n);
+const myNames=()=>{const l=S.projects.flatMap(linkedNames);return new Set((l.length?l:[S.me]).filter(Boolean))};
+const myNameIn=p=>{const l=linkedNames(p);if(l.length)return l[0];return p.team.includes(S.me)?S.me:''};
 const myRole=p=>p.myRole||(p.created_by===S.meId?'lead':'');
 const canEditGroup=(p,gid)=>myRole(p)==='lead'||(p.access||[]).some(x=>x.user_id===S.meId&&x.group_id===gid&&x.can_edit);
 const proposerOnly=()=>!!S.projects.length&&S.projects.every(p=>myRole(p)==='proposer');
 const hasScope=p=>myRole(p)==='proposer'||!!p.myScoped;
 const groupWritable=(p,gid)=>{const r=myRole(p);if(r==='lead')return true;if(r!=='editor')return false;if(!hasScope(p))return true;return (p.access||[]).some(x=>x.user_id===S.meId&&x.group_id===gid&&x.can_edit)};
-const taskWritable=(t,p)=>{if(!groupWritable(p,t.group))return false;if(myRole(p)==='lead')return true;if(myRole(p)!=='editor')return false;const MY=myNames();return MY.has(t.resp)||(t.collab||[]).some(c=>MY.has(c))};
+const taskWritable=(t,p)=>{if(!groupWritable(p,t.group))return false;if(myRole(p)==='lead')return true;if(myRole(p)!=='editor')return false;const MY=new Set(linkedNames(p));return MY.has(t.resp)||(t.collab||[]).some(c=>MY.has(c))};
 const isRO=p=>!!V.viewVer||(myRole(p)==='proposer'&&!p._draft);
 function activeDraft(){for(const p of S.projects)if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)return{p,pr}}return null}
 function exitDraft(){leaveVersionView();for(const p of S.projects){if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)pr.tasks=p.tasks;p.tasks=p._liveTasks||p.tasks;delete p._liveTasks;delete p._draft}}V.draft=''}
@@ -356,7 +358,7 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
 
 /* ---------- mutations ---------- */
 function commit(){if(V.viewVer)leaveVersionView();const d=activeDraft();if(d)d.pr.tasks=d.p.tasks;save();render();DB.sync(S).catch(e=>{console.error(e);toast('Nepodařilo se uložit do databáze: '+(e.message||e)+(/\[tasks\].*row-level/.test(e.message||'')?' — úkol musí mít vás jako odpovědného/spolupracovníka a ležet ve skupině, kde smíte zapisovat.':''),true)})}
-function blankTask(p){const wg=(!p._draft&&myRole(p)==='editor'&&hasScope(p))?(p.groups.find(g=>groupWritable(p,g.id))||{}).id:null;return{id:uid(),name:'',start:TODAY,end:addDays(TODAY,4),color:'',group:p._draft?((p.proposals||[]).find(x=>x.id===p._draft)||{}).group||'':(wg||p.groups[0]?.id||''),_draft:!!p._draft,resp:(myRole(p)==='editor'?(Object.entries(p.teamLinks||{}).find(([n,u])=>u===S.meId)||[p.team.includes(S.me)?S.me:''])[0]:''),collab:[],critical:false,progress:0,parent:null,deps:[],milestone:false,collapsed:false,note:'',links:[],log:[],todos:[],docs:[],autoProg:false}}
+function blankTask(p){const wg=(!p._draft&&myRole(p)==='editor'&&hasScope(p))?(p.groups.find(g=>groupWritable(p,g.id))||{}).id:null;return{id:uid(),name:'',start:TODAY,end:addDays(TODAY,4),color:'',group:p._draft?((p.proposals||[]).find(x=>x.id===p._draft)||{}).group||'':(wg||p.groups[0]?.id||''),_draft:!!p._draft,resp:(myRole(p)==='editor'?(linkedNames(p)[0]||''):''),collab:[],critical:false,progress:0,parent:null,deps:[],milestone:false,collapsed:false,note:'',links:[],log:[],todos:[],docs:[],autoProg:false}}
 function targetProject(afterId){let p=proj(V.project);if(!p){const f=afterId&&findTask(afterId);p=f?f.p:S.projects[0]}return p}
 function addTask(afterId,init={}){
   const p=targetProject(afterId);if(!p){newProject();return}
@@ -501,7 +503,7 @@ function openTask(id,focusLog){const f=findTask(id);if(!f)return;const {t,p}=f;c
   fm.addEventListener('submit',()=>{
     if(!HIDE){addLog();LT.todos=todos.filter(x=>x.text.trim());if(!DR)t.autoProg=E('autoProg').checked}
     if(!DR&&!kids&&!t.autoProg&&+E('progress').value>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo, nelze ho označit za hotový:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));E('progress').value=t.progress||0}
-    if(!DR&&myRole(p)==='editor'){const MY=myNames();const nr=E('resp').value,nc=$$('input[name=collab]:checked',fm).map(x=>x.value);if(!MY.has(nr)&&!nc.some(c=>MY.has(c))){alert('Jako řešitel musíte u úkolu zůstat odpovědný nebo spolupracovník – jinak byste ho už nemohl upravovat.');return}}
+    if(!DR&&myRole(p)==='editor'){const MY=new Set(linkedNames(p));const nr=E('resp').value,nc=$$('input[name=collab]:checked',fm).map(x=>x.value);if(!MY.has(nr)&&!nc.some(c=>MY.has(c))){alert('Jako řešitel musíte u úkolu zůstat odpovědný nebo spolupracovník – jinak byste ho už nemohl upravovat.');return}}
     t.name=E('name').value.trim();t.color=E('usecolor').checked?E('color').value:'';t.group=E('group').value;t.resp=E('resp').value;t.collab=$$('input[name=collab]:checked',fm).map(x=>x.value);
     t.unclear=E('unclear').checked;t.question=E('question').value.trim();t.note=E('note').value.trim();if(!HIDE)LT.links=links.filter(l=>l.url||l.name);t.critical=E('critical').checked;t.milestone=E('milestone').checked;t.deps=deps;
     if(!kids){t.start=E('start').value||t.start;t.end=t.milestone?t.start:(E('end').value||t.end);if(t.end<t.start)t.end=t.start;if(!DR)t.progress=t.milestone?(E('msdone').checked?100:0):(+E('progress').value||0)}
