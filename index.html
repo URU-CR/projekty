@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.4.7">
+<meta name="app-version" content="1.4.10">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
@@ -114,7 +114,7 @@ button{cursor:pointer}
 .col.td{background:none;border-left:2px dashed var(--today);opacity:.9;z-index:3}
 .col.mline{border-left:1px solid var(--line);}
 .prow{position:absolute;left:0;right:0;height:var(--rowh);background:var(--bg)}
-.bar{position:absolute;height:24px;border-radius:2px;top:5px;color:#fff;font-size:12px;cursor:grab;touch-action:none;background:color-mix(in srgb,var(--c) 42%,var(--panel)) !important}
+.bar{user-select:none;-webkit-user-select:none;position:absolute;height:24px;border-radius:2px;top:5px;color:#fff;font-size:12px;cursor:grab;touch-action:none;background:color-mix(in srgb,var(--c) 42%,var(--panel)) !important}
 .bar:active{cursor:grabbing}
 .bar .prog{position:absolute;left:0;top:0;bottom:0;background:var(--c);border-radius:2px 0 0 2px;pointer-events:none}
 .bar .h{position:absolute;top:0;bottom:0;width:8px;cursor:ew-resize}
@@ -193,6 +193,9 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .narrow .c-resp,.narrow .c-prog,.narrow .c-st{display:none}
 .st{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;white-space:nowrap}
 .st.late{background:var(--critical);color:#fff}
+.st.behind{background:#fdba74;color:#1b222c}
+.bar.behind:not(.ms){outline:1px dashed #d97706;outline-offset:2px}
+.bar .lbl i.dt.behind{color:#b45309;font-weight:600}
 .st.stalled{background:#f59e0b;color:#1b222c}
 .st.soon{background:var(--accent-soft);color:var(--text)}
 .st.done{color:#1a7f3c;border:1px solid #6fcf97;background:color-mix(in srgb,#6fcf97 14%,transparent)}
@@ -231,8 +234,11 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 
 .st.risk{background:#fde68a;color:#1b222c}
 .pill.risk b{color:#b45309}
-.tdc{border:1px solid var(--line);background:none;border-radius:999px;font-size:11px;padding:0 6px;color:var(--muted);flex:none;line-height:16px}
-.tdc.bad{border-color:var(--critical);color:var(--critical);font-weight:600}
+.tdc{border:1px solid var(--line);background:none;border-radius:999px;font-size:11px;padding:0 7px;color:var(--muted);flex:none;line-height:17px;white-space:nowrap}
+/* otevřené položky: výrazný modrý štítek; po termínu: červený; vše hotovo: tichý šedý */
+.tdc.open{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.tdc.bad{background:var(--critical);border-color:var(--critical);color:#fff;font-weight:600}
+.tdc.open:hover,.tdc.bad:hover{filter:brightness(1.12)}
 .tdc.empty{visibility:hidden}
 .lrow:hover .tdc.empty{visibility:visible}
 .lrow.todo{background:color-mix(in srgb,var(--bg) 60%,transparent)}
@@ -403,7 +409,13 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 .chgtag:hover{background:#ffe88a}
 :root[data-theme="dark"] .chgtag{background:#4a3d12;color:#ffd666}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chgtag{background:#4a3d12;color:#ffd666}}
-.ghost{position:absolute;height:24px;top:5px;border:1px dashed var(--muted);border-radius:2px;opacity:.55;pointer-events:none}
+/* změna termínu (nepřečtená): původní rozsah = oranžový čárkovaný rámeček nad barem, ubrané dny šrafované, přidané dny oranžový proužek */
+.chgold{position:absolute;height:24px;border:1.5px dashed #d97706;border-radius:2px;box-sizing:border-box;z-index:3;pointer-events:none;background:transparent}
+.chgcut{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-radius:2px;background:repeating-linear-gradient(135deg,rgba(217,119,6,.55) 0 3px,transparent 3px 7px);pointer-events:none}
+.chgadd{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-top:3px solid #d97706;border-bottom:3px solid #d97706;background:transparent;pointer-events:none}
+.bar .lbl i.chgd{color:#b45309;font-weight:600;background:#fff3c4;border-radius:4px;padding:0 5px}
+:root[data-theme="dark"] .bar .lbl i.chgd{background:#4a3d12;color:#ffd666}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar .lbl i.chgd{background:#4a3d12;color:#ffd666}}
 .pill.chg b{color:#b45309}
 .hist{display:grid;gap:4px;font-size:12.5px}
 .hist div{display:flex;gap:8px;align-items:center;background:var(--bg);border-radius:6px;padding:5px 8px}
@@ -417,7 +429,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.4.7">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.4.10">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -463,8 +475,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.4.7"></script>
-<script src="db.js?v=1.4.7"></script>
-<script src="app.js?v=1.4.7"></script>
+<script src="config.js?v=1.4.10"></script>
+<script src="db.js?v=1.4.10"></script>
+<script src="app.js?v=1.4.10"></script>
 </body>
 </html>
