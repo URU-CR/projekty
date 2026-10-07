@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.5.1';
+const APP_VERSION='1.5.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -874,7 +874,9 @@ $('#xfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f
 (function(){const tip=document.createElement('div');tip.id='tip';document.body.appendChild(tip);
   const show=(el,e)=>{tip.innerHTML=el.dataset.tip;tip.style.display='block';move(e)};
   const move=e=>{const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+16;if(x+r.width>innerWidth-8)x=e.clientX-r.width-10;if(y+r.height>innerHeight-8)y=e.clientY-r.height-10;tip.style.left=x+'px';tip.style.top=y+'px'};
-  document.addEventListener('pointerover',e=>{const el=e.target.closest('[data-tip]');if(el)show(el,e)});
+  // každý title v aplikaci se při prvním najetí převede na okamžitou bublinu (data-tip); nativní zpožděný tooltip se tím vypne
+  const adopt=el=>{if(el&&!el.dataset.tip&&el.getAttribute('title')){el.dataset.tip=esc(el.getAttribute('title'));el.removeAttribute('title')}return el};
+  document.addEventListener('pointerover',e=>{if(!e.target.closest)return;const el=adopt(e.target.closest('[data-tip],[title]'));if(el&&el.dataset.tip)show(el,e)});
   document.addEventListener('pointermove',e=>{if(tip.style.display==='block'){if(!e.target.closest('[data-tip]'))tip.style.display='none';else move(e)}});
   document.addEventListener('pointerout',e=>{if(e.target.closest&&e.target.closest('[data-tip]')&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('[data-tip]')))tip.style.display='none'});
   document.addEventListener('pointerdown',()=>tip.style.display='none');
