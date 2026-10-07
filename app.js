@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.4.1';
+const APP_VERSION='1.4.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -58,7 +58,7 @@ const canEditGroup=(p,gid)=>myRole(p)==='lead'||(p.access||[]).some(x=>x.user_id
 const proposerOnly=()=>!!S.projects.length&&S.projects.every(p=>myRole(p)==='proposer');
 const hasScope=p=>myRole(p)==='proposer'||!!p.myScoped;
 const groupWritable=(p,gid)=>{const r=myRole(p);if(r==='lead')return true;if(r!=='editor')return false;if(!hasScope(p))return true;return (p.access||[]).some(x=>x.user_id===S.meId&&x.group_id===gid&&x.can_edit)};
-const taskWritable=(t,p)=>groupWritable(p,t.group);
+const taskWritable=(t,p)=>{if(!groupWritable(p,t.group))return false;if(myRole(p)==='lead')return true;if(myRole(p)!=='editor')return false;const MY=myNames();return MY.has(t.resp)||(t.collab||[]).some(c=>MY.has(c))};
 const isRO=p=>!!V.viewVer||(myRole(p)==='proposer'&&!p._draft);
 function activeDraft(){for(const p of S.projects)if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)return{p,pr}}return null}
 function exitDraft(){leaveVersionView();for(const p of S.projects){if(p._draft){const pr=(p.proposals||[]).find(x=>x.id===p._draft);if(pr)pr.tasks=p.tasks;p.tasks=p._liveTasks||p.tasks;delete p._liveTasks;delete p._draft}}V.draft=''}
@@ -611,7 +611,7 @@ function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');dlg.cla
 
 /* ---------- context menu ---------- */
 const ctx=$('#ctx');
-function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('Aktuální harmonogram je pro vás jen ke čtení – upravujte v návrhu.');return}if(!f.p._draft&&!taskWritable(f.t,f.p)){toast('Tuto skupinu máte jen ke čtení.');return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
+function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)){toast('Aktuální harmonogram je pro vás jen ke čtení – upravujte v návrhu.');return}if(!f.p._draft&&!taskWritable(f.t,f.p)){toast(groupWritable(f.p,f.t.group)?'Můžete upravovat jen úkoly, kde jste odpovědný nebo spolupracovník (jméno v týmu musí být spojené s vaším účtem).':'Tuto skupinu máte jen ke čtení.');return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
   const t=f.t;const sibs=f.p.tasks.filter(x=>x.parent===t.parent);const k=sibs.indexOf(t);
   ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button><button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button>${kidsOf(t,f.p).length&&myRole(f.p)==='lead'?'<button data-op="grp">Skupina (barva) pro celou fázi…</button>':''}<div class="sep"></div>
     <button data-op="add">Přidat úkol pod tento</button><button data-op="child">Přidat podúkol</button><div class="sep"></div>
@@ -687,7 +687,7 @@ function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
   S.todos.push(...(j.todos||[]).map(td=>({...td,id:uid()})));if(!S.me&&j.me)S.me=j.me;
   V.project='ALL';V.by='project';V.status='';V.person='';V.group='';commit();scrollToToday();toast('Import proběhl – '+j.projects.length+' projektů')}
 
-g.addEventListener('change',e=>{const el=e.target;const row=el.closest('.lrow');if(!row)return;if(g.classList.contains('ro'))return;if(row.dataset.id){const f0=findTask(row.dataset.id);if(f0&&!f0.p._draft&&!taskWritable(f0.t,f0.p)){toast('Tuto skupinu máte jen ke čtení.');render();return}}
+g.addEventListener('change',e=>{const el=e.target;const row=el.closest('.lrow');if(!row)return;if(g.classList.contains('ro'))return;if(row.dataset.id){const f0=findTask(row.dataset.id);if(f0&&!f0.p._draft&&!taskWritable(f0.t,f0.p)){toast(groupWritable(f0.p,f0.t.group)?'Můžete upravovat jen úkoly, kde jste odpovědný nebo spolupracovník.':'Tuto skupinu máte jen ke čtení.');render();return}}
   if(el.dataset.tf){const f=findTodo(row.dataset.td);if(!f)return;if(myRole(f.p)==='proposer'){toast('ToDo úkolů může upravovat jen tým projektu.');render();return}const k=el.dataset.tf;f.td[k]=k==='done'?el.checked:k==='pri'?+el.value:el.value;if(k==='done')f.td.doneAt=el.checked?TODAY:'';commit();return}
   if(!el.dataset.f)return;const f=findTask(row.dataset.id);if(!f)return;const t=f.t;
   const k=el.dataset.f;let v=el.value;if(k==='msdone'){v=el.checked?100:(t.progress>=100?75:t.progress||0);if(v===100&&openBlocking(t).length){alert('Milník má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}t.progress=v;commit();return}if(k==='progress'){v=Math.min(100,Math.max(0,+v||0));if(v>=100&&openBlocking(t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(t).map(x=>x.text).join('\n– '));render();return}}t[k]=v;commit()});
