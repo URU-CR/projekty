@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.6.4';
+const APP_VERSION='1.6.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -770,7 +770,10 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
 // další pořadové číslo v denním seznamu (malé celé číslo – sloupec ord je integer)
 const nextOrd=()=>{let m=0;const f=td=>{if(td.ord>m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));return Math.floor(m)+1};
 const todoRefOf=t=>S.todos.find(td=>td.taskRef===t.id&&!td.done);
-function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';const ref=todoRefOf(t);const st=ref?'todo':t.checked===TODAY?'chk':'';const over=ref&&ref.due&&ref.due<TODAY;
+function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';
+  // souhrnný bar (fáze): neklikací, ✓ se doplní samo, jakmile jsou všechny otevřené podřízené úkoly zkontrolované nebo v ToDo
+  if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&progressOf(x,p)<100);const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||x.checked===TODAY);return `<i class="dm auto ${all?'chk':''}">${all?'✓':''}</i>`}
+  const ref=todoRefOf(t);const st=ref?'todo':t.checked===TODAY?'chk':'';const over=ref&&ref.due&&ref.due<TODAY;
   return `<i class="dm ${st} ${over?'over':''}" data-dchk="${t.id}">${st==='todo'?'☐':st==='chk'?'✓':''}</i>`}
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
