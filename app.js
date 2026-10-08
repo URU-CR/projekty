@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.7.0';
+const APP_VERSION='1.7.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -110,7 +110,7 @@ function revertChange(p,c){const t=p.tasks.find(x=>x.id===c.task_id);if(!t||c.ki
   ackChanges(p,[c.id]);commit();toast('Vráceno: '+chgText(c))}
 const groupNameOf=(p,gid)=>((p.groups||[]).find(g=>g.id===gid)||{}).name||'?';
 const allPeople=()=>[...new Set([S.me,...S.projects.flatMap(p=>p.team)].filter(Boolean))];
-const prioSort=(a,b)=>(b.td.imp?1:0)-(a.td.imp?1:0)||(a.td.pri||2)-(b.td.pri||2)||((a.td.due||'9')<(b.td.due||'9')?-1:1);
+const prioSort=(a,b)=>(b.td.imp?1:0)-(a.td.imp?1:0)||(a.td.pri||4)-(b.td.pri||4)||((a.td.due||'9')<(b.td.due||'9')?-1:1);
 const isOpen=k=>V.open.includes(k);const toggleOpen=k=>{V.open=isOpen(k)?V.open.filter(x=>x!==k):[...V.open,k]};
 function status(t,p){const sp=span(t,p),pr=progressOf(t,p);
   if(pr>=100)return{k:'done',l:'hotovo'};
@@ -226,7 +226,7 @@ function render(){
     if(r.type==='todo'){const td=r.td,over=td.due&&td.due<TODAY&&!td.done;const team=r.p?r.p.team:allPeople();
       L+=`<div class="lrow todo ${td.done?'done':''} ${over?'over':''}" style="--lv:${r.level}" data-td="${td.id}"><span class="c-n"></span><span class="c-name">${r.ctx?'':'<span class="ind2"></span>'}<input type="checkbox" data-tf="done" ${td.done?'checked':''}><input class="tt" data-tf="text" value="${esc(td.text)}" placeholder="Co je třeba udělat">${r.ctx?`<span class="cl">${esc(r.t?r.t.name:'inbox')}${r.p?' · '+esc(r.p.name):''}</span>`:''}<button class="imp ${td.imp?'on':''}" data-tf="imp">★</button><button class="blk ${td.block?'on':''}" data-tf="block">⛔</button></span>
         <span class="c-resp"><select data-tf="who"><option value="">—</option>${[...new Set([...team,...(td.who?[td.who]:[])])].map(m=>`<option ${td.who===m?'selected':''}>${esc(m)}</option>`).join('')}</select></span>
-        <span class="c-st"><input type="date" data-tf="due" value="${td.due||''}"></span><span class="c-prog"><select class="prs" data-tf="pri"><option value="1" ${td.pri==1?'selected':''}>A</option><option value="2" ${!td.pri||td.pri==2?'selected':''}>B</option><option value="3" ${td.pri==3?'selected':''}>C</option></select></span><span class="c-act">${r.ctx?`<button data-tact="tri">⋯</button>`:`<button data-tact="del">×</button>`}</span></div>`;continue}
+        <span class="c-st"><input type="date" data-tf="due" value="${td.due||''}"></span><span class="c-prog"><select class="prs" data-tf="pri"><option value="0" ${!td.pri?'selected':''}>—</option><option value="1" ${td.pri==1?'selected':''}>A</option><option value="2" ${td.pri==2?'selected':''}>B</option><option value="3" ${td.pri==3?'selected':''}>C</option></select></span><span class="c-act">${r.ctx?`<button data-tact="tri">⋯</button>`:`<button data-tact="del">×</button>`}</span></div>`;continue}
     const {t,p}=r,sp=span(t,p),st=status(t,p);n++;const wbs=V.by==='project'?wbsOf(t,p):String(n);const dch=p._draft?draftChange(p,t):null;const uc=p._draft?[]:unreadOf(p,t.id);const chgtag=uc.length?`<span class="chgtag" data-act="ack" data-tip="${esc(uc.map(c=>'<b>'+esc(c.authorName)+' · '+fmtDT(c.at)+'</b>\n'+esc(chgText(c))).join('\n\n'))}\n\nKlepnutím vzít na vědomí">✎ ${uc.length>1?uc.length+' změn':'změna'} · ${esc(uc[uc.length-1].authorName)}</span>`:'';const pmark=p._draft?(!t.orig?'<span class="pmark new">nový</span>':dch?`<span class="pmark chg" title="Původně – ${esc(dch.join(', '))}">≠</span>`:''):'';
     const ot=origOf(t,p)||t;const tdn=(ot.todos||[]).length,tdd=(ot.todos||[]).filter(x=>x.done).length,tdbad=(ot.todos||[]).some(x=>!x.done&&x.due&&x.due<TODAY);
     const opts=p.team.map(m=>`<option ${t.resp===m?'selected':''}>${esc(m)}</option>`).join('');
@@ -313,7 +313,7 @@ function renderDaily(g){
   const lateTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='late')).length;const behindTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='behind')).length;
   const endToday=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&span(t,p).end===TODAY&&progressOf(t,p)<100)).length;
   const dt=parse(TODAY);
-  const PRI={1:'Vysoká priorita',2:'Střední priorita',3:'Nízká priorita'};
+  const PRI={0:'Bez priority',1:'Vysoká priorita',2:'Střední priorita',3:'Nízká priorita'};
   const TRI=`<svg viewBox="0 0 20 18" width="18" height="16" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
   const ring=(t,p)=>{const pr=progressOf(t,p),r=7,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 20 20" width="18" height="18" title="${esc(t.name)}: ${pr} %"><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="3"/><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 10 10)"/></svg>`};
   const item=x=>{const td=x.td,over=td.due&&td.due<TODAY&&!td.done,o=V.dopen===td.id;
@@ -321,8 +321,8 @@ function renderDaily(g){
     const pOpts=`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${x.p&&x.p.id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
     const tOpts=x.p?`<option value="">— inbox projektu —</option>`+x.p.tasks.filter(t=>!kidsOf(t,x.p).length&&progressOf(t,x.p)<100).map(t=>`<option value="${t.id}" ${x.t&&x.t.id===t.id?'selected':''}>${wbsOf(t,x.p)} ${esc(t.name)}</option>`).join(''):'';
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?'po termínu · '+fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
-    const pri=+td.pri||2;const ref=td.taskRef?findTask(td.taskRef):null;
-    return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="Priorita ${['','A','B','C'][pri]}">${TRI}</button><button class="chk" data-df="done">✓</button>
+    const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
+    return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
       <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" size="${Math.max(6,Math.min(60,td.text.length+1))}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="tag">⤷ ${esc(ref.t.name)}</span>${ring(ref.t,ref.p)}`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
@@ -341,23 +341,23 @@ function renderDaily(g){
     if(label==='Dnes'){if(!l.length&&!doneToday.length&&V.dnew!==dd)h+=`<div class="dempty">Nic na dnešek. Klepněte na + a napište, co je potřeba.</div>`;h+=doneToday.map(item).join('')}
     else if(!l.length&&V.dnew!==dd)h+=`<div class="dempty">—</div>`;
     h+=`</div>`}
-  h+=`<div class="sub" style="margin-top:28px">Enter v položce založí další pod ní · ⠿ přetáhne položku (i do jiného dne) · ★ důležité · trojúhelník = priorita (klepnutím A → C → B) · ⋯ termín a projekt · vložení víceřádkového textu vytvoří položku z každého řádku</div>`;
+  h+=`<div class="sub" style="margin-top:28px">Enter v položce založí další pod ní · ⠿ přetáhne položku (i do jiného dne) · ★ důležité · trojúhelník = priorita (klepnutím A → B → C → bez) · ⋯ termín a projekt · vložení víceřádkového textu vytvoří položku z každého řádku</div>`;
   h+=`</div>`;g.innerHTML=h;
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=$(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
 g.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
-    if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:2,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
+    if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:0,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
     if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();f.list.splice(f.list.indexOf(f.td),1);commit()}
     if(e.key==='Escape')e.target.blur();return}
-  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=nextOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=2;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
+  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=firstOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=0;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
 g.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
   else if(df==='due')td.due=el.value;
   else if(df==='pid'||df==='tid'){const pid=df==='pid'?el.value:(f.p?f.p.id:'');const tid=df==='tid'?el.value:'';const key=tid||(pid?'p:'+pid:'me');const list=todoList(key);if(list){f.list.splice(f.list.indexOf(td),1);list.push(td);const p=proj(pid);if(p&&td.who&&!p.team.includes(td.who))p.team.push(td.who)}}
   commit()});
-g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;for(const l of lines){quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=nextOrd()}}V.dhead=false;focusTd='dadd';commit()});
+g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;const base=firstOrd()-lines.length;lines.forEach((l,i)=>{quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=base+i}});V.dhead=false;focusTd='dadd';commit()});
 g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const box=b.closest('[data-td]');
   if(b.dataset.dopt!==undefined){V.dopen=V.dopen===b.dataset.dopt?'':b.dataset.dopt;save();render();return}
   if(b.dataset.dnew!==undefined){const same=V.dnew===b.dataset.dnew&&!V.dhead;V.dnew=same?null:b.dataset.dnew;V.dhead=false;focusTd='dadd';render();return}
@@ -369,7 +369,7 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
   if(b.hasAttribute('data-gochg')){V.by='project';V.status='changes';const pp=S.projects.find(p=>unreadAll(p).length);if(pp)V.project=pp.id;commit();return}
   if(!box)return;const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(b.dataset.dd!==undefined){td.due=b.dataset.dd===''?'':addDays(TODAY,+b.dataset.dd);commit()}
-  if(b.hasAttribute('data-dpri')){td.pri=({2:1,1:3,3:2})[+td.pri||2];commit()}
+  if(b.hasAttribute('data-dpri')){td.pri=({0:1,1:2,2:3,3:0})[+td.pri||0];commit()}
   if(b.hasAttribute('data-dimp')){td.imp=!td.imp;commit()}
   if(b.hasAttribute('data-dblk')){td.block=!td.block;commit()}
   if(b.hasAttribute('data-ddel')){f.list.splice(f.list.indexOf(td),1);V.dopen='';commit()}
@@ -421,11 +421,11 @@ function quickAdd(text){
   if(init.start&&!init.end)init.end=addDays(init.start,4);
   const nt={...blankTask(p),...init};p.tasks.push(nt);focusId=null;commit();openTask(nt.id);
 }
-function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:2,imp:false,...o};list.push(td);return td}
+function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:0,imp:false,...o};list.push(td);return td}
 function quickTodo(text){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
   s=s.replace(/(^|\s)!(?=\s|$)/,(m,a)=>{init.block=true;return a}).trim();
   s=s.replace(/(^|\s)(\d{1,2})\.\s?(\d{1,2})\.(\d{4})?/,(m,a,d,mo,y)=>{const yy=y||TODAY.slice(0,4);const v=`${yy}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!isNaN(parse(v)))init.due=v;return a}).trim();
-  let key=p?'p:'+p.id:'me';
+  let key=(p&&V.by!=='daily')?'p:'+p.id:'me';  // v denním seznamu patří nová položka mimo projekty (do projektu ji zařadí ⋯ nebo „>úkol“)
   s=s.replace(/(^|\s)>(.+)$/,(m,a,w)=>{const q=w.trim().toLowerCase();const pool=p?p.tasks.map(t=>({t,p})):S.projects.flatMap(pp=>pp.tasks.map(t=>({t,p:pp})));const hit=pool.find(x=>x.t.name.toLowerCase().startsWith(q))||pool.find(x=>x.t.name.toLowerCase().includes(q));if(hit){key=hit.t.id;V.open=[...new Set([...V.open,hit.t.id])]}return a}).trim();
   const team=p?p.team:[...new Set(S.projects.flatMap(x=>x.team))];
   s=s.replace(/(^|\s)@(\S+)/,(m,a,w)=>{const who=team.find(x=>x.toLowerCase().startsWith(w.toLowerCase()));init.who=who||w;return a}).trim();
@@ -562,7 +562,7 @@ function openDump(lines,existingIds){
   const dlg=$('#tdlg');dlg.classList.add('wide');
   const me=S.me||'';const people=allPeople();
   let items;
-  if(existingIds){items=existingIds.map(id=>{const f=findTodo(id);return {id,text:f.td.text,pid:f.p?f.p.id:'',tid:f.t?f.t.id:'',who:f.td.who,due:f.td.due,pri:f.td.pri||2,imp:!!f.td.imp,block:!!f.td.block}})}
+  if(existingIds){items=existingIds.map(id=>{const f=findTodo(id);return {id,text:f.td.text,pid:f.p?f.p.id:'',tid:f.t?f.t.id:'',who:f.td.who,due:f.td.due,pri:f.td.pri||0,imp:!!f.td.imp,block:!!f.td.block}})}
   const step1=()=>{
     dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Seznam – co mám v hlavě</span><button type="button" data-x>×</button></div><div class="db dump">
       <div class="hint">Napište všechno, každou věc na nový řádek – bez třídění a bez formátu. Chcete-li, oddělte skupiny řádkem s názvem projektu a dvojtečkou (např. „ESPIS:“); položky pod ním se do projektu předvyplní. Zatřídit, přidat termíny a priority budete v dalším kroku.</div>
@@ -575,14 +575,14 @@ function openDump(lines,existingIds){
     fm.addEventListener('submit',e=>{e.preventDefault();if(fm.elements.me&&fm.elements.me.value.trim())S.me=fm.elements.me.value.trim();
       const ls=fm.elements.dump.value.split('\n').map(s=>s.replace(/^[\s\-•*·]+/,'').trim());let pid='',tid='';items=[];
       for(const l of ls){if(!l)continue;const m=l.match(/^(.+?):\s*$/);if(m){const q=m[1].toLowerCase();const p=S.projects.find(p=>p.name.toLowerCase().startsWith(q))||S.projects.find(p=>p.name.toLowerCase().includes(q));pid=p?p.id:'';tid='';if(!p){const hit=S.projects.flatMap(pp=>pp.tasks.map(t=>({t,pp}))).find(x=>x.t.name.toLowerCase().startsWith(q));if(hit){pid=hit.pp.id;tid=hit.t.id}}continue}
-        items.push({text:l,pid:pid||(V.project!=='ALL'?V.project:''),tid,who:S.me||'',due:'',pri:2,imp:false,block:false})}
+        items.push({text:l,pid:pid||(V.project!=='ALL'?V.project:''),tid,who:S.me||'',due:'',pri:0,imp:false,block:false})}
       if(!items.length)return;step2()});
   };
   const step2=()=>{
     const pOpts=v=>`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${v===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
     const tOpts=(pid,v)=>{const p=proj(pid);return `<option value="">— inbox projektu —</option>`+(p?p.tasks.filter(t=>!kidsOf(t,p).length&&progressOf(t,p)<100).map(t=>`<option value="${t.id}" ${v===t.id?'selected':''}>${esc(t.name)}</option>`).join(''):'')};
     const wOpts=(pid,v)=>{const p=proj(pid);const ppl=[...new Set([...(p?p.team:people),...(me?[me]:[]),...(v?[v]:[])])];return `<option value="">—</option>`+ppl.map(m=>`<option ${v===m?'selected':''}>${esc(m)}</option>`).join('')};
-    const rowHtml=(it,i)=>`<div class="r" data-i="${i}"><span class="hint">${i+1}</span><input type="text" data-k="text" value="${esc(it.text)}"><select data-k="pid">${pOpts(it.pid)}</select><select data-k="tid">${tOpts(it.pid,it.tid)}</select><select data-k="who">${wOpts(it.pid,it.who)}</select><div class="dq"><input type="date" data-k="due" value="${it.due||''}"><button type="button" data-d="0">D</button><button type="button" data-d="1">Z</button></div><select data-k="pri"><option value="1" ${it.pri==1?'selected':''}>A</option><option value="2" ${it.pri==2?'selected':''}>B</option><option value="3" ${it.pri==3?'selected':''}>C</option></select><button type="button" data-k="imp" class="${it.imp?'on':''}">★</button><button type="button" data-k="block" class="blk ${it.block?'on':''}">⛔</button><button type="button" class="rm" data-k="rm">×</button></div>`;
+    const rowHtml=(it,i)=>`<div class="r" data-i="${i}"><span class="hint">${i+1}</span><input type="text" data-k="text" value="${esc(it.text)}"><select data-k="pid">${pOpts(it.pid)}</select><select data-k="tid">${tOpts(it.pid,it.tid)}</select><select data-k="who">${wOpts(it.pid,it.who)}</select><div class="dq"><input type="date" data-k="due" value="${it.due||''}"><button type="button" data-d="0">D</button><button type="button" data-d="1">Z</button></div><select data-k="pri"><option value="0" ${!it.pri?'selected':''}>—</option><option value="1" ${it.pri==1?'selected':''}>A</option><option value="2" ${it.pri==2?'selected':''}>B</option><option value="3" ${it.pri==3?'selected':''}>C</option></select><button type="button" data-k="imp" class="${it.imp?'on':''}">★</button><button type="button" data-k="block" class="blk ${it.block?'on':''}">⛔</button><button type="button" class="rm" data-k="rm">×</button></div>`;
     dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Zatřídit ${items.length} položek</span><button type="button" data-x>×</button></div><div class="db">
       <div class="tri"><div class="r hd"><span></span><span>Co</span><span>Projekt</span><span>K úkolu</span><span>Kdo</span><span>Do kdy (D = dnes, Z = zítra)</span><span>Prio</span><span>★</span><span>⛔</span><span></span></div>${items.map(rowHtml).join('')}</div>
       <div class="hint">Bez projektu → Můj inbox. S projektem bez úkolu → Inbox projektu. Priorita A/B/C řadí položky v denním seznamu, ★ je zvedne úplně nahoru. ⛔ znamená, že bez této položky nejde úkol dokončit.</div>
@@ -665,7 +665,7 @@ function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)||(!f.p._
     <button data-op="del" class="danger">Smazat <kbd>Delete</kbd></button>`;
   ctx.classList.add('open');const w=ctx.offsetWidth||220,hh=ctx.offsetHeight||360;ctx.style.left=Math.min(x,innerWidth-w-8)+'px';ctx.style.top=Math.min(y,innerHeight-hh-8)+'px';ctx.dataset.id=id}
 ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const id=ctx.dataset.id;ctx.classList.remove('open');
-  ({grp:()=>setGroupForSubtree(id),checked:()=>{const f=findTask(id);if(!f)return;f.t.checked=f.t.checked===TODAY?'':TODAY;commit();toast(f.t.checked?'Dnes zkontrolováno':'Značka zrušena')},addtodo:()=>{const f=findTask(id);if(!f)return;if(todoRefOf(f.t)){toast('Úkol už v ToDo je');return}S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
+  ({grp:()=>setGroupForSubtree(id),checked:()=>{const f=findTask(id);if(!f)return;f.t.checked=f.t.checked===TODAY?'':TODAY;commit();toast(f.t.checked?'Dnes zkontrolováno':'Značka zrušena')},addtodo:()=>{const f=findTask(id);if(!f)return;if(todoRefOf(f.t)){toast('Úkol už v ToDo je');return}S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+f.t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:id});commit();toast('Přidáno do dnešního ToDo')},unclear:()=>{const f=findTask(id);f.t.unclear=!f.t.unclear;if(f.t.unclear&&!f.t.question)openTask(id);else commit()},edit:()=>openTask(id),add:()=>addTask(id),child:()=>addChild(id),copy:()=>{copyTask(id);render()},paste:()=>pasteTask(id,false),pastechild:()=>pasteTask(id,true),dup:()=>duplicateTask(id),up:()=>moveTask(id,-1),down:()=>moveTask(id,1),in:()=>indent(id,true),out:()=>indent(id,false),del:()=>delTask(id)})[b.dataset.op]()});
 document.addEventListener('click',e=>{if(Date.now()-(+ctx.dataset.t||0)<500)return;if(!e.target.closest('#ctx,[data-act=menu]'))ctx.classList.remove('open')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove('open');
   if(!sel||$('dialog[open]')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
@@ -768,6 +768,8 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
   if(b.dataset.tf==='imp'){f.td.imp=!f.td.imp;commit()}});
 // denní řízení: ToDo „Kontrola …“ (ikona ☐ na baru, dokud není odškrtnuto) a „Dnes zkontrolováno“ (ikona ✓ jen dnes)
 // další pořadové číslo v denním seznamu (malé celé číslo – sloupec ord je integer)
+// nová položka jde na začátek seznamu (menší než všechna dosavadní pořadí; 0 se vyhýbáme – znamená „bez pořadí“)
+const firstOrd=()=>{let m=Infinity;const f=td=>{if(td.ord&&td.ord<m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));let v=(m===Infinity?1:Math.floor(m))-1;return v===0?-1:v};
 const nextOrd=()=>{let m=0;const f=td=>{if(td.ord>m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));return Math.floor(m)+1};
 const todoRefOf=t=>S.todos.find(td=>td.taskRef===t.id&&!td.done);
 // rychlá poznámka: ikonka za čtverečkem; prázdná = nenápadná, s textem = žlutý lístek (text v bublině); klepnutí otevře malý editor
@@ -791,7 +793,7 @@ g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!b
 g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();const f=findTask(sq.dataset.dchk);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
-  else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:t.id,ord:nextOrd()});toast('Přidáno do dnešního ToDo')}
+  else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')}
   else{t.checked=TODAY;toast('Dnes zkontrolováno')}
   commit()});
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
@@ -822,7 +824,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=20))miss.push('SCHEMA 20');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=21))miss.push('SCHEMA 21');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
