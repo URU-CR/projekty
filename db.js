@@ -114,7 +114,7 @@ const DB = (() => {
     S.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, null, null, j); });
     return F;
   }
-  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 2, imp: !!td.imp, sort, task_ref: td.taskRef || null, heading: !!td.heading, ord: Math.round(td.ord || 0) });
+  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 2, imp: !!td.imp, sort, task_ref: td.taskRef || null, heading: !!td.heading, ord: Math.max(0, Math.min(2000000000, Math.round(td.ord || 0))) });
 
   /* ---------- synchronizace rozdílů ---------- */
   const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };

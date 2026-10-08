@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.6.3';
+const APP_VERSION='1.6.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -350,14 +350,14 @@ g.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const 
     if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:2,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
     if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();f.list.splice(f.list.indexOf(f.td),1);commit()}
     if(e.key==='Escape')e.target.blur();return}
-  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=Date.now();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=2;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
+  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=nextOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=2;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
 g.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
   else if(df==='due')td.due=el.value;
   else if(df==='pid'||df==='tid'){const pid=df==='pid'?el.value:(f.p?f.p.id:'');const tid=df==='tid'?el.value:'';const key=tid||(pid?'p:'+pid:'me');const list=todoList(key);if(list){f.list.splice(f.list.indexOf(td),1);list.push(td);const p=proj(pid);if(p&&td.who&&!p.team.includes(td.who))p.team.push(td.who)}}
   commit()});
-g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;for(const l of lines){quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=Date.now()+lines.indexOf(l)}}V.dhead=false;focusTd='dadd';commit()});
+g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;for(const l of lines){quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=nextOrd()}}V.dhead=false;focusTd='dadd';commit()});
 g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const box=b.closest('[data-td]');
   if(b.dataset.dopt!==undefined){V.dopen=V.dopen===b.dataset.dopt?'':b.dataset.dopt;save();render();return}
   if(b.dataset.dnew!==undefined){const same=V.dnew===b.dataset.dnew&&!V.dhead;V.dnew=same?null:b.dataset.dnew;V.dhead=false;focusTd='dadd';render();return}
@@ -767,6 +767,8 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
   if(b.dataset.tf==='block'){f.td.block=!f.td.block;commit()}
   if(b.dataset.tf==='imp'){f.td.imp=!f.td.imp;commit()}});
 // denní řízení: ToDo „Kontrola …“ (ikona ☐ na baru, dokud není odškrtnuto) a „Dnes zkontrolováno“ (ikona ✓ jen dnes)
+// další pořadové číslo v denním seznamu (malé celé číslo – sloupec ord je integer)
+const nextOrd=()=>{let m=0;const f=td=>{if(td.ord>m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));return Math.floor(m)+1};
 const todoRefOf=t=>S.todos.find(td=>td.taskRef===t.id&&!td.done);
 function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';const ref=todoRefOf(t);const st=ref?'todo':t.checked===TODAY?'chk':'';const over=ref&&ref.due&&ref.due<TODAY;
   return `<i class="dm ${st} ${over?'over':''}" data-dchk="${t.id}">${st==='todo'?'☐':st==='chk'?'✓':''}</i>`}
@@ -776,7 +778,7 @@ let lastBarDown={id:null,t:0};
 g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.target.closest('[data-dchk]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
 g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();const f=findTask(sq.dataset.dchk);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
-  else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:t.id,ord:Date.now()});toast('Přidáno do dnešního ToDo')}
+  else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:t.id,ord:nextOrd()});toast('Přidáno do dnešního ToDo')}
   else{t.checked=TODAY;toast('Dnes zkontrolováno')}
   commit()});
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
