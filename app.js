@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.6.5';
+const APP_VERSION='1.7.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -281,7 +281,7 @@ function render(){
     const inside=false;const nol=x<220;
     B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='behind'?'behind':''} ${st.k==='done'?'done':''} ${nol?'nol':''} ${t.unclear?'unclear':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col};--gc:${baseColor(t,p)}"${V.barTip===false?'':` title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}${who?' · '+who:''}${chtip?'\n'+esc(chtip):''}"`}>
       <div class="prog" style="width:${prog}%"></div><span class="h h-l"></span><span class="h h-r"></span>
-      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl">${dmark(t,p)}<b>${esc(t.name)} · </b><i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd" title="${esc(chtip)}">⟲ ${chd}</i>`:''}</span></div>`+CH;
+      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl">${dmark(t,p)}${qnote(t,p)}<b>${esc(t.name)} · </b><i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd" title="${esc(chtip)}">⟲ ${chd}</i>`:''}</span></div>`+CH;
     for(const td of t.todos){if(!td.due||td.due<start||td.due>end)continue;B+=`<div class="tdot ${td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(td.due)+px/2-5}px;top:${top}px" title="${esc(td.text)} · ${fmt(td.due)}${td.who?' · '+esc(td.who):''}"></div>`}
     ri++;
   }
@@ -770,6 +770,15 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
 // další pořadové číslo v denním seznamu (malé celé číslo – sloupec ord je integer)
 const nextOrd=()=>{let m=0;const f=td=>{if(td.ord>m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));return Math.floor(m)+1};
 const todoRefOf=t=>S.todos.find(td=>td.taskRef===t.id&&!td.done);
+// rychlá poznámka: ikonka za čtverečkem; prázdná = nenápadná, s textem = žlutý lístek (text v bublině); klepnutí otevře malý editor
+function qnote(t,p){if(p._draft)return'';const can=myRole(p)==='lead'||taskWritable(t,p);if(!t.quick&&!can)return'';
+  return `<i class="qn ${t.quick?'on':''}" data-qn="${t.id}" ${t.quick?`title="${esc(t.quick)}"`:''}>${t.quick?'✎':'+'}</i>`}
+const qnBox=document.createElement('div');qnBox.id='qn';qnBox.innerHTML=`<input placeholder="Rychlá poznámka… (Enter uloží, Esc zavře)" maxlength="300"><button type="button" data-qnx title="">✕</button>`;document.body.appendChild(qnBox);
+function openQn(id,x,y){const f=findTask(id);if(!f)return;qnBox.dataset.id=id;const i=qnBox.querySelector('input');i.value=f.t.quick||'';qnBox.querySelector('[data-qnx]').style.display=f.t.quick?'':'none';qnBox.style.display='flex';qnBox.style.left=Math.min(x,innerWidth-340)+'px';qnBox.style.top=Math.min(y+10,innerHeight-50)+'px';i.focus();i.select()}
+function closeQn(){qnBox.style.display='none';qnBox.dataset.id=''}
+qnBox.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const f=findTask(qnBox.dataset.id);if(f){f.t.quick=qnBox.querySelector('input').value.trim();commit()}closeQn()}if(e.key==='Escape'){closeQn()}});
+qnBox.addEventListener('click',e=>{if(e.target.closest('[data-qnx]')){const f=findTask(qnBox.dataset.id);if(f){f.t.quick='';commit()}closeQn()}});
+document.addEventListener('pointerdown',e=>{if(qnBox.style.display!=='none'&&!e.target.closest('#qn,[data-qn]'))closeQn()});
 function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';
   // souhrnný bar (fáze): neklikací, ✓ se doplní samo, jakmile jsou všechny otevřené podřízené úkoly zkontrolované nebo v ToDo
   if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&progressOf(x,p)<100);const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||x.checked===TODAY);return `<i class="dm auto ${all?'chk':''}">${all?'✓':''}</i>`}
@@ -778,7 +787,8 @@ function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
 let lastBarDown={id:null,t:0};
-g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.target.closest('[data-dchk]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
+g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.target.closest('[data-dchk],[data-qn]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
+g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();const f=findTask(sq.dataset.dchk);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
   else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:2,imp:false,taskRef:t.id,ord:nextOrd()});toast('Přidáno do dnešního ToDo')}
@@ -812,7 +822,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=19))miss.push('SCHEMA 19');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=20))miss.push('SCHEMA 20');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
