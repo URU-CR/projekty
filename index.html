@@ -4,10 +4,13 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.7.2">
+<meta name="app-version" content="1.7.4">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png?v=2">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<meta name="theme-color" content="#d6262b"><rect x=%2210%22 y=%2220%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%232196f3%22/><rect x=%2230%22 y=%2242%22 width=%2260%22 height=%2216%22 rx=%223%22 fill=%22%231cb36d%22/><rect x=%2220%22 y=%2264%22 width=%2245%22 height=%2216%22 rx=%223%22 fill=%22%23f39a1e%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -208,11 +211,11 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .bar.late.ms::before{outline:1px dashed var(--critical);outline-offset:2px}
 .bar .lbl i.dt.late{color:var(--critical);font-weight:600}
 /* denní kontrola (jen vedoucí): prázdný šedý čtvereček za barem → ✓ zelená (dnes zkontrolováno) → ☐ modrá (v ToDo) → prázdný */
-.bar .lbl i.dm{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-weight:700;font-size:11px;line-height:1;margin-right:7px;border-radius:4px;vertical-align:-3px;pointer-events:auto;cursor:pointer;border:1.5px solid var(--line);background:var(--panel);color:transparent;box-sizing:border-box}
+.bar .lbl i.dm{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-weight:700;font-size:11px;line-height:1;margin-right:7px;border-radius:4px;vertical-align:middle;position:relative;top:-1px;pointer-events:auto;cursor:pointer;border:1.5px solid var(--line);background:var(--panel);color:transparent;box-sizing:border-box}
 .bar .lbl i.dm:hover{border-color:var(--muted)}
 .bar .lbl i.dm.auto{pointer-events:none;cursor:default;border-style:dashed}
 /* rychlá poznámka za čtverečkem */
-.bar .lbl i.qn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-size:13px;font-weight:700;line-height:1;margin-right:7px;border-radius:4px;vertical-align:-3px;pointer-events:auto;cursor:pointer;box-sizing:border-box;border:1.5px dashed var(--line);color:var(--muted);background:var(--panel)}
+.bar .lbl i.qn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-size:13px;font-weight:700;line-height:1;margin-right:7px;border-radius:4px;vertical-align:middle;position:relative;top:-1px;pointer-events:auto;cursor:pointer;box-sizing:border-box;border:1.5px dashed var(--line);color:var(--muted);background:var(--panel)}
 .bar .lbl i.qn:hover{border-color:var(--muted);color:var(--text)}
 .bar .lbl i.qn.on{background:#fff3b0;color:#7a5200;border:1px solid #e6c84f}
 :root[data-theme="dark"] .bar .lbl i.qn.on{background:#4a3d12;color:#ffd666;border-color:#7a6420}
@@ -476,7 +479,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.7.2">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.7.4">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -523,8 +526,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.7.2"></script>
-<script src="db.js?v=1.7.2"></script>
-<script src="app.js?v=1.7.2"></script>
+<script src="config.js?v=1.7.4"></script>
+<script src="db.js?v=1.7.4"></script>
+<script src="app.js?v=1.7.4"></script>
 </body>
 </html>
