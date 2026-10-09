@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.8.1">
+<meta name="app-version" content="1.10.0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -14,7 +14,7 @@
 <link rel="mask-icon" href="safari-pinned-tab.svg?v=3" color="#d6262b">
 <meta name="theme-color" content="#d6262b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Orbitron:wght@600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#f3f4f6; --panel:#ffffff; --line:#dfe3e8; --line2:#eef0f3; --text:#1b222c; --muted:#6a7381;
@@ -117,6 +117,67 @@ button{cursor:pointer}
 .col{position:absolute;top:0;bottom:0}
 .col.we{background:var(--weekend)}
 .col.td{background:none;border-left:2px dashed var(--today);opacity:.9;z-index:3}
+/* deadline projektu: plná červená linka přes graf + 🔥 v časové ose; odpočet v záhlaví */
+.col.dl{background:none;border-left:2px solid var(--critical);z-index:3;opacity:.85}
+.dlm{position:absolute;top:0;height:48px;display:flex;align-items:flex-start;gap:3px;transform:translateX(-9px);z-index:5;pointer-events:auto;white-space:nowrap}
+.dlm .fl{font-size:15px;line-height:22px;filter:drop-shadow(0 0 2px #fff)}
+.dlm b{font-size:11px;color:var(--critical);line-height:22px;font-weight:600}
+#cd{display:inline-flex;gap:6px}
+.cdp{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--critical);color:var(--critical);border-radius:6px;padding:2px 9px 2px 6px;font-size:12px;white-space:nowrap}
+.cdp i{font-style:normal;font-size:11px;font-weight:600}
+.cdp b{font-family:'Orbitron',ui-monospace,monospace;font-weight:600;font-size:13px;letter-spacing:.5px;font-variant-numeric:tabular-nums}
+.cdp b u{text-decoration:none;font-size:9px;margin:0 3px 0 1px;opacity:.8;font-family:'IBM Plex Sans',sans-serif}
+.flame{display:inline-block;vertical-align:-3px}
+.dlm .fl{color:var(--critical)}
+/* cizí termín */
+.col.ext{background:none;border-left:2px dashed #7c3aed;z-index:3;opacity:.8}
+.extm{position:absolute;top:26px;height:22px;transform:translateX(-50%);z-index:5;white-space:nowrap;pointer-events:auto}
+.extm b{font-size:10.5px;color:#7c3aed;background:var(--panel);border:1px solid #c4b5fd;border-radius:4px;padding:1px 6px;max-width:160px;overflow:hidden;text-overflow:ellipsis;display:inline-block;line-height:16px}
+/* denní kontrola (fronta) */
+#kdlg{width:min(900px,96vw);max-width:none}
+#kdlg .kk{font-size:11px;margin-left:auto;margin-right:10px}
+#kdlg .kbody{padding:6px 10px 12px;max-height:72vh;overflow:auto}
+.kr{display:grid;grid-template-columns:22px 1fr 90px 56px 14px 28px 28px;gap:8px;align-items:center;padding:7px 8px;border-radius:7px;border-bottom:1px solid var(--line2)}
+.kr.sel{background:var(--accent-soft);outline:1px solid var(--accent)}
+.kr .dm{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--line);background:var(--panel);color:transparent;font-size:12px;font-weight:700;cursor:pointer;box-sizing:border-box}
+.kr .dm:hover{border-color:var(--muted)}
+.kr .dm.chk{background:#d1fae5;border-color:#34c38f;color:#047857}.kr .dm.chk.d1{opacity:.6}.kr .dm.chk.d2{opacity:.3}
+.kr .kn{display:flex;flex-direction:column;gap:1px;min-width:0}
+.kr .kn b{cursor:pointer}.kr .kn b:hover{color:var(--accent)}
+.kr .kn .hint{font-size:11px}
+.kr .kq{font-size:12px;color:#7a5200;background:#fff3b0;border-radius:4px;padding:0 6px;align-self:flex-start;margin-top:2px}
+.kr .kl{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kr .kp{width:52px;border:1px solid var(--line);border-radius:5px;padding:3px 4px;font-size:13px;text-align:right;background:var(--bg)}
+.kr .pc{color:var(--muted);font-size:11px;margin-left:-6px}
+.kr .kb{border:1px solid var(--line);background:var(--panel);border-radius:5px;width:28px;height:26px;cursor:pointer;color:var(--muted);font-size:13px}
+.kr .kb:hover{border-color:var(--accent);color:var(--text)}
+.kr.st-late .st,.kr.st-behind .st{font-weight:600}
+#kBtn b{background:var(--accent-soft);border-radius:999px;padding:0 7px;font-weight:700;margin-left:4px}
+#kBtn.done b{background:#d1fae5;color:#047857}
+/* nápověda – zásuvka vlevo */
+#help{position:fixed;top:0;left:0;bottom:0;width:min(440px,92vw);background:var(--panel);border-right:1px solid var(--line);box-shadow:8px 0 30px rgba(0,0,0,.18);z-index:320;display:none;flex-direction:column;font-size:13px}
+#help.open{display:flex}
+#help .hh{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line2)}
+#help .hh b{font-size:15px}#help .hh .sp{flex:1}
+#help .hh button{border:0;background:none;font-size:16px;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:5px}#help .hh button:hover{background:var(--bg);color:var(--text)}
+#help .hs{padding:8px 12px}
+#help .hs input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:13px;background:var(--bg)}
+#help .hs input:focus{outline:none;border-color:var(--accent)}
+#help .hb{overflow:auto;padding:0 12px 20px}
+#help details{border-top:1px solid var(--line2);padding:4px 0}
+#help summary{cursor:pointer;font-weight:700;padding:6px 0;list-style:none;display:flex;align-items:center;gap:8px}
+#help summary::before{content:"▸";color:var(--muted);font-size:11px}
+#help details[open] summary::before{content:"▾"}
+#help .hi{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:6px 0 8px;border-top:1px dashed var(--line2)}
+#help .hi .ic{display:flex;align-items:center;justify-content:center;gap:3px;min-height:24px;flex-wrap:wrap;font-size:12px}
+#help .hi p{margin:2px 0 0;color:var(--text);line-height:1.4}
+#help .hi p .dm,#help .ic .dm{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;border:1.5px solid var(--line);background:var(--panel);color:transparent;font-size:10px;font-weight:700;vertical-align:-3px;box-sizing:border-box}
+#help .dm.chk{background:#d1fae5;border-color:#34c38f;color:#047857}#help .dm.todo{background:var(--accent);border-color:var(--accent);color:#fff}
+#help .qn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:4px;border:1.5px dashed var(--line);color:var(--muted);font-size:11px;font-weight:700;font-style:normal;vertical-align:-3px;box-sizing:border-box}
+#help .qn.on{background:#fff3b0;color:#7a5200;border:1px solid #e6c84f}
+#help kbd{border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:11px}
+.cdp.soon{background:var(--critical);color:#fff}
+.cdp.past{background:#444;border-color:#444;color:#fff}
 .col.mline{border-left:1px solid var(--line);}
 .prow{position:absolute;left:0;right:0;height:var(--rowh);background:var(--bg)}
 .bar{user-select:none;-webkit-user-select:none;position:absolute;height:24px;border-radius:2px;top:5px;color:#fff;font-size:12px;cursor:grab;touch-action:none;background:color-mix(in srgb,var(--c) 42%,var(--panel)) !important}
@@ -496,18 +557,20 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.8.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.10.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
     <div class="seg" id="zoom"><button data-z="day">Den</button><button data-z="week">Týden</button><button data-z="month">Měsíc</button></div>
     <button class="btn" id="bToday">Dnes</button>
-    <div class="seg" id="leftw"><button data-l="full">Tabulka</button><button data-l="narrow">Úzká</button><button data-l="off">Jen Gantt</button></div>
-    <button class="btn tog" id="tStrip">Filtry</button>
     <div class="menu" id="menu"><button class="btn">⋯</button>
       <ul>
         <li><button data-m="proj">Nastavení projektu, tým a skupiny</button></li>
         <li><button data-m="newproj">Nový projekt</button></li>
+        <li class="sep"></li>
+        <li><button data-m="leftw">Levá tabulka: <b id="leftwL"></b></button></li>
+        <li><button data-m="strip">Lišta rychlých filtrů: <b id="stripL"></b></button></li>
+        <li class="sep"></li>
         <li><button data-m="autodaily">Ráno otevírat ToDo: <b id="autodailyL"></b></button></li>
         <li><button data-m="bartip">Bublina s údaji u názvu úkolu a baru: <b id="bartipL"></b></button></li>
         <li><button data-m="track">Sledování změn: <b id="trackL"></b></button></li>
@@ -524,6 +587,9 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
         <li><button data-m="wipe" class="danger">Smazat všechna data</button></li>
       </ul>
     </div>
+    <button class="btn" id="helpBtn" title="Nápověda (?)">?</button>
+    <button class="btn" id="kBtn">Kontrola</button>
+    <span id="cd"></span>
     <button class="btn todo" id="todoBtn">ToDo</button>
     <input type="file" id="file" accept="application/json" hidden>
     <input type="file" id="xfile" accept=".xlsx" hidden>
@@ -545,8 +611,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.8.1"></script>
-<script src="db.js?v=1.8.1"></script>
-<script src="app.js?v=1.8.1"></script>
+<script src="config.js?v=1.10.0"></script>
+<script src="db.js?v=1.10.0"></script>
+<script src="app.js?v=1.10.0"></script>
 </body>
 </html>

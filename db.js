@@ -41,7 +41,7 @@ const DB = (() => {
     for (const p of projects) {
       const pt = team.filter(x => x.project_id === p.id);
       const P = {
-        id: p.id, name: p.name, lead: p.lead_name || '', color: p.color, archived: p.archived, created_by: p.created_by,
+        id: p.id, name: p.name, lead: p.lead_name || '', color: p.color, archived: p.archived, created_by: p.created_by, deadline: p.deadline || '', countdown: !!p.countdown,
         team: pt.map(x => x.name), _teamIds: Object.fromEntries(pt.map(x => [x.name, x.id])), teamLinks: Object.fromEntries(pt.filter(x => x.user_id).map(x => [x.name, x.user_id])),
         groups: groups.filter(g => g.project_id === p.id).map(g => ({ id: g.id, name: g.name, color: g.color })),
         members: members.filter(m => m.project_id === p.id).map(m => ({ user_id: m.user_id, role: m.role, scoped: !!m.scoped, email: prof[m.user_id]?.email || '?', name: prof[m.user_id]?.name || '' })),
@@ -60,7 +60,7 @@ const DB = (() => {
       const conv = t => { const T = {
         id: t.id, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [],
         critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, autoProg: !!t.auto_prog, collapsed: !!t.collapsed, parent: t.parent_id || null,
-        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '', checked: t.checked_on || '', quick: t.quick_note || '',
+        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '', checked: t.checked_on || '', quick: t.quick_note || '', external: !!t.external,
         links: links.filter(l => l.task_id === t.id).map(l => ({ id: l.id, name: l.name, url: l.url })),
         log: log.filter(l => l.task_id === t.id).map(l => ({ id: l.id, d: l.d, text: l.text, author: l.author, authorName: prof[l.author]?.name || '' })),
         docs: docs.filter(d => d.task_id === t.id).map(d => ({ id: d.id, name: d.name, path: d.path, size: d.size, uploaded_by: d.uploaded_by, created_at: d.created_at })),
@@ -91,14 +91,14 @@ const DB = (() => {
     const F = { projects: {}, team: {}, groups: {}, tasks: {}, links: {}, log: {}, todos: {}, proposals: {}, ptasks: {} };
     let sortT = 0;
     for (const p of S.projects) {
-      F.projects[p.id] = { id: p.id, name: p.name, lead_name: p.lead || '', color: p.color, archived: !!p.archived, created_by: p.created_by || user.id };
+      F.projects[p.id] = { id: p.id, name: p.name, lead_name: p.lead || '', color: p.color, archived: !!p.archived, created_by: p.created_by || user.id, deadline: p.deadline || null, countdown: !!p.countdown };
       p._teamIds ||= {}; p.teamLinks ||= {};
       p.team.forEach((name, i) => { const id = p._teamIds[name] ||= uuid(); F.team[id] = { id, project_id: p.id, name, user_id: p.teamLinks[name] || null, sort: i }; });
       p.groups.forEach((g, i) => { F.groups[g.id] = { id: g.id, project_id: p.id, name: g.name, color: g.color, sort: i }; });
       const live = p._draft ? p._liveTasks : p.tasks;
       live.forEach((t, i) => {
         F.tasks[t.id] = { id: t.id, project_id: p.id, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '',
-          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '', checked_on: t.checked || null, quick_note: t.quick || '' };
+          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '', checked_on: t.checked || null, quick_note: t.quick || '', external: !!t.external };
         (t.links || []).forEach((l, j) => { l.id ||= uuid(); F.links[l.id] = { id: l.id, task_id: t.id, name: l.name || '', url: l.url || '', sort: j }; });
         (t.log || []).forEach(l => { l.id ||= uuid(); F.log[l.id] = { id: l.id, task_id: t.id, d: l.d, text: l.text, author: l.author || user.id }; });
         (t.todos || []).forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, t.id, j); });
@@ -190,6 +190,6 @@ const DB = (() => {
       .subscribe();
   }
 
-  const SCHEMA = 21; // poslední potřebná migrace
+  const SCHEMA = 23; // poslední potřebná migrace
   return { SCHEMA, markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
