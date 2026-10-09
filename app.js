@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.12.0';
+const APP_VERSION='1.12.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -55,7 +55,7 @@ const todoList=key=>key==='me'?S.todos:key.startsWith('p:')?proj(key.slice(2))?.
 const linkedNames=p=>Object.entries(p.teamLinks||{}).filter(([n,u])=>u===S.meId).map(([n])=>n);
 const myNames=()=>{const l=S.projects.flatMap(linkedNames);return new Set((l.length?l:[S.me]).filter(Boolean))};
 const myNameIn=p=>{const l=linkedNames(p);if(l.length)return l[0];return p.team.includes(S.me)?S.me:''};
-const myRole=p=>p.myRole||(p.created_by===S.meId?'lead':'');
+const myRole=p=>p?(p.myRole||(p.created_by===S.meId?'lead':'')):'lead';  // bez projektu (osobní ToDo) = vlastník
 const canEditGroup=(p,gid)=>myRole(p)==='lead'||(p.access||[]).some(x=>x.user_id===S.meId&&x.group_id===gid&&x.can_edit);
 const proposerOnly=()=>!!S.projects.length&&S.projects.every(p=>myRole(p)==='proposer');
 const hasScope=p=>myRole(p)==='proposer'||!!p.myScoped;
