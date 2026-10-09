@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.10.1';
+const APP_VERSION='1.11.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -237,7 +237,7 @@ function render(){
       <span class="c-name"><span class="ind"></span>${r.group?`<button class="tg" data-act="toggle">${t.collapsed?'▸':'▾'}</button>`:(ot.todos||[]).length?`<button class="tg" data-act="open" data-tkey="${ot.id}">${isOpen(ot.id)?'▾':'▸'}</button>`:`<button class="tg none"></button>`}<button class="dot" data-act="edit" style="border:0;padding:0;cursor:pointer;background:${colorOf(t,p)}"></button><input class="nm" data-f="name" value="${esc(t.name)}" placeholder="Název úkolu"${V.barTip===false?'':` title="${esc(tip)}"`}>${V.by==='person'?`<span class="cl">${esc(p.name)}${r.collab?' · spolupráce':''}</span>`:''}${pmark}${chgtag}${t.unclear?`<span class="qm" data-act="edit" title="K upřesnění: ${esc(t.question||'')}">?</span>`:''}${r.group||(p._draft&&!t.orig)?'':`<button class="tdc ${tdbad?'bad':tdn&&tdd<tdn?'open':''} ${tdn?'':'empty'}" data-act="open" data-tkey="${ot.id}">${tdn?(tdd<tdn?'☐ ':'✓ ')+tdd+'/'+tdn:'+ ToDo'}</button>`}${ot.note?`<span class="ic" data-act="edit" title="Zadání: ${esc(ot.note.slice(0,200))}">≡</span>`:''}${(ot.log||[]).length?`<span class="ic" data-act="edit" title="Deník: ${ot.log.length} záznamů">✎${ot.log.length}</span>`:''}${(ot.docs||[]).length?`<span class="ic" data-act="edit" title="Soubory: ${(ot.docs||[]).map(x=>esc(x.name)).join(', ')}">📎${ot.docs.length}</span>`:''}${(ot.links||[]).length?`<span class="ic" data-act="edit" title="Odkazy: ${(ot.links||[]).map(x=>esc(x.name||x.url)).join(', ')}">🔗</span>`:''}</span>
       <span class="c-resp"><select data-f="resp"><option value="">—</option>${opts}</select></span>
       <span class="c-st">${st.l?`<span class="st ${st.k}">${st.l}</span>`:''}</span>
-      <span class="c-prog">${p._draft?`<span class="hint">${t.milestone?(t.progress>=100?'✓':''):progressOf(t,p)}</span>`:t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''}>`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''}><select data-f="progress" class="prsel">${[0,25,50,75,100].map(v=>`<option value="${v}" ${(t.progress||0)===v?'selected':''}>${v}</option>`).join('')}</select>`}</span>
+      <span class="c-prog">${p._draft?`<span class="hint">${t.milestone?(t.progress>=100?'✓':''):progressOf(t,p)}</span>`:t.milestone?`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''}>`:r.group||t.autoProg?`<span class="hint" title="${t.autoProg?'Podle checklistu':''}">${progressOf(t,p)}</span>`:`<input type="checkbox" data-f="msdone" ${(t.progress||0)>=100?'checked':''}><select data-f="progress" class="prsel">${[...new Set([0,25,50,75,100,t.progress||0])].sort((a,b)=>a-b).map(v=>`<option value="${v}" ${(t.progress||0)===v?'selected':''}>${v}</option>`).join('')}</select>`}</span>
       <span class="c-act"><button data-act="menu">⋯</button></span></div>`;
   }
   L+='<div class="splitter"></div></div>';
@@ -340,10 +340,11 @@ function renderTodoPanel(){renderCountdown();
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
     const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
     return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
-      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      <div class="body"><div class="line">${td.kind?`<button class="kind ${td.kind}" data-dkind title="${td.kind==='call'?'Zavolat':'Napsat e-mail'}${td.contact?' – '+esc(td.contact):''} (zkratka na Macu/iPhonu)">${td.kind==='call'?'📞':'✉️'}</button>`:`<button class="kind none" data-dkind title="Označit jako telefonát / e-mail">·</button>`}<input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
+      <label>Druh <div class="seg"><button data-dk="" class="${!td.kind?'on':''}">–</button><button data-dk="call" class="${td.kind==='call'?'on':''}">📞</button><button data-dk="mail" class="${td.kind==='mail'?'on':''}">✉️</button></div></label><label>Kontakt <input type="text" data-df="contact" value="${esc(td.contact||'')}" placeholder="jméno jako v Kontaktech" size="18"></label>
       ${x.t?`<button type="button" class="btn" data-dblk>${td.block?'⛔ blokuje úkol':'blokuje úkol?'}</button>`:''}<button type="button" class="btn danger" data-ddel>Smazat</button></div>`:''}`};
   // jeden seznam: ruční pořadí (ord); položky bez ord podle starého pravidla (po termínu, priorita, termín)
   const l=vis.filter(x=>!x.td.done);const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
@@ -357,6 +358,12 @@ function renderTodoPanel(){renderCountdown();
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=tp.querySelector(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
+// volání / e-mail přes Zkratky (Shortcuts) – fungují na Macu i iPhonu; jména zkratek v menu ⋯
+function runContact(td){const who=(td.contact||'').trim();if(!who){toast('U položky chybí jméno kontaktu (⋯ → Kontakt)',true);return}
+  const name=td.kind==='call'?(V.scCall||'Zavolat'):(V.scMail||'Napsat');const subj=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,'');
+  const input=td.kind==='call'?who:who+'|'+subj;
+  location.href=`shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(input)}`;
+  if(navigator.clipboard)navigator.clipboard.writeText(who).catch(()=>{});toast((td.kind==='call'?'📞 ':'✉️ ')+who+' – spouštím zkratku „'+name+'“ (jméno je i ve schránce)')}
 function setTodoPanel(m){V.todoPanel=m;save();renderTodoPanel();if(m==='open'){focusTd='dadd';const i=$('#dadd');if(i)i.focus()}}
 tp.addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(!b)return;setTodoPanel(b.dataset.tp==='close'?'':b.dataset.tp)});
 tp.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
@@ -368,6 +375,7 @@ tp.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
   else if(df==='due')td.due=el.value;
+  else if(df==='contact')td.contact=el.value.trim();
   else if(df==='pid'||df==='tid'){const pid=df==='pid'?el.value:(f.p?f.p.id:'');const tid=df==='tid'?el.value:'';const key=tid||(pid?'p:'+pid:'me');const list=todoList(key);if(list){f.list.splice(f.list.indexOf(td),1);list.push(td);const p=proj(pid);if(p&&td.who&&!p.team.includes(td.who))p.team.push(td.who)}}
   commit()});
 tp.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const base=firstOrd()-lines.length;lines.forEach((l,i)=>{quickTodo(l,{personal:true});const f=findTodo(lastTodoId);if(f){f.td.ord=base+i}});V.dhead=false;focusTd='dadd';commit()});
@@ -381,6 +389,8 @@ tp.addEventListener('click',e=>{const b=e.target.closest('button,a[data-golate],
   if(b.hasAttribute('data-gochg')){V.by='project';V.status='changes';const pp=S.projects.find(p=>unreadAll(p).length);if(pp)V.project=pp.id;commit();return}
   if(!box)return;const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(b.dataset.dd!==undefined){td.due=b.dataset.dd===''?'':addDays(TODAY,+b.dataset.dd);commit()}
+  if(b.dataset.dk!==undefined){td.kind=b.dataset.dk;commit()}
+  if(b.hasAttribute('data-dkind')){if(e.shiftKey||e.altKey||!td.kind){td.kind=td.kind==='call'?'mail':td.kind==='mail'?'':'call';if(td.kind&&!td.contact){const m=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,'').match(/^([^–\-:,(]+?)\s*(?:[–\-:,(]|$)/);if(m)td.contact=m[1].trim()}commit()}else runContact(td);return}
   if(b.hasAttribute('data-dpri')){td.pri=({0:1,1:2,2:3,3:0})[+td.pri||0];commit()}
   if(b.hasAttribute('data-dimp')){td.imp=!td.imp;commit()}
   if(b.hasAttribute('data-dblk')){td.block=!td.block;commit()}
@@ -435,6 +445,9 @@ function quickAdd(text){
 }
 function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:0,imp:false,...o};list.push(td);return td}
 function quickTodo(text,o={}){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
+  // „tel Kozák – termín“ / „mail Jandová: smlouva“ → druh položky + kontakt (jméno před oddělovačem – : , nebo celý text)
+  s=s.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,(m,k)=>{init.kind=/^(tel|zavolat|call)$/i.test(k)?'call':'mail';return ''});
+  if(init.kind){const m=s.match(/^([^–\-:,(]+?)\s*(?:[–\-:,(]|$)/);if(m)init.contact=m[1].trim()}
   s=s.replace(/(^|\s)!(?=\s|$)/,(m,a)=>{init.block=true;return a}).trim();
   s=s.replace(/(^|\s)(\d{1,2})\.\s?(\d{1,2})\.(\d{4})?/,(m,a,d,mo,y)=>{const yy=y||TODAY.slice(0,4);const v=`${yy}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!isNaN(parse(v)))init.due=v;return a}).trim();
   let key=(p&&!o.personal)?'p:'+p.id:'me';  // v denním seznamu patří nová položka mimo projekty (do projektu ji zařadí ⋯ nebo „>úkol“)
@@ -731,6 +744,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'leftw':{const lm=V.leftMode||(V.narrow?'narrow':'full');V.leftMode=lm==='full'?'narrow':lm==='narrow'?'off':'full';V.narrow=V.leftMode==='narrow';save();render();break}
     case 'strip':V.hideStrip=!V.hideStrip;save();render();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
+    case 'shortcuts':{const c=prompt('Název zkratky pro volání (Zkratky na Macu/iPhonu):',V.scCall||'Zavolat');if(c===null)break;const m=prompt('Název zkratky pro e-mail:',V.scMail||'Napsat');if(m===null)break;V.scCall=c.trim()||'Zavolat';V.scMail=m.trim()||'Napsat';save();toast('Uloženo');break}
     case 'bartip':V.barTip=V.barTip===false;save();render();toast(V.barTip?'Bublina u názvu a baru zapnuta':'Bublina u názvu a baru vypnuta');break;
     case 'track':S.trackChanges=!S.trackChanges;DB.setTrack(S.trackChanges).catch(e=>toast(e.message,true));render();break;
     case 'export':{exitDraft();$('#pdlg').classList.remove('proj');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
@@ -746,8 +760,8 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
   }});
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.projects)throw 0;importJson(j)}catch(err){alert('Soubor nelze načíst – není to export z této aplikace.')}};r.readAsText(f);e.target.value=''};
 function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
-  for(const p of j.projects){const P={id:nid(p.id),name:p.name,lead:p.lead||'',color:p.color||PALETTE[0],team:[...new Set(p.team||[])],teamLinks:{},_teamIds:{},groups:(p.groups||[]).map(g=>({id:nid(g.id),name:g.name,color:g.color})),members:[],invites:[],access:[],proposals:[],myRole:'lead',created_by:S.meId,tasks:[],todos:[]};
-    for(const t of p.tasks||[]){P.tasks.push({id:nid(t.id),name:t.name||'',start:t.start,end:t.end,color:t.color||'',group:(t.group&&(p.groups||[]).some(g=>g.id===t.group))?nid(t.group):'',resp:t.resp||'',collab:t.collab||[],critical:!!t.critical,milestone:!!t.milestone,progress:t.progress||0,autoProg:!!t.autoProg,collapsed:!!t.collapsed,parent:t.parent?nid(t.parent):null,note:t.note||'',unclear:!!t.unclear,question:t.question||'',deps:(t.deps||[]).map(nid),links:(t.links||[]).map(l=>({id:uid(),name:l.name||'',url:l.url||''})),log:(t.log||[]).map(l=>({id:uid(),d:l.d,text:l.text})),docs:[],todos:(t.todos||[]).map(td=>({...td,id:uid()}))})}
+  for(const p of j.projects){const P={id:nid(p.id),name:p.name,lead:p.lead||'',color:p.color||PALETTE[0],deadline:p.deadline||'',countdown:!!p.countdown,team:[...new Set(p.team||[])],teamLinks:{},_teamIds:{},groups:(p.groups||[]).map(g=>({id:nid(g.id),name:g.name,color:g.color})),members:[],invites:[],access:[],proposals:[],myRole:'lead',created_by:S.meId,tasks:[],todos:[]};
+    for(const t of p.tasks||[]){P.tasks.push({id:nid(t.id),name:t.name||'',start:t.start,end:t.end,color:t.color||'',group:(t.group&&(p.groups||[]).some(g=>g.id===t.group))?nid(t.group):'',resp:t.resp||'',collab:t.collab||[],critical:!!t.critical,milestone:!!t.milestone,progress:t.progress||0,autoProg:!!t.autoProg,collapsed:!!t.collapsed,parent:t.parent?nid(t.parent):null,note:t.note||'',unclear:!!t.unclear,question:t.question||'',external:!!t.external,quick:t.quick||'',checked:t.checked||'',deps:(t.deps||[]).map(nid),links:(t.links||[]).map(l=>({id:uid(),name:l.name||'',url:l.url||''})),log:(t.log||[]).map(l=>({id:uid(),d:l.d,text:l.text})),docs:[],todos:(t.todos||[]).map(td=>({...td,id:uid()}))})}
     P.todos=(p.todos||[]).map(td=>({...td,id:uid()}));S.projects.push(P)}
   S.todos.push(...(j.todos||[]).map(td=>({...td,id:uid()})));if(!S.me&&j.me)S.me=j.me;
   V.project='ALL';V.by='project';V.status='';V.person='';V.group='';commit();scrollToToday();toast('Import proběhl – '+j.projects.length+' projektů')}
@@ -886,7 +900,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=23))miss.push('SCHEMA 23');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=24))miss.push('SCHEMA 24');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
@@ -897,6 +911,7 @@ async function start(){
   try{const n=await DB.claimInvites();if(n)toast('Byl jste přidán do '+n+' projektu/ů');S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
   if(V.by==='todo'||V.by==='daily')V.by='project';
+  if(innerWidth<=760){V.todoPanel='open';V.hideStrip=true}
   if(proposerOnly()){V.by='project';V.autoDaily=false;if(!proj(V.project)||myRole(proj(V.project))!=='proposer')V.project=S.projects[0].id;restoreDraft();if(!V.draft){const p0=proj(V.project);const pr=(p0.proposals||[]).find(x=>x.status==='open');if(pr)enterDraft(p0,pr)}}
   else{if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.todoPanel='open';V.lastDaily=TODAY}
   if(V.project!=='ALL'&&!proj(V.project))V.project='ALL';
@@ -1001,7 +1016,9 @@ const HELP=[
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
-  [HI.grab,'Přetažení v ToDo','Za ⠿ mění pořadí; nadpis bere s sebou položky pod ním až po další nadpis. Termín přetažení nemění.'],
+  ['📞 ✉️','Telefonát / e-mail z ToDo','Zadání „tel Kozák – termín“ nebo „mail Jandová: smlouva“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na 📞/✉️ spustí zkratku „Zavolat“ / „Napsat“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře nový e-mail; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
+ ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],
+ [HI.grab,'Přetažení v ToDo','Za ⠿ mění pořadí; nadpis bere s sebou položky pod ním až po další nadpis. Termín přetažení nemění.'],
   ['<b>L</b> / <b>N</b>','Zkratky','L – seznam „co mám v hlavě“ (ranní vysypání a roztřídění), N – nový úkol do harmonogramu, Delete – smazat vybraný úkol, Ctrl+C/V/D kopírovat, vložit, duplikovat, Alt+↑↓ posun, Alt+Tab zanořit.'],
  ]},
  {g:'Harmonogram',items:[
