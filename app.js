@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.11.1';
+const APP_VERSION='1.11.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -187,7 +187,7 @@ function renderStrip(){
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
   const stat=[['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
   let h=`<div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
-  h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
+  h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button><button class="pill ${V.extShow?'on':''}" data-extshow="1">┆ Cizí termíny</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
   const people=[...new Set(ps.flatMap(p=>p.team))];
   h+=`<span class="sepv"></span><select id="person" class="pill"><option value="">Všichni lidé</option>${people.map(n=>`<option ${V.person===n?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
   const p=proj(V.project);
@@ -249,7 +249,7 @@ function render(){
     if(we)C+=`<div class="col we" style="left:${i*px}px;width:${px}px"></div>`;
     if(dt.getUTCDate()===1)C+=`<div class="col mline" style="left:${i*px}px"></div>`;
     if(td)C+=`<div class="col td" style="left:${i*px}px;width:0"></div>`;
-    for(const xp of curProjects())for(const xt of xp.tasks){if(xt.external&&(xt.milestone?xt.start:xt.end)===d&&matches(xt,xp)){C+=`<div class="col ext" style="left:${i*px+(xt.milestone?px/2:px)}px;width:0"></div>`;DL+=`<div class="extm" style="left:${i*px+(xt.milestone?px/2:px)}px" title="Cizí termín: ${esc(xt.name)} · ${fmt(xt.milestone?xt.start:xt.end)}${xp!==proj(V.project)?' · '+esc(xp.name):''}"><b>${esc(xt.name)}</b></div>`}}
+    if(V.extShow)for(const xp of curProjects())for(const xt of xp.tasks){if(xt.external&&(xt.milestone?xt.start:xt.end)===d&&matches(xt,xp)){C+=`<div class="col ext" style="left:${i*px+(xt.milestone?px/2:px)}px;width:0"></div>`;DL+=`<div class="extm" style="left:${i*px+(xt.milestone?px/2:px)}px" title="Cizí termín: ${esc(xt.name)} · ${fmt(xt.milestone?xt.start:xt.end)}${xp!==proj(V.project)?' · '+esc(xp.name):''}"><b>${esc(xt.name)}</b></div>`}}
     for(const dp of curProjects()){if(dp.deadline===d){C+=`<div class="col dl" style="left:${i*px}px;width:0"></div>`;DL+=`<div class="dlm" style="left:${i*px}px" title="Deadline ${esc(dp.name)}: ${fmt(dp.deadline)}${dp.deadline<TODAY?' (uplynul)':' – zbývá '+diff(TODAY,dp.deadline)+' d'}"><span class="fl">${FLAME}</span>${curProjects().length>1?`<b>${esc(dp.name)}</b>`:''}</div>`}}
     if(V.zoom==='day')D+=`<span class="${we?'we':''} ${td?'td':''}" style="left:${i*px}px;width:${px}px">${dt.getUTCDate()}</span>`;
     else if(wd===0&&V.zoom==='week')D+=`<span style="left:${i*px}px;width:${7*px}px">${dt.getUTCDate()}. ${dt.getUTCMonth()+1}.</span>`;
@@ -715,6 +715,7 @@ $('#bToday').onclick=scrollToToday;
 
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.depshi){V.depsHi=!V.depsHi;save();$('#gantt').classList.toggle('depshi',!!V.depsHi);b.classList.toggle('on',!!V.depsHi);return}
+  if(b.dataset.extshow){V.extShow=!V.extShow;save();render();return}
   if(b.dataset.ackall){const p=proj(V.project);if(p)ackChanges(p,unreadAll(p).map(c=>c.id));return}
   if(b.dataset.st==='todo'){V.todoPanel=V.todoPanel==='open'?'':'open';commit();return}
   if(b.dataset.st){V.status=V.status===b.dataset.st?'':b.dataset.st;commit()}
@@ -1027,7 +1028,7 @@ const HELP=[
   [HI.ms,'Milník','Jednodenní kosočtverec; zaškrtnutím splněn (vyžaduje uzavřené blokující ToDo).'],
   [HI.crit,'Kritický úkol','Vždy sytě červený bez ohledu na skupinu; po 100 % se vrátí k barvě skupiny.'],
   [HI.late+' '+HI.behind,'Stavy','Po termínu = konec uplynul a není 100 %. Ve skluzu = termín běží, ale % je nižší, než odpovídá uplynulé části (≥ 1 den, ≥ 5 b.). Dále '+HI.risk+' (blokující ToDo po termínu), '+HI.stalled+' (2 dny po startu a 0 %), „končí do 7 dnů“, „běží“. Filtry v liště ukazují počty.'],
-  [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose).'],
+  [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose) – zobrazí se jen po zapnutí pilulky „┆ Cizí termíny“ v liště, jako Vazby.'],
   [HI.chg,'Změny od kolegů','Žlutý štítek u úkolu a žlutý proužek řádku: co se změnilo, kdo, kdy (bublina). „Vzít na vědomí“ u štítku, nebo hromadně ve filtru „Nové změny“. Vedoucí může změnu vrátit. Vypnout lze v menu ⋯ (Sledování změn).'],
   [HI.ghost+' '+HI.hatch,'Posun termínu (nepřečtený)','Oranžový čárkovaný rámeček = původní rozsah, šrafování = ubrané dny, oranžový proužek = přidané dny, štítek „⟲ posun +3 d“ (bublina „Původně … → nyní …“). Zmizí po vzetí na vědomí.'],
   [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní.'],
