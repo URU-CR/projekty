@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.8.0';
+const APP_VERSION='1.8.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -171,7 +171,7 @@ function renderTabs(){
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
   $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
-  $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
+  $$('#leftw button').forEach(b=>b.classList.toggle('on',b.dataset.l===(V.leftMode||(V.narrow?'narrow':'full'))));const ts=$('#tStrip');if(ts)ts.classList.toggle('on',!V.hideStrip);document.body.classList.toggle('nostrip',!!V.hideStrip);$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
 function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
@@ -203,7 +203,7 @@ function renderStrip(){
 
 function render(){
   renderTabs();renderStrip();
-  const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('viewver',!!V.viewVer);g.classList.toggle('ro',!!V.viewVer||!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
+  const g=$('#gantt');const lm=V.leftMode||(V.narrow?'narrow':'full'); g.classList.toggle('narrow',lm==='narrow');g.classList.toggle('noleft',lm==='off');g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('viewver',!!V.viewVer);g.classList.toggle('ro',!!V.viewVer||!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',lm!=='full'?'':(V.leftw?V.leftw+'px':''));
   renderTodoPanel();
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Pokud jste byl pozván jako navrhovatel, zkontrolujte, že jste se zaregistroval na stejný e-mail, na který přišla pozvánka, a obnovte stránku. Jinak založte projekt tlačítkem „+ projekt“ nahoře.</p></div>';return}
   const rows=buildRows();
@@ -688,7 +688,8 @@ $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)r
 $('#zoom').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.zoom=b.dataset.z;commit();scrollToToday()});
 $('#by').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.b!=='project'&&V.draft)exitDraft();V.by=b.dataset.b;V.prevBy=V.by;V.status='';commit();scrollToToday()});
 $('#bToday').onclick=scrollToToday;
-$('#narrow').onchange=e=>{V.narrow=e.target.checked;commit()};
+$('#leftw').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.leftMode=b.dataset.l;V.narrow=b.dataset.l==='narrow';save();render()});
+$('#tStrip').addEventListener('click',()=>{V.hideStrip=!V.hideStrip;save();render()});
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.depshi){V.depsHi=!V.depsHi;save();$('#gantt').classList.toggle('depshi',!!V.depsHi);b.classList.toggle('on',!!V.depsHi);return}
   if(b.dataset.ackall){const p=proj(V.project);if(p)ackChanges(p,unreadAll(p).map(c=>c.id));return}
