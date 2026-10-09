@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.10.0">
+<meta name="app-version" content="1.10.1">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -477,6 +477,7 @@ dialog.proj{width:min(760px,96vw)}
 #tp .di .pill.over{color:var(--critical);border-color:var(--critical)}
 #tp .di .tag{font-size:10.5px;color:var(--muted);flex:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tp .di .ring{flex:none}
+#tp .di .ringw{flex:none;display:inline-flex;cursor:help}
 #tp .di .pdot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
 #tp .di .dopt{border:0;background:none;color:transparent;padding:0 5px;border-radius:4px;flex:none;font-size:14px;cursor:pointer}
 #tp .di:hover .dopt,#tp .di.open .dopt{color:var(--muted)}
@@ -557,7 +558,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.10.0">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.10.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -611,8 +612,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.10.0"></script>
-<script src="db.js?v=1.10.0"></script>
-<script src="app.js?v=1.10.0"></script>
+<script src="config.js?v=1.10.1"></script>
+<script src="db.js?v=1.10.1"></script>
+<script src="app.js?v=1.10.1"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.10.0';
+const APP_VERSION='1.10.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -332,7 +332,7 @@ function renderTodoPanel(){renderCountdown();
   const dt=parse(TODAY);
   const PRI={0:'Bez priority',1:'Vysoká priorita',2:'Střední priorita',3:'Nízká priorita'};
   const TRI=`<svg viewBox="0 0 20 18" width="15" height="13" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
-  const ring=(t,p)=>{const pr=progressOf(t,p),r=6,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 16 16" width="14" height="14" title="${esc(t.name)}: ${pr} %"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="2.5"/><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 8 8)"/></svg>`};
+  const ring=(t,p)=>{const pr=progressOf(t,p),r=6,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="2.5"/><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 8 8)"/></svg>`};
   const item=x=>{const td=x.td,over=td.due&&td.due<TODAY&&!td.done,o=V.dopen===td.id;
     if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab>⠿</span><div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny"></div></div><button class="dopt x" data-ddel-q>✕</button></div>`;
     const pOpts=`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${x.p&&x.p.id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
@@ -340,7 +340,7 @@ function renderTodoPanel(){renderCountdown();
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
     const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
     return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
-      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="tag">⤷ ${esc(ref.t.name)}</span>${ring(ref.t,ref.p)}`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
@@ -1016,7 +1016,7 @@ const HELP=[
   [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní.'],
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
-  [HI.link,'ToDo z kontroly','Položka „Kontrola …“ v ToDo nese odkaz na úkol a kroužek s % plnění.'],
+  [HI.link,'ToDo z kontroly','Položka „Kontrola …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
   ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. „Lišta rychlých filtrů“ ji skryje/zobrazí (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. „Podle lidí“ seskupí úkoly podle odpovědných.'],
   [HI.dot,'Barvy','Barva úkolu vychází ze skupiny (Nastavení projektu → skupiny); v detailu lze zvolit vlastní. Klepnutí na čtvereček barvy v řádku otevře detail. Legenda skupin v záhlaví projektu filtruje skupinu.'],
  ]},
