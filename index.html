@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.7.6">
+<meta name="app-version" content="1.8.0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -229,6 +229,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 #qn button:hover{color:var(--critical)}
 .bar .lbl i.dm.auto.chk{border-style:solid}
 .bar .lbl i.dm.chk{background:#d1fae5;border-color:#34c38f;color:#047857}
+.bar .lbl i.dm.chk.d1{opacity:.6}
+.bar .lbl i.dm.chk.d2{opacity:.3}
 .bar .lbl i.dm.todo{background:var(--accent);border-color:var(--accent);color:#fff}
 .bar .lbl i.dm.todo.over{background:var(--critical);border-color:var(--critical)}
 :root[data-theme="dark"] .bar .lbl i.dm.chk{background:#114d3a;border-color:#2f9c73;color:#6ee7b7}
@@ -351,67 +353,74 @@ dialog.proj{width:min(760px,96vw)}
 .deplist div span{flex:1}
 .deplist div button{border:0;background:none;color:var(--muted)}
 
-/* denní seznam – vzhled Poznámek: kulaté zaškrtávátko, nadpisy skupin, ★ a priorita přímo v řádku, ⠿ pro přetažení */
-.daily{max-width:680px;margin:0 auto;padding:10px 22px 80px;width:100%;position:relative}
-.daily .sub{color:var(--muted);font-size:12px;margin:6px 0 18px}
-.daily .sub a{color:var(--accent);text-decoration:none;cursor:pointer}
-.dsec{margin-bottom:4px}
-.dh2{display:flex;align-items:center;justify-content:space-between;margin:26px 0 4px}
-.dsec:first-of-type .dh2{margin-top:6px}
-.dh2 h2{font-size:24px;font-weight:700;margin:0;letter-spacing:-.01em}
-.dhb{display:flex;align-items:center;gap:10px}
-.dh2 button{border:0;background:none;color:var(--muted);font-size:26px;line-height:1;padding:0 4px;cursor:pointer}
-.dh2 button:hover{color:var(--text)}
-.dh2 button.hb{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 9px;line-height:16px}
-.dadd{display:flex;gap:8px;margin:2px 0 6px 102px}
-.dadd.head{margin-left:30px}
-.dadd input{flex:1;border:0;border-bottom:1px solid var(--line);background:transparent;padding:8px 2px;font-size:16px}
-.dadd.head input{font-weight:700}
-.dadd input:focus{outline:none;border-color:var(--accent)}
-.di{display:flex;align-items:center;gap:6px;padding:6px 4px;position:relative;border-radius:6px}
-.di:hover{background:color-mix(in srgb,var(--panel) 60%,transparent)}
-.di .grab{width:16px;flex:none;color:transparent;cursor:grab;font-size:15px;line-height:1;text-align:center;user-select:none;touch-action:none}
-.di:hover .grab{color:var(--line)}
-.di .grab:hover{color:var(--muted)}
-.di.dragsrc{opacity:.35}
-.di .star,.di .pri{border:0;background:none;padding:0;width:22px;height:22px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:5px}
-.di .star{font-size:17px;color:var(--line)}
-.di .star:hover{color:#c99400}
-.di .star.on{color:#e6a700}
-.di .pri{color:#e0881a}
-.di.p0 .pri{color:var(--line)}
-.di.p0 .pri:hover{color:var(--muted)}
-.di.p1 .pri{color:var(--critical)}
-.di.p3 .pri{color:#3aa355}
-.di .pri:hover{background:var(--accent-soft)}
-.di .chk{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:13px;font-weight:700;background:var(--panel);margin:0 4px 0 2px}
-.di .chk:hover{border-color:#e6a700}
-.di.done .chk{background:#f2b335;border-color:#f2b335;color:#fff}
-.di .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.di .line{display:flex;align-items:center;gap:8px;min-width:0}
-.di .dtext{flex:0 1 auto;min-width:40px;max-width:100%;border:1px solid transparent;background:transparent;border-radius:4px;padding:1px 4px;margin-left:-4px;font-size:16px;line-height:1.35}
-.di .dtext:focus{outline:none;border-color:var(--accent);background:var(--panel)}
-.di.done .dtext{text-decoration:line-through;color:var(--muted)}
-.di.done .body{opacity:.75}
-.di.done .star,.di.done .pri{opacity:.35;pointer-events:none}
-.di.head{margin-top:14px;padding-bottom:2px}
-.di.head .dtext{font-weight:700;font-size:16px}
-.di.head .grab{margin-right:72px}
-.di .pill{padding:2px 8px;font-size:11px;color:var(--muted);flex:none}
-.di .pill.over{color:var(--critical);border-color:var(--critical)}
-.di .tag{font-size:11px;color:var(--muted);flex:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.di .ring{flex:none}
-.di .pdot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
-.di .dopt{border:0;background:none;color:var(--line);padding:2px 6px;border-radius:4px;flex:none;font-size:16px;cursor:pointer}
-.di:hover .dopt,.di.open .dopt{color:var(--muted)}
-.di .dopt.x{font-size:14px}
-.di.open .dopt{color:var(--text)}
-.dopts{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:4px 4px 12px 106px;margin-bottom:6px;font-size:12px}
-.dopts label{color:var(--muted);display:flex;align-items:center;gap:5px}
-.dopts select,.dopts input[type=date]{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:4px 6px;font-size:12px;max-width:190px}
-.dopts .seg button{padding:3px 9px;font-size:12px}
-.dopts .btn{padding:3px 8px;font-size:12px}
-.dempty{color:var(--muted);padding:6px 4px 10px 106px;font-size:14px}
+/* plovoucí panel ToDo – pravý horní roh, kompaktní */
+#todoBtn{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;padding:6px 12px;display:inline-flex;align-items:center;gap:6px}
+#todoBtn b{background:rgba(255,255,255,.22);border-radius:999px;padding:0 7px;font-weight:700;line-height:18px}
+#todoBtn i.ov{font-style:normal;background:var(--critical);border-radius:999px;padding:0 6px;font-size:11px;line-height:18px}
+#todoBtn.on{background:#174a99;border-color:#174a99}
+#tp{position:fixed;top:52px;right:10px;z-index:300;width:clamp(360px,30vw,560px);max-height:calc(100vh - 64px);display:none;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.22);font-size:13px}
+#tp.open{display:flex}
+#tp.min{display:flex;width:auto;max-height:none}
+#tp .tph{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line2)}
+#tp.min .tph{border:0;padding:4px 6px 4px 10px}
+#tp .tph b{font-size:14px}
+#tp .tph .sub{color:var(--muted);font-size:12px}
+#tp .tph .sp{flex:1}
+#tp .tph button{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:2px 7px;border-radius:5px;cursor:pointer}
+#tp .tph button:hover{background:var(--bg);color:var(--text)}
+#tp .tph .tpt{font-size:13px;color:var(--text);font-weight:600;padding:4px 6px}
+#tp .tph .ov{color:var(--critical);font-weight:600}
+#tp .tpsub{color:var(--muted);font-size:11.5px;padding:6px 12px 0}
+#tp .tpsub a{color:var(--accent);cursor:pointer;text-decoration:none}
+#tp .dsec{display:flex;flex-direction:column;flex:1;min-height:0;position:relative}
+#tp .dadd{display:flex;gap:6px;align-items:center;padding:8px 10px 6px 12px}
+#tp .dadd input{flex:1;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:6px 8px;font-size:13px}
+#tp .dadd.head input{font-weight:700}
+#tp .dadd input:focus{outline:none;border-color:var(--accent)}
+#tp .hb{font-size:11px;border:1px solid var(--line);border-radius:999px;padding:3px 8px;background:none;color:var(--muted);cursor:pointer;flex:none}
+#tp .hb.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+#tp .tpl{overflow:auto;padding:2px 6px 10px}
+#tp .di{display:flex;align-items:center;gap:4px;padding:3px 2px;position:relative;border-radius:5px}
+#tp .di:hover{background:var(--bg)}
+#tp .di .grab{width:14px;flex:none;color:transparent;cursor:grab;font-size:13px;line-height:1;text-align:center;user-select:none;touch-action:none}
+#tp .di:hover .grab{color:var(--line)}
+#tp .di.dragsrc{opacity:.35}
+#tp .di .star,#tp .di .pri{border:0;background:none;padding:0;width:18px;height:18px;flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px}
+#tp .di .star{font-size:14px;color:var(--line)}
+#tp .di .star:hover{color:#c99400}
+#tp .di .star.on{color:#e6a700}
+#tp .di .pri{color:#e0881a}
+#tp .di.p0 .pri{color:var(--line)}
+#tp .di.p0 .pri:hover{color:var(--muted)}
+#tp .di.p1 .pri{color:var(--critical)}
+#tp .di.p3 .pri{color:#3aa355}
+#tp .di .chk{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line);flex:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-size:10px;font-weight:700;background:var(--panel);margin:0 3px 0 1px}
+#tp .di .chk:hover{border-color:#e6a700}
+#tp .di.done .chk{background:#f2b335;border-color:#f2b335;color:#fff}
+#tp .di .body{flex:1;min-width:0}
+#tp .di .line{display:flex;align-items:center;gap:6px;min-width:0}
+#tp .di .dtext{flex:1 1 auto;min-width:40px;border:1px solid transparent;background:transparent;border-radius:4px;padding:1px 3px;margin-left:-3px;font-size:13px;line-height:1.3}
+#tp .di .dtext:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+#tp .di.done .dtext{text-decoration:line-through;color:var(--muted)}
+#tp .di.done .star,#tp .di.done .pri{opacity:.35;pointer-events:none}
+#tp .di.head{margin-top:8px}
+#tp .di.head .dtext{font-weight:700}
+#tp .di.head .grab{margin-right:60px}
+#tp .di .pill{padding:0 6px;font-size:10.5px;color:var(--muted);flex:none;line-height:16px}
+#tp .di .pill.over{color:var(--critical);border-color:var(--critical)}
+#tp .di .tag{font-size:10.5px;color:var(--muted);flex:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tp .di .ring{flex:none}
+#tp .di .pdot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+#tp .di .dopt{border:0;background:none;color:transparent;padding:0 5px;border-radius:4px;flex:none;font-size:14px;cursor:pointer}
+#tp .di:hover .dopt,#tp .di.open .dopt{color:var(--muted)}
+#tp .di .dopt.x{font-size:12px}
+#tp .dopts{display:flex;flex-wrap:wrap;gap:5px 8px;align-items:center;padding:2px 4px 8px 70px;font-size:11.5px}
+#tp .dopts label{color:var(--muted);display:flex;align-items:center;gap:4px}
+#tp .dopts select,#tp .dopts input[type=date]{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:3px 5px;font-size:11.5px;max-width:170px}
+#tp .dopts .seg button{padding:2px 7px;font-size:11.5px}
+#tp .dopts .btn{padding:2px 7px;font-size:11.5px}
+#tp .dempty{color:var(--muted);padding:8px 6px;font-size:12.5px}
+@media (max-width:760px){#tp{left:6px;right:6px;width:auto;top:48px}}
 .lrow.todo.thead .tt{font-weight:700}
 
 #auth{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -449,7 +458,7 @@ dialog.proj{width:min(760px,96vw)}
 .roles{display:grid;gap:4px;margin:4px 0 0 12px}
 .roles div{display:flex;gap:8px;align-items:center;font-size:12px}
 .roles div span{flex:1;color:var(--muted)}
-body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab[data-p="__new"],body.proposer .tab[data-p="ALL"],body.proposer #menu li:has([data-m="newproj"]),body.proposer #menu li:has([data-m="import"]),body.proposer #menu li:has([data-m="gpro"]),body.proposer #menu li:has([data-m="dump"]),body.proposer #menu li:has([data-m="proj"]),body.proposer #menu li:has([data-m="autodaily"]),body.proposer #menu li:has([data-m="wipe"]),body.proposer #person,body.proposer .strip [data-st]{display:none !important}
+body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab[data-p="__new"],body.proposer .tab[data-p="ALL"],body.proposer #menu li:has([data-m="newproj"]),body.proposer #menu li:has([data-m="import"]),body.proposer #menu li:has([data-m="gpro"]),body.proposer #menu li:has([data-m="dump"]),body.proposer #menu li:has([data-m="proj"]),body.proposer #menu li:has([data-m="autodaily"]),body.proposer #menu li:has([data-m="wipe"]),body.proposer #person,body.proposer .strip [data-st]{display:none !important}
 .vers{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 6px;font-size:12px;max-width:260px}
 .vdiff{display:grid;gap:4px;font-size:13px}
 .vdiff div{padding:4px 8px;border-radius:5px;background:var(--bg)}
@@ -481,7 +490,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.7.6">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.8.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -492,7 +501,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
       <ul>
         <li><button data-m="proj">Nastavení projektu, tým a skupiny</button></li>
         <li><button data-m="newproj">Nový projekt</button></li>
-        <li><button data-m="autodaily">Ráno otevírat přehled Dnes: <b id="autodailyL"></b></button></li>
+        <li><button data-m="autodaily">Ráno otevírat ToDo: <b id="autodailyL"></b></button></li>
         <li><button data-m="bartip">Bublina s údaji u názvu úkolu a baru: <b id="bartipL"></b></button></li>
         <li><button data-m="track">Sledování změn: <b id="trackL"></b></button></li>
         <li class="sep"></li>
@@ -508,6 +517,7 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
         <li><button data-m="wipe" class="danger">Smazat všechna data</button></li>
       </ul>
     </div>
+    <button class="btn todo" id="todoBtn">ToDo</button>
     <input type="file" id="file" accept="application/json" hidden>
     <input type="file" id="xfile" accept=".xlsx" hidden>
   </div>
@@ -528,8 +538,8 @@ body.proposer #bToggle,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.7.6"></script>
-<script src="db.js?v=1.7.6"></script>
-<script src="app.js?v=1.7.6"></script>
+<script src="config.js?v=1.8.0"></script>
+<script src="db.js?v=1.8.0"></script>
+<script src="app.js?v=1.8.0"></script>
 </body>
 </html>

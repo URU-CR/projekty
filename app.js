@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.7.6';
+const APP_VERSION='1.8.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -11,7 +11,7 @@ const addDays=(s,n)=>iso(new Date(parse(s).getTime()+n*DAY));
 const diff=(a,b)=>Math.round((parse(b)-parse(a))/DAY);
 const todayIso=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 let TODAY=todayIso();
-function checkDate(){const t=todayIso();if(t!==TODAY){TODAY=t;if(typeof render==='function'&&S){if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}render()}}}
+function checkDate(){const t=todayIso();if(t!==TODAY){TODAY=t;if(typeof render==='function'&&S){if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.todoPanel='open';V.lastDaily=TODAY}render()}}}
 setInterval(checkDate,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDate()});window.addEventListener('focus',checkDate);
 const uid=()=>crypto.randomUUID();
 const MON=['led','úno','bře','dub','kvě','čvn','čvc','srp','zář','říj','lis','pro'];
@@ -170,7 +170,7 @@ function renderTabs(){
     S.projects.map(p=>`<button class="tab ${V.project===p.id?'on':''}" data-p="${p.id}"><span class="pd" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')+
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
-  $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));if(V.by!=='daily')V.prevBy=V.by;
+  $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
   $('#narrow').checked=V.narrow;$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
@@ -186,7 +186,7 @@ function renderStrip(){
   const crit=leafs.filter(x=>x.t.critical&&status(x.t,x.p).k!=='done').length;
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
   const stat=[['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
-  let h=`<div class="quick"><button class="btn pri" id="bToggle">${V.by==='daily'?'Harmonogram':'Dnes'}</button><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)" ${V.by==='daily'?'disabled':''}></div>`;
+  let h=`<div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
   h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
   const people=[...new Set(ps.flatMap(p=>p.team))];
   h+=`<span class="sepv"></span><select id="person" class="pill"><option value="">Všichni lidé</option>${people.map(n=>`<option ${V.person===n?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -204,7 +204,7 @@ function renderStrip(){
 function render(){
   renderTabs();renderStrip();
   const g=$('#gantt'); g.classList.toggle('narrow',V.narrow);g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('viewver',!!V.viewVer);g.classList.toggle('ro',!!V.viewVer||!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',V.narrow?'':(V.leftw?V.leftw+'px':''));
-  if(V.by==='daily'){renderDaily(g);return}
+  renderTodoPanel();
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Pokud jste byl pozván jako navrhovatel, zkontrolujte, že jste se zaregistroval na stejný e-mail, na který přišla pozvánka, a obnovte stránku. Jinak založte projekt tlačítkem „+ projekt“ nahoře.</p></div>';return}
   const rows=buildRows();
   const px=ZOOM[V.zoom];
@@ -300,68 +300,70 @@ function render(){
   if(focusId){sel=focusId;const r=$(`.lrow[data-id="${focusId}"]`);if(r)r.classList.add('sel');const i=$(`.lrow[data-id="${focusId}"] input.nm`);if(i){i.focus();i.select()}focusId=null}
   if(focusTd){const i=focusTd.startsWith('td:')?$(`.lrow[data-td="${focusTd.slice(3)}"] input.tt`):$(`.lrow.todoadd[data-key="${focusTd}"] input.tt`);if(i)i.focus();focusTd=null}
 }
-function scrollToToday(){if(V.by==='daily')return;const x=diff(g.dataset.start,TODAY)*+g.dataset.px;g.scrollLeft=Math.max(0,x-(g.clientWidth-parseInt(getComputedStyle(g).getPropertyValue('--leftw')))/3)}
+function scrollToToday(){const x=diff(g.dataset.start,TODAY)*+g.dataset.px;g.scrollLeft=Math.max(0,x-(g.clientWidth-parseInt(getComputedStyle(g).getPropertyValue('--leftw')))/3)}
 
 /* ---------- daily view ---------- */
 const DAYS=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobota'];
 function ctxOf(x){return x.t?`${esc(x.t.name)}${x.p?' · '+esc(x.p.name):''}`:x.p?esc(x.p.name):'mimo projekty'}
-function renderDaily(g){
+/* ---------- plovoucí panel ToDo (pravý horní roh) ---------- */
+const tp=document.createElement('div');tp.id='tp';document.body.appendChild(tp);
+function renderTodoPanel(){
+  const mode=V.todoPanel||'';const btn=$('#todoBtn');
   const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
   const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;const vis=all.filter(mine);
   const open=vis.filter(x=>!x.td.done&&!x.td.heading);const TOM=addDays(TODAY,1);
+  const overN=open.filter(x=>x.td.due&&x.td.due<TODAY).length;
+  if(btn){btn.innerHTML=`ToDo <b>${open.length}</b>${overN?`<i class="ov">${overN}</i>`:''}`;btn.classList.toggle('on',mode==='open')}
+  tp.className=mode;if(!mode){tp.innerHTML='';return}
   const doneToday=vis.filter(x=>x.td.done&&x.td.doneAt===TODAY&&!x.td.heading);
+  if(mode==='min'){tp.innerHTML=`<div class="tph"><button class="tpt" data-tp="open">☐ ToDo <b>${open.length}</b>${overN?` · <span class="ov">${overN} po termínu</span>`:''}</button><button data-tp="close" class="x">✕</button></div>`;return}
   const lateTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='late')).length;const behindTasks=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&status(t,p).k==='behind')).length;
   const endToday=S.projects.flatMap(p=>p.tasks.filter(t=>!kidsOf(t,p).length&&span(t,p).end===TODAY&&progressOf(t,p)<100)).length;
   const dt=parse(TODAY);
   const PRI={0:'Bez priority',1:'Vysoká priorita',2:'Střední priorita',3:'Nízká priorita'};
-  const TRI=`<svg viewBox="0 0 20 18" width="18" height="16" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
-  const ring=(t,p)=>{const pr=progressOf(t,p),r=7,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 20 20" width="18" height="18" title="${esc(t.name)}: ${pr} %"><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="3"/><circle cx="10" cy="10" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 10 10)"/></svg>`};
+  const TRI=`<svg viewBox="0 0 20 18" width="15" height="13" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
+  const ring=(t,p)=>{const pr=progressOf(t,p),r=6,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 16 16" width="14" height="14" title="${esc(t.name)}: ${pr} %"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="2.5"/><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 8 8)"/></svg>`};
   const item=x=>{const td=x.td,over=td.due&&td.due<TODAY&&!td.done,o=V.dopen===td.id;
-    if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab>⠿</span><div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny" size="${Math.max(6,Math.min(60,td.text.length+1))}"></div></div><button class="dopt x" data-ddel-q>✕</button></div>`;
+    if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab>⠿</span><div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny"></div></div><button class="dopt x" data-ddel-q>✕</button></div>`;
     const pOpts=`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${x.p&&x.p.id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
     const tOpts=x.p?`<option value="">— inbox projektu —</option>`+x.p.tasks.filter(t=>!kidsOf(t,x.p).length&&progressOf(t,x.p)<100).map(t=>`<option value="${t.id}" ${x.t&&x.t.id===t.id?'selected':''}>${wbsOf(t,x.p)} ${esc(t.name)}</option>`).join(''):'';
-    const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?'po termínu · '+fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
+    const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
     const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
     return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
-      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" size="${Math.max(6,Math.min(60,td.text.length+1))}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="tag">⤷ ${esc(ref.t.name)}</span>${ring(ref.t,ref.p)}`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      <div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="tag">⤷ ${esc(ref.t.name)}</span>${ring(ref.t,ref.p)}`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
       ${x.t?`<button type="button" class="btn" data-dblk>${td.block?'⛔ blokuje úkol':'blokuje úkol?'}</button>`:''}<button type="button" class="btn danger" data-ddel>Smazat</button></div>`:''}`};
-  const wk=addDays(TODAY,7);const dow=dt.getUTCDay();const fri=dow>=5||dow===0?addDays(TODAY,((5-dow)+7)%7||7):addDays(TODAY,5-dow);const wkDue=fri<=TOM?addDays(TOM,1):fri;
-  const secs=[['Dnes','0',x=>!x.td.due||x.td.due<=TODAY],['Zítra','1',x=>x.td.due===TOM],['Tento týden',String(diff(TODAY,wkDue)),x=>x.td.due>TOM&&x.td.due<=wk],['Nadcházející','14',x=>x.td.due>wk]];
-  let h=`<div class="daily"><div class="sub">${DAYS[dt.getUTCDay()]} ${fmt(TODAY)} · ${open.length} otevřených${doneToday.length?`, ${doneToday.length} hotovo`:''}${endToday||lateTasks||behindTasks?` · harmonogram: ${[endToday?endToday+' končí dnes':'',lateTasks?`<a data-golate>${lateTasks} po termínu</a>`:'',behindTasks?`<a data-gobehind>${behindTasks} ve skluzu</a>`:''].filter(Boolean).join(', ')}`:''}${(()=>{const n=S.projects.reduce((s,p)=>s+unreadAll(p).length,0);return n?` · <a data-gochg>${n} ${n===1?'nová změna':n<5?'nové změny':'nových změn'} od kolegů</a>`:''})()}</div>`;
-  for(const [label,dd,f] of secs){
-    // pořadí v sekci: ručně (ord); položky bez ord se zařadí podle starého pravidla (po termínu, priorita) a ord dostanou
-    const l=vis.filter(x=>!x.td.done&&f(x));const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
-    l.sort((a,b)=>{const ao=a.td.ord||0,bo=b.td.ord||0;if(ao&&bo)return ao-bo;if(ao||bo)return ao?-1:1;return legacy(a,b)});l.forEach((x,i)=>x.td.ord=i+1);
-    h+=`<div class="dsec" data-dd="${dd}"><div class="dh2"><h2>${label}</h2><span class="dhb"><button class="hb" data-dhead="${dd}">Nadpis</button><button data-dnew="${dd}">+</button></span></div>`;
-    if(V.dnew===dd)h+=`<div class="dadd ${V.dhead?'head':''}"><input id="dadd" placeholder="${V.dhead?'Nadpis skupiny… (Enter)':'Co je třeba udělat… (Enter)'}" autocomplete="off"></div>`;
-    h+=l.map(item).join('');
-    if(label==='Dnes'){if(!l.length&&!doneToday.length&&V.dnew!==dd)h+=`<div class="dempty">Nic na dnešek. Klepněte na + a napište, co je potřeba.</div>`;h+=doneToday.map(item).join('')}
-    else if(!l.length&&V.dnew!==dd)h+=`<div class="dempty">—</div>`;
-    h+=`</div>`}
-  h+=`<div class="sub" style="margin-top:28px">Enter v položce založí další pod ní · ⠿ přetáhne položku (i do jiného dne) · ★ důležité · trojúhelník = priorita (klepnutím A → B → C → bez) · ⋯ termín a projekt · vložení víceřádkového textu vytvoří položku z každého řádku</div>`;
-  h+=`</div>`;g.innerHTML=h;
+  // jeden seznam: ruční pořadí (ord); položky bez ord podle starého pravidla (po termínu, priorita, termín)
+  const l=vis.filter(x=>!x.td.done);const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
+  l.sort((a,b)=>{const ao=a.td.ord||0,bo=b.td.ord||0;if(ao&&bo)return ao-bo;if(ao||bo)return ao?-1:1;return legacy(a,b)});l.forEach((x,i)=>x.td.ord=i+1);
+  const sub=[`${open.length} otevřených`,doneToday.length?`${doneToday.length} hotovo`:'',endToday?`${endToday} končí dnes`:'',lateTasks?`<a data-golate>${lateTasks} po termínu</a>`:'',behindTasks?`<a data-gobehind>${behindTasks} ve skluzu</a>`:'',(()=>{const n=S.projects.reduce((s,p)=>s+unreadAll(p).length,0);return n?`<a data-gochg>${n} ${n===1?'změna':n<5?'změny':'změn'}</a>`:''})()].filter(Boolean).join(' · ');
+  let h=`<div class="tph"><b>ToDo</b><span class="sub">${DAYS[dt.getUTCDay()]} ${fmt(TODAY)}</span><span class="sp"></span><button data-tp="min" title="Zmenšit">–</button><button data-tp="close" class="x" title="Zavřít">✕</button></div>
+  <div class="tpsub">${sub}</div>
+  <div class="dsec" data-dd="0"><div class="dadd ${V.dhead?'head':''}"><input id="dadd" placeholder="${V.dhead?'Nadpis skupiny… (Enter)':'Co je třeba udělat… (Enter)'}" autocomplete="off"><button class="hb ${V.dhead?'on':''}" data-dhead="0" title="Přidat nadpis skupiny">Nadpis</button></div>
+  <div class="tpl">${l.map(item).join('')}${!l.length&&!doneToday.length?`<div class="dempty">Nic otevřeného.</div>`:''}${doneToday.map(item).join('')}</div></div>`;
+  tp.innerHTML=h;
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
-  else if(focusTd&&focusTd.startsWith('td:')){const i=$(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
+  else if(focusTd&&focusTd.startsWith('td:')){const i=tp.querySelector(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
-g.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
+function setTodoPanel(m){V.todoPanel=m;save();renderTodoPanel();if(m==='open'){focusTd='dadd';const i=$('#dadd');if(i)i.focus()}}
+tp.addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(!b)return;setTodoPanel(b.dataset.tp==='close'?'':b.dataset.tp)});
+tp.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
     if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:0,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
     if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();f.list.splice(f.list.indexOf(f.td),1);commit()}
     if(e.key==='Escape')e.target.blur();return}
-  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const dd=V.dnew;quickTodo(v);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=firstOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=0;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){V.dnew=null;V.dhead=false;render()}}});
-g.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
+  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;quickTodo(v,{personal:true});const f=findTodo(lastTodoId);if(f){f.td.ord=firstOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=0;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){if(V.dhead){V.dhead=false;render()}else setTodoPanel('min')}}});
+tp.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
   else if(df==='due')td.due=el.value;
   else if(df==='pid'||df==='tid'){const pid=df==='pid'?el.value:(f.p?f.p.id:'');const tid=df==='tid'?el.value:'';const key=tid||(pid?'p:'+pid:'me');const list=todoList(key);if(list){f.list.splice(f.list.indexOf(td),1);list.push(td);const p=proj(pid);if(p&&td.who&&!p.team.includes(td.who))p.team.push(td.who)}}
   commit()});
-g.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const dd=V.dnew;const base=firstOrd()-lines.length;lines.forEach((l,i)=>{quickTodo(l);const f=findTodo(lastTodoId);if(f){if(dd!=='')f.td.due=addDays(TODAY,+dd);f.td.ord=base+i}});V.dhead=false;focusTd='dadd';commit()});
-g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const box=b.closest('[data-td]');
+tp.addEventListener('paste',e=>{if(e.target.id!=='dadd')return;const txt=(e.clipboardData||window.clipboardData).getData('text');const lines=txt.split(/\r?\n/).map(s=>s.replace(/^[\s\-•*·]+/,'').trim()).filter(Boolean);if(lines.length<2)return;e.preventDefault();const base=firstOrd()-lines.length;lines.forEach((l,i)=>{quickTodo(l,{personal:true});const f=findTodo(lastTodoId);if(f){f.td.ord=base+i}});V.dhead=false;focusTd='dadd';commit()});
+tp.addEventListener('click',e=>{const b=e.target.closest('button,a[data-golate],a[data-gobehind],a[data-gochg]');if(!b)return;const box=b.closest('[data-td]');
   if(b.dataset.dopt!==undefined){V.dopen=V.dopen===b.dataset.dopt?'':b.dataset.dopt;save();render();return}
-  if(b.dataset.dnew!==undefined){const same=V.dnew===b.dataset.dnew&&!V.dhead;V.dnew=same?null:b.dataset.dnew;V.dhead=false;focusTd='dadd';render();return}
-  if(b.dataset.dhead!==undefined){const same=V.dnew===b.dataset.dhead&&V.dhead;V.dnew=same?null:b.dataset.dhead;V.dhead=!same;focusTd='dadd';render();return}
+    if(b.dataset.dhead!==undefined){V.dhead=!V.dhead;focusTd='dadd';render();return}
   if(box&&b.dataset.df==='done'){const f=findTodo(box.dataset.td);if(!f)return;f.td.done=!f.td.done;f.td.doneAt=f.td.done?TODAY:'';commit();return}
   if(box&&b.hasAttribute('data-ddel-q')){const f=findTodo(box.dataset.td);if(!f)return;f.list.splice(f.list.indexOf(f.td),1);commit();return}
   if(b.hasAttribute('data-dlater')){V.laterOpen=!V.laterOpen;commit();return}
@@ -378,21 +380,21 @@ g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;c
 (function(){let dd=null;
   // skupina = nadpis + položky pod ním až po další nadpis (v rámci sekce, bez hotových)
   const groupOf=box=>{const out=[box];if(!box.classList.contains('head'))return out;let n=box.nextElementSibling;while(n&&n.classList.contains('di')&&!n.classList.contains('head')&&!n.classList.contains('done')){out.push(n);n=n.nextElementSibling}return out};
-  g.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||e.button!==0)return;const box=h.closest('.di[data-td]');if(!box)return;e.preventDefault();dd={id:box.dataset.td,box,grp:groupOf(box),y0:e.clientY,moved:false,pid:e.pointerId,line:null,ghost:null,before:null,sec:null};h.setPointerCapture(e.pointerId)});
-  g.addEventListener('pointermove',e=>{if(!dd)return;if(!dd.moved){if(Math.abs(e.clientY-dd.y0)<4)return;dd.moved=true;dd.grp.forEach(x=>x.classList.add('dragsrc'));dd.line=document.createElement('div');dd.line.className='dropline';$('.daily').appendChild(dd.line);dd.ghost=document.createElement('div');dd.ghost.className='dragghost';dd.ghost.textContent=(dd.box.querySelector('.dtext').value||'(bez textu)')+(dd.grp.length>1?` (+${dd.grp.length-1})`:'');document.body.appendChild(dd.ghost);document.body.style.cursor='grabbing'}
+  tp.addEventListener('pointerdown',e=>{const h=e.target.closest('[data-grab]');if(!h||e.button!==0)return;const box=h.closest('.di[data-td]');if(!box)return;e.preventDefault();dd={id:box.dataset.td,box,grp:groupOf(box),y0:e.clientY,moved:false,pid:e.pointerId,line:null,ghost:null,before:null,sec:null};h.setPointerCapture(e.pointerId)});
+  tp.addEventListener('pointermove',e=>{if(!dd)return;if(!dd.moved){if(Math.abs(e.clientY-dd.y0)<4)return;dd.moved=true;dd.grp.forEach(x=>x.classList.add('dragsrc'));dd.line=document.createElement('div');dd.line.className='dropline';tp.appendChild(dd.line);dd.ghost=document.createElement('div');dd.ghost.className='dragghost';dd.ghost.textContent=(dd.box.querySelector('.dtext').value||'(bez textu)')+(dd.grp.length>1?` (+${dd.grp.length-1})`:'');document.body.appendChild(dd.ghost);document.body.style.cursor='grabbing'}
     dd.ghost.style.left=(e.clientX+14)+'px';dd.ghost.style.top=(e.clientY-12)+'px';
     // cíl: sekce pod kurzorem (nebo nejbližší), uvnitř první položka, jejíž střed je pod kurzorem
-    const secs=$$('.daily .dsec');let sec=null;for(const s of secs){const r=s.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom){sec=s;break}}
+    const secs=[...tp.querySelectorAll('.dsec')];let sec=null;for(const s of secs){const r=s.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom){sec=s;break}}
     if(!sec){let best=1e9;for(const s of secs){const r=s.getBoundingClientRect();const d=Math.min(Math.abs(e.clientY-r.top),Math.abs(e.clientY-r.bottom));if(d<best){best=d;sec=s}}}
     if(!sec)return;dd.sec=sec;const items=[...sec.querySelectorAll('.di[data-td]')].filter(x=>!dd.grp.includes(x)&&!x.classList.contains('done'));let before=null;for(const it of items){const r=it.getBoundingClientRect();if(e.clientY<r.top+r.height/2){before=it;break}}
-    dd.before=before;const dr=$('.daily').getBoundingClientRect();let y;if(before)y=before.getBoundingClientRect().top;else if(items.length)y=items[items.length-1].getBoundingClientRect().bottom;else y=sec.querySelector('.dh2').getBoundingClientRect().bottom+2;
-    dd.line.style.display='block';dd.line.style.left='34px';dd.line.style.right='8px';dd.line.style.top=(y-dr.top-1)+'px'});
+    dd.before=before;const dr=tp.getBoundingClientRect();let y;if(before)y=before.getBoundingClientRect().top;else if(items.length)y=items[items.length-1].getBoundingClientRect().bottom;else y=sec.querySelector('.tpl').getBoundingClientRect().top+2;
+    dd.line.style.display='block';dd.line.style.left='28px';dd.line.style.right='8px';dd.line.style.top=(y-dr.top-1)+'px'});
   const end=e=>{if(!dd)return;const d=dd;dd=null;if(!d.moved)return;d.grp.forEach(x=>x.classList.remove('dragsrc'));d.line.remove();d.ghost.remove();document.body.style.cursor='';if(e.type!=='pointerup'||!d.sec)return;
     const tds=d.grp.map(x=>findTodo(x.dataset.td)).filter(Boolean).map(f=>f.td);if(!tds.length)return;const ddv=d.sec.dataset.dd;const n=tds.length;
     let base;if(d.before){const bf=findTodo(d.before.dataset.td);base=(bf?bf.td.ord||0:0)-1}else{let mx=0;d.sec.querySelectorAll('.di[data-td]').forEach(x=>{const o=findTodo(x.dataset.td);if(o&&!tds.includes(o.td)&&o.td.ord>mx)mx=o.td.ord});base=mx}
-    tds.forEach((td,i)=>{if(ddv==='0'){if(!td.due||td.due>TODAY)td.due=TODAY}else td.due=addDays(TODAY,+ddv);td.ord=base+(i+1)/(n+1)});
+    tds.forEach((td,i)=>{td.ord=base+(i+1)/(n+1)});
     commit()};
-  g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+  tp.addEventListener('pointerup',end);tp.addEventListener('pointercancel',end);
 })();
 
 /* ---------- mutations ---------- */
@@ -422,10 +424,10 @@ function quickAdd(text){
   const nt={...blankTask(p),...init};p.tasks.push(nt);focusId=null;commit();openTask(nt.id);
 }
 function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:0,imp:false,...o};list.push(td);return td}
-function quickTodo(text){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
+function quickTodo(text,o={}){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
   s=s.replace(/(^|\s)!(?=\s|$)/,(m,a)=>{init.block=true;return a}).trim();
   s=s.replace(/(^|\s)(\d{1,2})\.\s?(\d{1,2})\.(\d{4})?/,(m,a,d,mo,y)=>{const yy=y||TODAY.slice(0,4);const v=`${yy}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!isNaN(parse(v)))init.due=v;return a}).trim();
-  let key=(p&&V.by!=='daily')?'p:'+p.id:'me';  // v denním seznamu patří nová položka mimo projekty (do projektu ji zařadí ⋯ nebo „>úkol“)
+  let key=(p&&!o.personal)?'p:'+p.id:'me';  // v denním seznamu patří nová položka mimo projekty (do projektu ji zařadí ⋯ nebo „>úkol“)
   s=s.replace(/(^|\s)>(.+)$/,(m,a,w)=>{const q=w.trim().toLowerCase();const pool=p?p.tasks.map(t=>({t,p})):S.projects.flatMap(pp=>pp.tasks.map(t=>({t,p:pp})));const hit=pool.find(x=>x.t.name.toLowerCase().startsWith(q))||pool.find(x=>x.t.name.toLowerCase().includes(q));if(hit){key=hit.t.id;V.open=[...new Set([...V.open,hit.t.id])]}return a}).trim();
   const team=p?p.team:[...new Set(S.projects.flatMap(x=>x.team))];
   s=s.replace(/(^|\s)@(\S+)/,(m,a,w)=>{const who=team.find(x=>x.toLowerCase().startsWith(w.toLowerCase()));init.who=who||w;return a}).trim();
@@ -603,7 +605,7 @@ function openDump(lines,existingIds){
         if(it.id){const f=findTodo(it.id);if(f){f.list.splice(f.list.indexOf(f.td),1);const list=todoList(key);if(list)list.push({...f.td,text:it.text.trim(),who:it.who,due:it.due,pri:it.pri,imp:it.imp,block:it.block});continue}}
         const p=proj(it.pid);if(p&&it.who&&!p.team.includes(it.who))p.team.push(it.who);
         addTodo(key,it.text.trim(),{who:it.who,due:it.due,pri:it.pri,imp:it.imp,block:it.block})}
-      dumpDraft='';dlg.close();dlg.classList.remove('wide');if(!existingIds)V.by='daily';commit()});
+      dumpDraft='';dlg.close();dlg.classList.remove('wide');if(!existingIds)V.todoPanel='open';commit()});
   };
   if(existingIds)step2();else if(lines){items=lines;step2()}else step1();
   dlg.showModal();
@@ -690,7 +692,7 @@ $('#narrow').onchange=e=>{V.narrow=e.target.checked;commit()};
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
   if(b.dataset.depshi){V.depsHi=!V.depsHi;save();$('#gantt').classList.toggle('depshi',!!V.depsHi);b.classList.toggle('on',!!V.depsHi);return}
   if(b.dataset.ackall){const p=proj(V.project);if(p)ackChanges(p,unreadAll(p).map(c=>c.id));return}
-  if(b.dataset.st==='todo'){V.by='daily';V.status='';commit();return}
+  if(b.dataset.st==='todo'){V.todoPanel=V.todoPanel==='open'?'':'open';commit();return}
   if(b.dataset.st){V.status=V.status===b.dataset.st?'':b.dataset.st;commit()}
   if(b.dataset.g){V.group=V.group===b.dataset.g?'':b.dataset.g;commit()}
   if(b.dataset.gsettings){openProj(V.project)}
@@ -701,9 +703,11 @@ $('#draftbar').addEventListener('change',e=>{if(e.target.id==='versel'&&e.target
 $('#draftbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const cp=proj(V.project);if(b.hasAttribute('data-savever')){const n=prompt('Název verze (např. „po schůzce s ICZ 24. 9.“):');if(n!==null)saveDraftVersion('manual',n.trim()||'bez názvu');return}if(b.dataset.vdiff){versionAction('diff',b.dataset.vdiff);return}if(b.dataset.vrestore){const vid=b.dataset.vrestore;leaveVersionView();versionAction('restore',vid);return}if(b.hasAttribute('data-vclose')){leaveVersionView();render();return}if(b.dataset.newdraft&&cp){createDraft(cp,b.dataset.newdraft);return}if(b.dataset.enter&&cp){const pr=(cp.proposals||[]).find(x=>x.id===b.dataset.enter);if(pr){enterDraft(cp,pr);commit()}return}if(b.hasAttribute('data-approve'))approveDraft();if(b.hasAttribute('data-reject'))rejectDraft();if(b.hasAttribute('data-reset'))resetDraft();});
 $('#draftbar').addEventListener('change',e=>{if(e.target.id==='draftnote'){const d=activeDraft();if(d){d.pr.note=e.target.value;save();DB.sync(S).catch(err=>toast(err.message,true))}}});
 $('#strip').addEventListener('change',e=>{if(e.target.id==='person'){V.person=e.target.value;commit()}});
-$('#strip').addEventListener('click',e=>{if(e.target.id==='bToggle'){if(V.draft)exitDraft();V.by=V.by==='daily'?(V.prevBy||'project'):'daily';if(V.by==='daily')V.prevBy=undefined;V.status='';commit();scrollToToday();return}const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
+$('#strip').addEventListener('click',e=>{const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
 $('#strip').addEventListener('keydown',e=>{if(e.target.id==='quick'&&e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const cp=proj(V.project);if(cp&&isRO(cp)){toast('Aktuální harmonogram je pro vás jen ke čtení – otevřete návrh.');return}quickAdd(v);setTimeout(()=>{const q=$('#quick');q.focus()},0)}});
 const menu=$('#menu');
+$('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':'open'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.todoPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#tp'))setTodoPanel('min')});
 menu.querySelector(':scope > button').onclick=e=>{menu.classList.toggle('open');e.stopPropagation()};
 document.addEventListener('click',()=>menu.classList.remove('open'));
 menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;menu.classList.remove('open');
@@ -781,11 +785,14 @@ function closeQn(){qnBox.style.display='none';qnBox.dataset.id=''}
 qnBox.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const f=findTask(qnBox.dataset.id);if(f){f.t.quick=qnBox.querySelector('input').value.trim();commit()}closeQn()}if(e.key==='Escape'){closeQn()}});
 qnBox.addEventListener('click',e=>{if(e.target.closest('[data-qnx]')){const f=findTask(qnBox.dataset.id);if(f){f.t.quick='';commit()}closeQn()}});
 document.addEventListener('pointerdown',e=>{if(qnBox.style.display!=='none'&&!e.target.closest('#qn,[data-qn]'))closeQn()});
-function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';
+// stáří denní kontroly ve dnech (0 = dnes, 1 = včera, 2 = předevčírem; 3+ = už se nezobrazuje)
+const chkAge=t=>{if(!t.checked)return 99;const d=diff(t.checked,TODAY);return d<0?0:d};
+const chkOn=t=>chkAge(t)<=2;
+function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';if(t.milestone||progressOf(t,p)>=100)return'';  // milníky a hotové úkoly se denně nekontrolují
   // souhrnný bar (fáze): neklikací, ✓ se doplní samo, jakmile jsou všechny otevřené podřízené úkoly zkontrolované nebo v ToDo
-  if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&progressOf(x,p)<100);const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||x.checked===TODAY);return `<i class="dm auto ${all?'chk':''}">${all?'✓':''}</i>`}
-  const ref=todoRefOf(t);const st=ref?'todo':t.checked===TODAY?'chk':'';const over=ref&&ref.due&&ref.due<TODAY;
-  return `<i class="dm ${st} ${over?'over':''}" data-dchk="${t.id}">${st==='todo'?'☐':st==='chk'?'✓':''}</i>`}
+  if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&!x.milestone&&progressOf(x,p)<100);if(!leaves.length)return'';const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||chkOn(x));const age=all?Math.max(...leaves.filter(x=>!todoRefOf(x)).map(chkAge),0):0;return `<i class="dm auto ${all?'chk d'+age:''}">${all?'✓':''}</i>`}
+  const ref=todoRefOf(t);const age=chkAge(t);const st=ref?'todo':age<=2?'chk d'+age:'';const over=ref&&ref.due&&ref.due<TODAY;const atit=age===1?'Zkontrolováno včera':age===2?'Zkontrolováno předevčírem':'';
+  return `<i class="dm ${st} ${over?'over':''}" data-dchk="${t.id}" ${!ref&&atit?`title="${atit}"`:''}>${ref?'☐':age<=2?'✓':''}</i>`}
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
 let lastBarDown={id:null,t:0};
@@ -793,6 +800,7 @@ g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!b
 g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();const f=findTask(sq.dataset.dchk);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
+  else if(t.checked&&t.checked!==TODAY&&chkOn(t)){t.checked=TODAY;toast('Dnes zkontrolováno')}
   else if(t.checked===TODAY){t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')}
   else{t.checked=TODAY;toast('Dnes zkontrolováno')}
   commit()});
@@ -834,9 +842,9 @@ async function start(){
   hideAuth();$('#gantt').innerHTML='<div class="empty">Načítám data…</div>';
   try{const n=await DB.claimInvites();if(n)toast('Byl jste přidán do '+n+' projektu/ů');S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
-  if(V.by==='todo')V.by='daily';
+  if(V.by==='todo'||V.by==='daily')V.by='project';
   if(proposerOnly()){V.by='project';V.autoDaily=false;if(!proj(V.project)||myRole(proj(V.project))!=='proposer')V.project=S.projects[0].id;restoreDraft();if(!V.draft){const p0=proj(V.project);const pr=(p0.proposals||[]).find(x=>x.status==='open');if(pr)enterDraft(p0,pr)}}
-  else{if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.by='daily';V.lastDaily=TODAY;V.dnew='0'}
+  else{if(V.autoDaily!==false&&V.lastDaily!==TODAY){V.todoPanel='open';V.lastDaily=TODAY}
   if(V.project!=='ALL'&&!proj(V.project))V.project='ALL';
   restoreDraft()}
   document.body.classList.toggle('proposer',proposerOnly());
