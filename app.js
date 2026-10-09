@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.11.2';
+const APP_VERSION='1.12.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -340,11 +340,11 @@ function renderTodoPanel(){renderCountdown();
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
     const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
     return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
-      <div class="body"><div class="line">${td.kind?`<button class="kind ${td.kind}" data-dkind title="${td.kind==='call'?'Zavolat':'Napsat e-mail'}${td.contact?' – '+esc(td.contact):''} (zkratka na Macu/iPhonu)">${td.kind==='call'?'📞':'✉️'}</button>`:`<button class="kind none" data-dkind title="Označit jako telefonát / e-mail">·</button>`}<input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      <div class="body"><div class="line">${td.kind&&KIND[td.kind]?`<button class="kind ${td.kind}" data-dkind title="${KIND[td.kind].l}${td.contact?' – '+esc(td.contact):''} (zkratka na Macu/iPhonu)">${KIND[td.kind].i}</button>`:`<button class="kind none" data-dkind title="Označit jako telefonát / e-mail / SMS / WhatsApp">·</button>`}<input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
-      <label>Druh <div class="seg"><button data-dk="" class="${!td.kind?'on':''}">–</button><button data-dk="call" class="${td.kind==='call'?'on':''}">📞</button><button data-dk="mail" class="${td.kind==='mail'?'on':''}">✉️</button></div></label><label>Kontakt <input type="text" data-df="contact" value="${esc(td.contact||'')}" placeholder="jméno jako v Kontaktech" size="18"></label>
+      <label>Druh <div class="seg"><button data-dk="" class="${!td.kind?'on':''}">–</button><button data-dk="call" class="${td.kind==='call'?'on':''}">📞</button><button data-dk="mail" class="${td.kind==='mail'?'on':''}">✉️</button><button data-dk="sms" class="${td.kind==='sms'?'on':''}">💬</button><button data-dk="wa" class="${td.kind==='wa'?'on':''}">${KIND.wa.i}</button></div></label><label>Kontakt <input type="text" data-df="contact" value="${esc(td.contact||'')}" placeholder="jméno jako v Kontaktech" size="18"></label>
       ${x.t?`<button type="button" class="btn" data-dblk>${td.block?'⛔ blokuje úkol':'blokuje úkol?'}</button>`:''}<button type="button" class="btn danger" data-ddel>Smazat</button></div>`:''}`};
   // jeden seznam: ruční pořadí (ord); položky bez ord podle starého pravidla (po termínu, priorita, termín)
   const l=vis.filter(x=>!x.td.done);const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
@@ -358,12 +358,14 @@ function renderTodoPanel(){renderCountdown();
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=tp.querySelector(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
-// volání / e-mail přes Zkratky (Shortcuts) – fungují na Macu i iPhonu; jména zkratek v menu ⋯
+const KIND={call:{i:'📞',l:'Zavolat',sc:'scCall',d:'Zavolat'},mail:{i:'✉️',l:'Napsat e-mail',sc:'scMail',d:'Napsat'},sms:{i:'💬',l:'Poslat SMS',sc:'scSms',d:'SMS'},wa:{i:'<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="#25d366" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2z"/><path fill="#fff" d="M9.3 7.6c-.2-.5-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.2.2 2.1 3.3 5.2 4.5 2.6 1 3.1.8 3.6.8.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.3l-2-1c-.3-.1-.5-.2-.7.1l-1 1.2c-.2.2-.4.2-.7.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.5-.5.3-.5c.1-.2 0-.4 0-.5l-.9-2.4z"/></svg>',l:'Napsat na WhatsApp',sc:'scWa',d:'WhatsApp'}};
+const KSEQ=['','call','mail','sms','wa'];
+// volání / e-mail / SMS / WhatsApp přes Zkratky (Shortcuts) – fungují na Macu i iPhonu; jména zkratek v menu ⋯
 function runContact(td){const who=(td.contact||'').trim();if(!who){toast('U položky chybí jméno kontaktu (⋯ → Kontakt)',true);return}
-  const name=td.kind==='call'?(V.scCall||'Zavolat'):(V.scMail||'Napsat');const subj=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,'');
+  const K=KIND[td.kind]||KIND.call;const name=V[K.sc]||K.d;const subj=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat|sms|wa|whatsapp|texta?)\s+/i,'');
   const input=td.kind==='call'?who:who+'|'+subj;
   location.href=`shortcuts://run-shortcut?name=${encodeURIComponent(name)}&input=text&text=${encodeURIComponent(input)}`;
-  if(navigator.clipboard)navigator.clipboard.writeText(who).catch(()=>{});toast((td.kind==='call'?'📞 ':'✉️ ')+who+' – spouštím zkratku „'+name+'“ (jméno je i ve schránce)')}
+  if(navigator.clipboard)navigator.clipboard.writeText(who).catch(()=>{});toast(K.l+': '+who+' – spouštím zkratku „'+name+'“ (jméno je i ve schránce)')}
 function setTodoPanel(m){V.todoPanel=m;save();renderTodoPanel();if(m==='open'){focusTd='dadd';const i=$('#dadd');if(i)i.focus()}}
 tp.addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(!b)return;setTodoPanel(b.dataset.tp==='close'?'':b.dataset.tp)});
 tp.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
@@ -390,7 +392,7 @@ tp.addEventListener('click',e=>{const b=e.target.closest('button,a[data-golate],
   if(!box)return;const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(b.dataset.dd!==undefined){td.due=b.dataset.dd===''?'':addDays(TODAY,+b.dataset.dd);commit()}
   if(b.dataset.dk!==undefined){td.kind=b.dataset.dk;commit()}
-  if(b.hasAttribute('data-dkind')){if(e.shiftKey||e.altKey||!td.kind){td.kind=td.kind==='call'?'mail':td.kind==='mail'?'':'call';if(td.kind&&!td.contact){const m=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,'').match(/^([^–\-:,(]+?)\s*(?:[–\-:,(]|$)/);if(m)td.contact=m[1].trim()}commit()}else runContact(td);return}
+  if(b.hasAttribute('data-dkind')){if(e.shiftKey||e.altKey||!td.kind){td.kind=KSEQ[(KSEQ.indexOf(td.kind||'')+1)%KSEQ.length];if(td.kind&&!td.contact){const m=td.text.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat|sms|wa|whatsapp|texta?)\s+/i,'').match(/^([^–\-:,(]+?)\s*(?:[–\-:,(]|$)/);if(m)td.contact=m[1].trim()}commit()}else runContact(td);return}
   if(b.hasAttribute('data-dpri')){td.pri=({0:1,1:2,2:3,3:0})[+td.pri||0];commit()}
   if(b.hasAttribute('data-dimp')){td.imp=!td.imp;commit()}
   if(b.hasAttribute('data-dblk')){td.block=!td.block;commit()}
@@ -446,7 +448,7 @@ function quickAdd(text){
 function addTodo(key,text,o={}){const list=todoList(key);if(!list)return;const td={id:uid(),text,done:false,who:S.me||'',due:'',block:false,pri:0,imp:false,...o};list.push(td);return td}
 function quickTodo(text,o={}){const p=proj(V.project);let init={};let s=text.replace(/^-\s*/,'');
   // „tel Kozák – termín“ / „mail Jandová: smlouva“ → druh položky + kontakt (jméno před oddělovačem – : , nebo celý text)
-  s=s.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat)\s+/i,(m,k)=>{init.kind=/^(tel|zavolat|call)$/i.test(k)?'call':'mail';return ''});
+  s=s.replace(/^(tel|zavolat|call|mail|email|e-mail|napsat|sms|wa|whatsapp|texta?)\s+/i,(m,k)=>{k=k.toLowerCase();init.kind=/^(tel|zavolat|call)$/.test(k)?'call':/^sms$/.test(k)?'sms':/^(wa|whatsapp|texta?)$/.test(k)?'wa':'mail';return ''});
   if(init.kind){const m=s.match(/^([^–\-:,(]+?)\s*(?:[–\-:,(]|$)/);if(m)init.contact=m[1].trim()}
   s=s.replace(/(^|\s)!(?=\s|$)/,(m,a)=>{init.block=true;return a}).trim();
   s=s.replace(/(^|\s)(\d{1,2})\.\s?(\d{1,2})\.(\d{4})?/,(m,a,d,mo,y)=>{const yy=y||TODAY.slice(0,4);const v=`${yy}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;if(!isNaN(parse(v)))init.due=v;return a}).trim();
@@ -745,7 +747,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'leftw':{const lm=V.leftMode||(V.narrow?'narrow':'full');V.leftMode=lm==='full'?'narrow':lm==='narrow'?'off':'full';V.narrow=V.leftMode==='narrow';save();render();break}
     case 'strip':V.hideStrip=!V.hideStrip;save();render();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
-    case 'shortcuts':{const c=prompt('Název zkratky pro volání (Zkratky na Macu/iPhonu):',V.scCall||'Zavolat');if(c===null)break;const m=prompt('Název zkratky pro e-mail:',V.scMail||'Napsat');if(m===null)break;V.scCall=c.trim()||'Zavolat';V.scMail=m.trim()||'Napsat';save();toast('Uloženo');break}
+    case 'shortcuts':{for(const k of ['call','mail','sms','wa']){const K=KIND[k];const v=prompt('Název zkratky – '+K.l+' (aplikace Zkratky na Macu/iPhonu):',V[K.sc]||K.d);if(v===null)break;V[K.sc]=v.trim()||K.d}save();toast('Uloženo');break}
     case 'bartip':V.barTip=V.barTip===false;save();render();toast(V.barTip?'Bublina u názvu a baru zapnuta':'Bublina u názvu a baru vypnuta');break;
     case 'track':S.trackChanges=!S.trackChanges;DB.setTrack(S.trackChanges).catch(e=>toast(e.message,true));render();break;
     case 'export':{exitDraft();$('#pdlg').classList.remove('proj');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
@@ -1017,7 +1019,7 @@ const HELP=[
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
-  ['📞 ✉️','Telefonát / e-mail z ToDo','Zadání „tel Kozák – termín“ nebo „mail Jandová: smlouva“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na 📞/✉️ spustí zkratku „Zavolat“ / „Napsat“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře nový e-mail; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
+  ['📞 ✉️ 💬','Telefonát / e-mail / SMS / WhatsApp z ToDo','Zadání „tel Kozák – termín“, „mail Jandová: smlouva“, „sms Míka …“ nebo „wa Míka …“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na ikonu spustí zkratku „Zavolat“ / „Napsat“ / „SMS“ / „WhatsApp“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře zprávu s textem položky; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
  ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],
  [HI.grab,'Přetažení v ToDo','Za ⠿ mění pořadí; nadpis bere s sebou položky pod ním až po další nadpis. Termín přetažení nemění.'],
   ['<b>L</b> / <b>N</b>','Zkratky','L – seznam „co mám v hlavě“ (ranní vysypání a roztřídění), N – nový úkol do harmonogramu, Delete – smazat vybraný úkol, Ctrl+C/V/D kopírovat, vložit, duplikovat, Alt+↑↓ posun, Alt+Tab zanořit.'],

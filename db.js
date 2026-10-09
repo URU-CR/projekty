@@ -77,7 +77,7 @@ const DB = (() => {
     }
     const pMap = Object.fromEntries(S.projects.map(p => [p.id, p]));
     for (const td of todos) {
-      const T = { id: td.id, owner: td.owner, text: td.text, who: td.who || '', done: !!td.done, doneAt: td.done_at || '', due: td.due || '', block: !!td.block, pri: td.pri || 0, imp: !!td.imp, taskRef: td.task_ref || '', heading: !!td.heading, ord: td.ord || 0 };
+      const T = { id: td.id, owner: td.owner, text: td.text, who: td.who || '', done: !!td.done, doneAt: td.done_at || '', due: td.due || '', block: !!td.block, pri: td.pri || 0, imp: !!td.imp, taskRef: td.task_ref || '', heading: !!td.heading, ord: td.ord || 0, kind: td.kind || '', contact: td.contact || '' };
       if (td.task_id && tMap[td.task_id]) tMap[td.task_id].todos.push(T);
       else if (td.project_id && pMap[td.project_id]) pMap[td.project_id].todos.push(T);
       else if (td.owner === user.id) S.todos.push(T);
@@ -114,7 +114,7 @@ const DB = (() => {
     S.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, null, null, j); });
     return F;
   }
-  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 0, imp: !!td.imp, sort, task_ref: td.taskRef || null, heading: !!td.heading, ord: Math.max(-2000000000, Math.min(2000000000, Math.round(td.ord || 0))) });
+  const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 0, imp: !!td.imp, sort, task_ref: td.taskRef || null, heading: !!td.heading, ord: Math.max(-2000000000, Math.min(2000000000, Math.round(td.ord || 0))), kind: td.kind || '', contact: td.contact || '' });
 
   /* ---------- synchronizace rozdílů ---------- */
   const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };
@@ -190,6 +190,6 @@ const DB = (() => {
       .subscribe();
   }
 
-  const SCHEMA = 23; // poslední potřebná migrace
+  const SCHEMA = 24; // poslední potřebná migrace
   return { SCHEMA, markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
