@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.12.1';
+const APP_VERSION='1.13.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -122,7 +122,7 @@ function status(t,p){const sp=span(t,p),pr=progressOf(t,p);
   if(sp.end<=addDays(TODAY,7))return{k:'soon',l:sp.end===TODAY?'dnes':'za '+diff(TODAY,sp.end)+' d'};
   if(sp.start<=TODAY)return{k:'active',l:'běží'};
   return{k:'future',l:''}}
-function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
+function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='review'){if(!needsReview(t,p))return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
   if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))return false;
   if(V.group&&t.group!==V.group)return false;return true}
 
@@ -185,7 +185,7 @@ function renderStrip(){
   const cnt=k=>leafs.filter(x=>status(x.t,x.p).k===k).length;
   const crit=leafs.filter(x=>x.t.critical&&status(x.t,x.p).k!=='done').length;
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
-  const stat=[['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
+  const stat=[...(S.projects.some(p=>myRole(p)==='lead')?[['review','Ke kontrole',reviewQueue().filter(x=>!(x.age===0||x.ref)).length]]:[]),['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
   let h=`<div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
   h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button><button class="pill ${V.extShow?'on':''}" data-extshow="1">┆ Cizí termíny</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
   const people=[...new Set(ps.flatMap(p=>p.team))];
@@ -204,7 +204,7 @@ function renderStrip(){
 function render(){
   renderTabs();renderStrip();
   const g=$('#gantt');const lm=V.leftMode||(V.narrow?'narrow':'full'); g.classList.toggle('narrow',lm==='narrow');g.classList.toggle('noleft',lm==='off');g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('viewver',!!V.viewVer);g.classList.toggle('ro',!!V.viewVer||!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',lm!=='full'?'':(V.leftw?V.leftw+'px':''));
-  renderTodoPanel();if(kd.classList.contains('open'))renderKontrola();const kb=$('#kBtn');if(kb){const qn=S.projects.some(p=>myRole(p)==='lead');kb.style.display=qn?'':'none';if(qn){const q=reviewQueue();const left=q.filter(x=>!(x.age===0||x.ref)).length;kb.innerHTML=`Kontrola <b>${left}</b>`;kb.classList.toggle('done',!left)}}
+  renderTodoPanel();const kb=$('#kBtn');if(kb){const qn=S.projects.some(p=>myRole(p)==='lead');kb.style.display=qn?'':'none';if(qn){const q=reviewQueue();const left=q.filter(x=>!(x.age===0||x.ref)).length;kb.innerHTML=`Kontrola <b>${left}</b>`;kb.classList.toggle('done',!left);kb.classList.toggle('on',V.status==='review')}}
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Pokud jste byl pozván jako navrhovatel, zkontrolujte, že jste se zaregistroval na stejný e-mail, na který přišla pozvánka, a obnovte stránku. Jinak založte projekt tlačítkem „+ projekt“ nahoře.</p></div>';return}
   const rows=buildRows();
   const px=ZOOM[V.zoom];
@@ -759,7 +759,6 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'diag':DB.debug().then(d=>{const errs=JSON.parse(localStorage.getItem('projekty-errors')||'[]');$('#pdlg').classList.remove('proj');const txt='Verze aplikace '+APP_VERSION+'\n'+JSON.stringify(d,null,1)+'\n\nPoslední chyby:\n'+(errs.join('\n')||'žádné');const dlg=$('#pdlg');dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Diagnostika</span><button type="button" data-x>×</button></div><div class="db"><textarea rows="14" readonly style="width:100%;font:11px monospace;border:1px solid var(--line);border-radius:6px;padding:6px;background:var(--bg);color:inherit">${esc(txt)}</textarea></div><div class="df"><button type="button" class="btn" data-clr>Smazat historii chyb</button><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn pri" data-copy>Kopírovat</button></div></form>`;dlg.querySelector('form').addEventListener('click',e=>{if(e.target.closest('[data-x]'))dlg.close();if(e.target.closest('[data-clr]')){localStorage.removeItem('projekty-errors');dlg.close()}if(e.target.closest('[data-copy]')){navigator.clipboard&&navigator.clipboard.writeText(txt);toast('Zkopírováno')}});dlg.showModal()}).catch(e=>alert('Diagnostika selhala: '+e.message));break;
     case 'pwd':changePassword();break;
     case 'name':{const n=prompt('Vaše jméno (tak, jak je uvedené v týmech projektů):',S.me||'');if(n!==null){S.me=n.trim();DB.setName(S.me).then(()=>toast('Jméno uloženo')).catch(e=>toast(e.message,true));render()}break}
-    case 'wipe':if(confirm('Opravdu smazat všechna data? Doporučujeme nejdřív export.')){S={projects:[]};V.project='ALL';commit()}break;
   }});
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.projects)throw 0;importJson(j)}catch(err){alert('Soubor nelze načíst – není to export z této aplikace.')}};r.readAsText(f);e.target.value=''};
 function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
@@ -802,7 +801,7 @@ g.addEventListener('click',e=>{const b=e.target.closest('[data-tact],[data-tf=bl
   if(b.dataset.tact==='tri'){openDump(null,[f.td.id])}
   if(b.dataset.tf==='block'){f.td.block=!f.td.block;commit()}
   if(b.dataset.tf==='imp'){f.td.imp=!f.td.imp;commit()}});
-// denní řízení: ToDo „Kontrola …“ (ikona ☐ na baru, dokud není odškrtnuto) a „Dnes zkontrolováno“ (ikona ✓ jen dnes)
+// denní řízení: ToDo „CHECK …“ (ikona ☐ na baru, dokud není odškrtnuto) a „Dnes zkontrolováno“ (ikona ✓ jen dnes)
 // další pořadové číslo v denním seznamu (malé celé číslo – sloupec ord je integer)
 // nová položka jde na začátek seznamu (menší než všechna dosavadní pořadí; 0 se vyhýbáme – znamená „bez pořadí“)
 const firstOrd=()=>{let m=Infinity;const f=td=>{if(td.ord&&td.ord<m)m=td.ord};S.todos.forEach(f);S.projects.forEach(p=>p.todos.forEach(f));let v=(m===Infinity?1:Math.floor(m))-1;return v===0?-1:v};
@@ -832,7 +831,7 @@ let lastBarDown={id:null,t:0};
 g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.target.closest('[data-dchk],[data-qn]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
 g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 function cycleCheck(id,mode){const f=findTask(id);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
-  const toTodo=()=>{t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'Kontrola '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')};
+  const toTodo=()=>{t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'CHECK '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')};
   if(mode==='chk'){if(ref)S.todos.splice(S.todos.indexOf(ref),1);t.checked=TODAY;toast('Dnes zkontrolováno')}
   else if(mode==='todo'){if(!ref)toTodo()}
   else if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
@@ -841,40 +840,10 @@ function cycleCheck(id,mode){const f=findTask(id);if(!f||myRole(f.p)!=='lead')re
   else{t.checked=TODAY;toast('Dnes zkontrolováno')}
   commit()}
 g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();cycleCheck(sq.dataset.dchk)});
-/* ---------- Kontrola: denní průchod úkoly jako frontou ---------- */
-const kd=document.createElement('dialog');kd.id='kdlg';kd.tabIndex=-1;document.body.appendChild(kd);let kdSel=null;
-function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,st:status(t,p),age:chkAge(t),ref:!!todoRefOf(t)})}}
-  const R={late:0,behind:1,risk:2,soon:3,stalled:4,active:5,future:6};
-  out.sort((a,b)=>(R[a.st.k]??9)-(R[b.st.k]??9)||b.age-a.age||(a.t.end<b.t.end?-1:1));return out}
-function openKontrola(){kd.classList.add('open');renderKontrola();kd.showModal()}
-function renderKontrola(){if(!kd.open&&!kd.classList.contains('open'))return;const q=reviewQueue();const todo=q.filter(x=>!(x.age===0||x.ref));const done=q.length-todo.length;
-  if(kdSel&&!todo.some(x=>x.t.id===kdSel))kdSel=null;if(!kdSel&&todo.length)kdSel=todo[0].t.id;
-  const row=x=>{const t=x.t,p=x.p;const last=(t.log||[]).slice(-1)[0];const pr=progressOf(t,p);
-    return `<div class="kr ${kdSel===t.id?'sel':''} st-${x.st.k}" data-id="${t.id}"><i class="dm ${x.age<=2?'chk d'+x.age:''}" data-kchk="${t.id}" title="${x.age===1?'Zkontrolováno včera':x.age===2?'Zkontrolováno předevčírem':''}">${x.age<=2?'✓':''}</i>
-      <div class="kn"><b data-kopen="${t.id}">${esc(t.name)}</b><span class="hint">${curProjects().length>1?esc(p.name)+' · ':''}${fmts(t.start)} – ${fmts(t.end)}${t.resp?' · '+esc(t.resp):''}</span>${t.quick?`<span class="kq">✎ ${esc(t.quick)}</span>`:''}${last?`<span class="kl">${fmts(last.d)}: ${esc(last.text.slice(0,120))}</span>`:''}</div>
-      ${x.st.l?`<span class="st ${x.st.k}">${x.st.l}</span>`:'<span></span>'}
-      <input type="number" class="kp" min="0" max="100" step="5" value="${pr}" data-kprog="${t.id}" ${t.autoProg?'disabled title="Podle checklistu"':''}><span class="pc">%</span>
-      <button class="kb" data-ktodo="${t.id}" title="Do ToDo (T)">☐</button><button class="kb" data-kqn="${t.id}" title="Rychlá poznámka (P)">${t.quick?'✎':'+'}</button></div>`};
-  kd.innerHTML=`<form method="dialog"><div class="dh"><span>Denní kontrola <span class="hint">· zbývá <b>${todo.length}</b> z ${q.length}${done?` · ${done} dnes hotovo`:''}</span></span><span class="hint kk">↓↑ pohyb · K zkontrolováno · T do ToDo · P poznámka · Enter detail · Esc zavřít</span><button type="button" data-x>×</button></div>
-    <div class="db kbody">${todo.length?todo.map(row).join(''):`<div class="dempty">Vše zkontrolováno. ${q.length?'Dnes jste prošel '+q.length+' úkolů.':''}</div>`}</div></form>`;
-  const sel=kd.querySelector('.kr.sel');if(sel&&sel.scrollIntoView)sel.scrollIntoView({block:'nearest'});if(!kd.contains(document.activeElement)||!document.activeElement.matches('input'))kd.focus()}
-kd.addEventListener('click',e=>{const x=e.target.closest('[data-x]');if(x){kd.classList.remove('open');kd.close();return}
-  const r=e.target.closest('.kr');if(r&&!e.target.closest('input,button,[data-kchk],[data-kopen]')){kdSel=r.dataset.id;kd.querySelectorAll('.kr').forEach(k=>k.classList.toggle('sel',k.dataset.id===kdSel))}
-  const c=e.target.closest('[data-kchk]');if(c){kdSel=nextInQueue(c.dataset.kchk);cycleCheck(c.dataset.kchk,'chk');return}
-  const td=e.target.closest('[data-ktodo]');if(td){kdSel=nextInQueue(td.dataset.ktodo);cycleCheck(td.dataset.ktodo,'todo');return}
-  const qn=e.target.closest('[data-kqn]');if(qn){const rc=qn.getBoundingClientRect();openQn(qn.dataset.kqn,rc.left-300,rc.bottom);return}
-  const op=e.target.closest('[data-kopen]');if(op){openTask(op.dataset.kopen);return}});
-kd.addEventListener('change',e=>{const i=e.target.closest('[data-kprog]');if(!i)return;const f=findTask(i.dataset.kprog);if(!f)return;const v=Math.min(100,Math.max(0,+i.value||0));if(v>=100&&openBlocking(f.t).length){alert('Úkol má otevřené blokující ToDo:\n– '+openBlocking(f.t).map(x=>x.text).join('\n– '));renderKontrola();return}f.t.progress=v;commit()});
-function nextInQueue(id){const ids=[...kd.querySelectorAll('.kr')].map(k=>k.dataset.id);const i=ids.indexOf(id);return ids[i+1]||ids[i-1]||null}
-kd.addEventListener('keydown',e=>{if(e.target.matches('input')&&!['Escape'].includes(e.key)&&!(e.key==='Enter'))return;const ids=[...kd.querySelectorAll('.kr')].map(k=>k.dataset.id);const i=ids.indexOf(kdSel);
-  if(e.key==='ArrowDown'){e.preventDefault();kdSel=ids[Math.min(ids.length-1,i+1)]||kdSel;renderKontrola()}
-  else if(e.key==='ArrowUp'){e.preventDefault();kdSel=ids[Math.max(0,i-1)]||kdSel;renderKontrola()}
-  else if((e.key==='k'||e.key==='K')&&kdSel){e.preventDefault();const n=nextInQueue(kdSel);const id=kdSel;kdSel=n;cycleCheck(id,'chk')}
-  else if((e.key==='t'||e.key==='T')&&kdSel){e.preventDefault();const n=nextInQueue(kdSel);const id=kdSel;kdSel=n;cycleCheck(id,'todo')}
-  else if((e.key==='p'||e.key==='P')&&kdSel){e.preventDefault();const b=kd.querySelector(`.kr[data-id="${kdSel}"] [data-kqn]`);if(b){const rc=b.getBoundingClientRect();openQn(kdSel,rc.left-300,rc.bottom)}}
-  else if(e.key==='Enter'&&kdSel&&!e.target.matches('input')){e.preventDefault();openTask(kdSel)}
-  else if(e.key==='Escape'){kd.classList.remove('open')}});
-kd.addEventListener('close',()=>kd.classList.remove('open'));
+/* ---------- Kontrola: filtr harmonogramu na úkoly, které dnes ještě čekají na kontrolu ---------- */
+function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&!(chkAge(t)===0||todoRefOf(t))}
+function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)})}}return out}
+function openKontrola(){if(V.draft)exitDraft();V.by='project';V.status=V.status==='review'?'':'review';commit();if(V.status==='review')scrollToToday()}
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('click',e=>{if(e.target.closest('button,input,select,.bar'))return;const row=e.target.closest('.lrow[data-id]');if(!row)return;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=row.dataset.id;row.classList.add('sel')});
 let drag=null;
@@ -1014,8 +983,8 @@ const HI={sq:'<i class="dm"></i>',chk:'<i class="dm chk">✓</i>',todo:'<i class
   deps:'<span style="color:var(--muted)">⤳</span>',link:'<span style="color:var(--accent)">⤷</span>',kbd:k=>`<kbd>${k}</kbd>`};
 const HELP=[
  {g:'Denní rutina',items:[
-  [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („Kontrola …“, drží do odškrtnutí; červený po termínu) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
-  ['<b>Kontrola 14</b>','Denní kontrola (fronta)','Tlačítko v záhlaví otevře seznam otevřených úkolů seřazený podle naléhavosti (po termínu → skluz → ohrožené → končí brzy → nezahájené → nejdéle nekontrolované). V řádku: ✓, název (klepnutí = detail), stav, %, do ToDo, poznámka, poslední záznam deníku. Zkontrolované řádky mizí, nahoře „zbývá X z Y“. Klávesy: ↓↑, K zkontrolováno, T do ToDo, P poznámka, Enter detail, Esc zavřít.'],
+  [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
+  ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Klepnutím na čtvereček úkol z filtru zmizí; opětovné klepnutí na tlačítko filtr vypne.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
@@ -1036,7 +1005,7 @@ const HELP=[
   [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní.'],
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
-  [HI.link,'ToDo z kontroly','Položka „Kontrola …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
+  [HI.link,'ToDo z kontroly','Položka „CHECK …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
   ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. „Lišta rychlých filtrů“ ji skryje/zobrazí (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. „Podle lidí“ seskupí úkoly podle odpovědných.'],
   [HI.dot,'Barvy','Barva úkolu vychází ze skupiny (Nastavení projektu → skupiny); v detailu lze zvolit vlastní. Klepnutí na čtvereček barvy v řádku otevře detail. Legenda skupin v záhlaví projektu filtruje skupinu.'],
  ]},

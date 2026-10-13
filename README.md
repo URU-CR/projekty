@@ -36,13 +36,43 @@ Anon klíč je určen pro veřejný frontend – bezpečnost zajišťují RLS po
 | role | může |
 |---|---|
 | vedoucí (`lead`) | vše v projektu: úkoly, skupiny, tým, přístup, mazání |
-| řešitel (`editor`) | upravovat úkoly, kde je odpovědný nebo spolupracovník; deník, odkazy, dokumenty a ToDo v projektu; přidat jméno do týmu |
+| řešitel (`editor`) | upravovat úkoly, kde je odpovědný nebo spolupracovník; deník, odkazy, dokumenty a ToDo v projektu; přidat jméno do týmu. Volitelně omezen na skupiny (nastavení projektu → Přístup): pak vidí jen zvolené skupiny, zapisuje jen tam, kde má „návrhy úprav/úpravy“ |
 | čtenář (`viewer`) | jen číst |
+| navrhovatel (`proposer`) | vidí jen skupiny, které mu vedoucí povolí (nastavení projektu → Přístup); u skupin s právem „návrhy úprav“ pracuje ve sdíleném **návrhu** (kopie skupiny); aktuální harmonogram, plnění a deník vidí jen pro čtení |
 
 Osobní ToDo (Můj inbox) vidí pouze jejich vlastník.
+
+## Návrhy změn skupiny
+V harmonogramu klepněte na skupinu v legendě → objeví se „+ Otevřít návrh pro …“. Návrh je kopie skupiny, kterou upravují navrhovatelé i vedoucí společně (modrá lišta nahoře, značky *nový* / *≠* u změněných úkolů). Vedoucí návrh **Schválí a promítne** (odpovídající úkoly se aktualizují a ponechají si ToDo, deník, dokumenty a plnění; nové se založí, zrušené smažou) nebo **Zamítne**. Pro skupinu existuje vždy nejvýš jeden otevřený návrh. Vyžaduje `supabase/005_proposals.sql`.
 
 ## Jak funguje ukládání
 Aplikace drží celý stav v paměti (stejně jako prototyp). Po každé změně porovná stav se snímkem posledního uložení a odešle do Supabase jen rozdíly. Změny od kolegů se přes realtime promítnou do minuty bez obnovení stránky. Kopie stavu je v prohlížeči (localStorage) jako záloha pro čtení bez připojení; export JSON zůstává v menu.
 
 ## Aktualizace
 Nová verze = nahradit `index.html`, `app.js`, `db.js` v repu. Změny schématu budou vždy jako další `.sql` skript ve složce `supabase/`.
+
+## Denní řízení (od 1.5.0, čtvereček od 1.6.2)
+Vedoucí projektu vidí za každým barem šedý čtvereček denní kontroly. Klepnutí: **✓ zelená** = dnes zkontrolováno (drží 3 dny a slábne: včera 60 %, předevčírem 30 %; klepnutí na vybledlou ✓ ji obnoví na dnešek) → **☐ modrá** = v mém ToDo jako „Kontrola …“ (drží, dokud položku v ToDo neodškrtnu; červená po termínu) → prázdný. Dvojklik na bar otevře detail úkolu. Vyžaduje `supabase/018_daily_check.sql`.
+
+## ToDo panel (od 1.8.0; dříve denní seznam)
+ToDo se otevírá tlačítkem **ToDo** vpravo nahoře (s počtem otevřených a po termínu) jako plovoucí panel v pravém horním rohu; „–“ ho zmenší na malou lištu s počtem, ✕ zavře, Esc zmenší. Jeden seznam bez sekcí Dnes/Zítra (termín je u položky štítkem), nové položky nahoru, mimo projekty.
+
+## Denní seznam (1.6.0–1.7.x)
+Vzhled podle Poznámek: kulaté zaškrtávátko, **nadpisy skupin** (tlačítko „Nadpis“ u sekce), ★ důležité a trojúhelník priority přímo v řádku (klepnutím A → C → B), **přetažení za ⠿** mění pořadí i den (sekci). Vyžaduje `supabase/019_daily_list.sql`.
+
+## Rychlá poznámka (od 1.7.0)
+Za čtverečkem denní kontroly je nenápadné „+“: klepnutím se otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka se zobrazí jako žlutý lísteček ✎, text je v bublině při najetí; ✕ v editoru poznámku zruší. Vyžaduje `supabase/020_quick_note.sql`.
+
+## Deadline projektu (od 1.9.0)
+V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mohou přesahovat). V grafu je plná červená linka s 🔥 v časové ose (bublina říká, kolik dní zbývá). Volba „zobrazovat odpočet“ přidá do záhlaví živý odpočet **D d HH:MM** do půlnoci na začátku dne deadline (červeně vyplněný pod 14 dní, šedý po uplynutí). Vyžaduje `supabase/022_deadline.sql`.
+
+## 1.10.0 – Denní kontrola, cizí termíny, nápověda
+- **Kontrola** (záhlaví, od 1.13.0 jako filtr harmonogramu): zůstanou jen úkoly čekající dnes na kontrolu včetně nadřazených fází; zkontrolované z filtru mizí.
+- **Cizí termín**: zaškrtnutí v detailu úkolu/milníku → fialová svislá linka přes graf + název v časové ose. Vyžaduje `supabase/023_external.sql`.
+- **Rychlá poznámka** se při přepsání/zrušení zapíše do deníku úkolu.
+- **Nápověda** (tlačítko „?“ nebo klávesa ?): zásuvka vlevo, hledání, sbalené skupiny, ikony. Každou novou funkci doplnit do pole `HELP` v app.js.
+- Deadline: jednobarevný plamen, odpočet digitálním písmem. Volby „Levá tabulka“ a „Lišta rychlých filtrů“ přesunuty do menu ⋯.
+
+## 1.11.0 – Telefonát / e‑mail z ToDo, iPhone
+- Zadání „tel Kozák – …“ / „mail Jandová: …“ označí položku 📞/✉️ a uloží jméno kontaktu (ⓘ v ⋯ lze upravit). Klepnutí spustí zkratku **Zavolat** / **Napsat** (viz `ZKRATKY.md`), jméno je i ve schránce. Vyžaduje `supabase/024_todo_kind.sql`.
+- Na úzké obrazovce (iPhone) se otevře ToDo panel přes celou obrazovku.
