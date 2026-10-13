@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.14.1">
+<meta name="app-version" content="1.14.2">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -312,6 +312,7 @@ body.nostrip #strip{display:none}
 #ug button{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer}
 #ug button:hover{border-color:var(--accent)}
 #ug button.ok{background:var(--accent);color:#fff;border-color:var(--accent)}
+#ug button.done{background:#d1fae5;border-color:#34c38f;color:#047857;margin-left:4px}
 :root[data-theme="dark"] .bar .lbl i.dm.chk{background:#114d3a;border-color:#2f9c73;color:#6ee7b7}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar .lbl i.dm.chk{background:#114d3a;border-color:#2f9c73;color:#6ee7b7}}
 .bar.done{}
@@ -575,7 +576,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.14.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.14.2">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -630,8 +631,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.14.1"></script>
-<script src="db.js?v=1.14.1"></script>
-<script src="app.js?v=1.14.1"></script>
+<script src="config.js?v=1.14.2"></script>
+<script src="db.js?v=1.14.2"></script>
+<script src="app.js?v=1.14.2"></script>
 </body>
 </html>
