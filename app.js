@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.0';
+const APP_VERSION='1.14.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -171,7 +171,7 @@ function renderTabs(){
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
   $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
-  {const lm=V.leftMode||(V.narrow?'narrow':'full');$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';$('#stripL').textContent=V.hideStrip?'skrytá':'zobrazena';document.body.classList.toggle('nostrip',!!V.hideStrip)}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
+  {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';$('#stripL').textContent=V.hideStrip?'skrytá':'zobrazena';document.body.classList.toggle('nostrip',!!V.hideStrip)}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
 function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
@@ -744,6 +744,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'proj':{const p=proj(V.project)||S.projects[0];if(p)openProj(p.id);else newProject();break}
     case 'newproj':newProject();break;
     case 'dump':openDump();break;
+    case 'reviewdays':{const seq=[0,7,14,30,-1];const cur=V.reviewDays==null?7:V.reviewDays;V.reviewDays=seq[(seq.indexOf(cur)+1)%seq.length];save();render();break}
     case 'leftw':{const lm=V.leftMode||(V.narrow?'narrow':'full');V.leftMode=lm==='full'?'narrow':lm==='narrow'?'off':'full';V.narrow=V.leftMode==='narrow';save();render();break}
     case 'strip':V.hideStrip=!V.hideStrip;save();render();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
@@ -851,8 +852,10 @@ ugBox.addEventListener('click',e=>{const d=e.target.closest('[data-ugd]');if(d){
 ugBox.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();closeUrge(true)}if(e.key==='Escape')closeUrge(true)});
 document.addEventListener('pointerdown',e=>{if(ugBox.style.display!=='none'&&!e.target.closest('#ug,[data-dchk]'))closeUrge(true)});
 /* ---------- Kontrola: filtr harmonogramu na úkoly, které dnes ještě čekají na kontrolu ---------- */
-function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&!(chkAge(t)===0||todoRefOf(t)||t.urge)}
-function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)||!!t.urge})}}return out}
+// horizont Kontroly: budoucí úkoly jen pokud začínají do N dní (V.reviewDays; 7 = výchozí, -1 = vše)
+const inReviewHorizon=t=>{const d=V.reviewDays==null?7:V.reviewDays;return d<0||t.start<=addDays(TODAY,d)};
+function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&inReviewHorizon(t)&&!(chkAge(t)===0||todoRefOf(t)||t.urge)}
+function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100||!inReviewHorizon(t))continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)||!!t.urge})}}return out}
 // při zapnutí filtru se výběr „zmrazí“: úkoly v něm zůstanou i po zkontrolování (kvůli souvislostem a druhému kliknutí → do ToDo)
 function snapReview(){V.reviewIds=reviewQueue().filter(x=>!(x.age===0||x.ref)).map(x=>x.t.id)}
 function openKontrola(){if(V.draft)exitDraft();V.by='project';if(V.status==='review'){V.status='';V.reviewIds=[]}else{V.status='review';snapReview()}commit();if(V.status==='review')scrollToToday()}
@@ -892,6 +895,7 @@ async function boot(){
 }
 async function start(){
   hideAuth();$('#gantt').innerHTML='<div class="empty">Načítám data…</div>';
+  try{if(DB.checkSchema){const miss=await DB.checkSchema();if(miss.length){alert('Databáze nemá spuštěné tyto migrace: '+miss.map(m=>m.file).join(', ')+'.\n\nSpusťte v Supabase SQL Editoru:\n\n'+miss.map(m=>m.sql).join('\n')+"\nnotify pgrst, 'reload schema';"+'\n\nDo té doby se změny nemusí uložit.')}}}catch(e){console.warn('schema check',e)}
   try{const n=await DB.claimInvites();if(n)toast('Byl jste přidán do '+n+' projektu/ů');S=await DB.load();$('#who').textContent=S.me||S.meEmail;$('#brand').title='verze '+APP_VERSION}
   catch(e){console.error(e);toast('Data se nepodařilo načíst: '+(e.message||e),true)}
   if(V.by==='todo'||V.by==='daily')V.by='project';
@@ -996,7 +1000,7 @@ const HI={sq:'<i class="dm"></i>',chk:'<i class="dm chk">✓</i>',todo:'<i class
 const HELP=[
  {g:'Denní rutina',items:[
   [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → <i class="dm urge">!</i> urgovat (okénko s datem, výchozí dnes; Shift+klepnutí datum změní; filtr „Urgovat dnes“ ukáže urgence s dnešním a starším datem) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
-  ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
+  ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Budoucí úkoly se zahrnou jen pokud začínají do N dní (menu ⋯ → „Kontrola zahrnuje úkoly“; výchozí 7, lze jen běžící / 14 / 30 / všechny). Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],

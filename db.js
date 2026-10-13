@@ -191,5 +191,19 @@ const DB = (() => {
   }
 
   const SCHEMA = 25; // poslední potřebná migrace
-  return { SCHEMA, markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
+  // kontrola, že databáze má sloupce z posledních migrací; vrátí seznam chybějících migrací (název souboru + SQL)
+  const SCHEMA_CHECKS = [
+    ['023_external.sql', 'tasks', 'external', "alter table public.tasks add column if not exists external boolean not null default false;"],
+    ['024_todo_kind.sql', 'todos', 'kind', "alter table public.todos add column if not exists kind text not null default ''; alter table public.todos add column if not exists contact text not null default '';"],
+    ['025_urge.sql', 'tasks', 'urge_on', "alter table public.tasks add column if not exists urge_on date;"],
+  ];
+  async function checkSchema() {
+    const missing = [];
+    for (const [file, table, col, sql] of SCHEMA_CHECKS) {
+      const { error } = await sb.from(table).select(col).limit(0);
+      if (error && /column|schema cache/i.test(error.message || '')) missing.push({ file, sql });
+    }
+    return missing;
+  }
+  return { SCHEMA, checkSchema, markRead, setTrack, setScoped, setInviteScoped, saveVersion, getVersion, claimInvites, setAccess, setInviteAccess, setInviteRole, decideProposal, debug, init, signIn, signUp, signOut, resetPassword, updatePassword, setName, me, load, sync, addMember, setRole, removeMember, removeInvite, uploadDoc, docUrl, deleteDoc, subscribe, uuid };
 })();
