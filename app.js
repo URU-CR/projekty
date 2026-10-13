@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.13.1';
+const APP_VERSION='1.13.2';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -122,7 +122,7 @@ function status(t,p){const sp=span(t,p),pr=progressOf(t,p);
   if(sp.end<=addDays(TODAY,7))return{k:'soon',l:sp.end===TODAY?'dnes':'za '+diff(TODAY,sp.end)+' d'};
   if(sp.start<=TODAY)return{k:'active',l:'běží'};
   return{k:'future',l:''}}
-function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='review'){if(!needsReview(t,p))return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
+function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='review'){if(!(V.reviewIds||[]).includes(t.id))return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
   if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))return false;
   if(V.group&&t.group!==V.group)return false;return true}
 
@@ -720,7 +720,7 @@ $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!
   if(b.dataset.extshow){V.extShow=!V.extShow;save();render();return}
   if(b.dataset.ackall){const p=proj(V.project);if(p)ackChanges(p,unreadAll(p).map(c=>c.id));return}
   if(b.dataset.st==='todo'){V.todoPanel=V.todoPanel==='open'?'':'open';commit();return}
-  if(b.dataset.st){V.status=V.status===b.dataset.st?'':b.dataset.st;commit()}
+  if(b.dataset.st){V.status=V.status===b.dataset.st?'':b.dataset.st;if(V.status==='review')snapReview();else V.reviewIds=[];commit()}
   if(b.dataset.g){V.group=V.group===b.dataset.g?'':b.dataset.g;commit()}
   if(b.dataset.gsettings){openProj(V.project)}
   if(b.dataset.newdraft){const p=proj(V.project);if(p)createDraft(p,b.dataset.newdraft)}
@@ -843,7 +843,9 @@ g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)r
 /* ---------- Kontrola: filtr harmonogramu na úkoly, které dnes ještě čekají na kontrolu ---------- */
 function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&!(chkAge(t)===0||todoRefOf(t))}
 function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)})}}return out}
-function openKontrola(){if(V.draft)exitDraft();V.by='project';V.status=V.status==='review'?'':'review';commit();if(V.status==='review')scrollToToday()}
+// při zapnutí filtru se výběr „zmrazí“: úkoly v něm zůstanou i po zkontrolování (kvůli souvislostem a druhému kliknutí → do ToDo)
+function snapReview(){V.reviewIds=reviewQueue().filter(x=>!(x.age===0||x.ref)).map(x=>x.t.id)}
+function openKontrola(){if(V.draft)exitDraft();V.by='project';if(V.status==='review'){V.status='';V.reviewIds=[]}else{V.status='review';snapReview()}commit();if(V.status==='review')scrollToToday()}
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('click',e=>{if(e.target.closest('button,input,select,.bar'))return;const row=e.target.closest('.lrow[data-id]');if(!row)return;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=row.dataset.id;row.classList.add('sel')});
 let drag=null;
@@ -984,7 +986,7 @@ const HI={sq:'<i class="dm"></i>',chk:'<i class="dm chk">✓</i>',todo:'<i class
 const HELP=[
  {g:'Denní rutina',items:[
   [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
-  ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Klepnutím na čtvereček úkol z filtru zmizí; opětovné klepnutí na tlačítko filtr vypne.'],
+  ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
