@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.13.2';
+const APP_VERSION='1.14.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -122,7 +122,7 @@ function status(t,p){const sp=span(t,p),pr=progressOf(t,p);
   if(sp.end<=addDays(TODAY,7))return{k:'soon',l:sp.end===TODAY?'dnes':'za '+diff(TODAY,sp.end)+' d'};
   if(sp.start<=TODAY)return{k:'active',l:'běží'};
   return{k:'future',l:''}}
-function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='review'){if(!(V.reviewIds||[]).includes(t.id))return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
+function matches(t,p){if(V.status){const k=status(t,p).k;if(V.status==='changes'){if(!unreadOf(p,t.id).length)return false}else if(V.status==='unclear'){if(!t.unclear)return false}else if(V.status==='review'){if(!(V.reviewIds||[]).includes(t.id))return false}else if(V.status==='urge'){if(!(t.urge&&t.urge<=TODAY&&progressOf(t,p)<100))return false}else if(V.status==='critical'){if(!t.critical||k==='done')return false}else if(V.status==='open'){if(k==='done')return false}else if(k!==V.status)return false}
   if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))return false;
   if(V.group&&t.group!==V.group)return false;return true}
 
@@ -185,7 +185,7 @@ function renderStrip(){
   const cnt=k=>leafs.filter(x=>status(x.t,x.p).k===k).length;
   const crit=leafs.filter(x=>x.t.critical&&status(x.t,x.p).k!=='done').length;
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
-  const stat=[...(S.projects.some(p=>myRole(p)==='lead')?[['review','Ke kontrole',reviewQueue().filter(x=>!(x.age===0||x.ref)).length]]:[]),['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
+  const stat=[...(S.projects.some(p=>myRole(p)==='lead')?[['review','Ke kontrole',reviewQueue().filter(x=>!(x.age===0||x.ref)).length]]:[]),['urge','Urgovat dnes',leafs.filter(x=>x.t.urge&&x.t.urge<=TODAY&&progressOf(x.t,x.p)<100).length],['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
   let h=`<div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
   h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button><button class="pill ${V.extShow?'on':''}" data-extshow="1">┆ Cizí termíny</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
   const people=[...new Set(ps.flatMap(p=>p.team))];
@@ -763,7 +763,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.projects)throw 0;importJson(j)}catch(err){alert('Soubor nelze načíst – není to export z této aplikace.')}};r.readAsText(f);e.target.value=''};
 function importJson(j){const map={};const nid=o=>map[o]||(map[o]=uid());
   for(const p of j.projects){const P={id:nid(p.id),name:p.name,lead:p.lead||'',color:p.color||PALETTE[0],deadline:p.deadline||'',countdown:!!p.countdown,team:[...new Set(p.team||[])],teamLinks:{},_teamIds:{},groups:(p.groups||[]).map(g=>({id:nid(g.id),name:g.name,color:g.color})),members:[],invites:[],access:[],proposals:[],myRole:'lead',created_by:S.meId,tasks:[],todos:[]};
-    for(const t of p.tasks||[]){P.tasks.push({id:nid(t.id),name:t.name||'',start:t.start,end:t.end,color:t.color||'',group:(t.group&&(p.groups||[]).some(g=>g.id===t.group))?nid(t.group):'',resp:t.resp||'',collab:t.collab||[],critical:!!t.critical,milestone:!!t.milestone,progress:t.progress||0,autoProg:!!t.autoProg,collapsed:!!t.collapsed,parent:t.parent?nid(t.parent):null,note:t.note||'',unclear:!!t.unclear,question:t.question||'',external:!!t.external,quick:t.quick||'',checked:t.checked||'',deps:(t.deps||[]).map(nid),links:(t.links||[]).map(l=>({id:uid(),name:l.name||'',url:l.url||''})),log:(t.log||[]).map(l=>({id:uid(),d:l.d,text:l.text})),docs:[],todos:(t.todos||[]).map(td=>({...td,id:uid()}))})}
+    for(const t of p.tasks||[]){P.tasks.push({id:nid(t.id),name:t.name||'',start:t.start,end:t.end,color:t.color||'',group:(t.group&&(p.groups||[]).some(g=>g.id===t.group))?nid(t.group):'',resp:t.resp||'',collab:t.collab||[],critical:!!t.critical,milestone:!!t.milestone,progress:t.progress||0,autoProg:!!t.autoProg,collapsed:!!t.collapsed,parent:t.parent?nid(t.parent):null,note:t.note||'',unclear:!!t.unclear,question:t.question||'',external:!!t.external,quick:t.quick||'',checked:t.checked||'',urge:t.urge||'',deps:(t.deps||[]).map(nid),links:(t.links||[]).map(l=>({id:uid(),name:l.name||'',url:l.url||''})),log:(t.log||[]).map(l=>({id:uid(),d:l.d,text:l.text})),docs:[],todos:(t.todos||[]).map(td=>({...td,id:uid()}))})}
     P.todos=(p.todos||[]).map(td=>({...td,id:uid()}));S.projects.push(P)}
   S.todos.push(...(j.todos||[]).map(td=>({...td,id:uid()})));if(!S.me&&j.me)S.me=j.me;
   V.project='ALL';V.by='project';V.status='';V.person='';V.group='';commit();scrollToToday();toast('Import proběhl – '+j.projects.length+' projektů')}
@@ -822,7 +822,8 @@ const chkAge=t=>{if(!t.checked)return 99;const d=diff(t.checked,TODAY);return d<
 const chkOn=t=>chkAge(t)<=2;
 function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';if(t.milestone||progressOf(t,p)>=100)return'';  // milníky a hotové úkoly se denně nekontrolují
   // souhrnný bar (fáze): neklikací, ✓ se doplní samo, jakmile jsou všechny otevřené podřízené úkoly zkontrolované nebo v ToDo
-  if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&!x.milestone&&progressOf(x,p)<100);if(!leaves.length)return'';const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||chkOn(x));const age=all?Math.max(...leaves.filter(x=>!todoRefOf(x)).map(chkAge),0):0;return `<i class="dm auto ${all?'chk d'+age:''}">${all?'✓':''}</i>`}
+  if(kidsOf(t,p).length){const leaves=descendants(t,p).filter(x=>!kidsOf(x,p).length&&!x.milestone&&progressOf(x,p)<100);if(!leaves.length)return'';const all=leaves.length>0&&leaves.every(x=>todoRefOf(x)||x.urge||chkOn(x));const age=all?Math.max(...leaves.filter(x=>!todoRefOf(x)&&!x.urge).map(chkAge),0):0;return `<i class="dm auto ${all?'chk d'+age:''}">${all?'✓':''}</i>`}
+  if(t.urge)return `<i class="dm urge ${t.urge<=TODAY?'now':''}" data-dchk="${t.id}" title="Urgovat ${fmt(t.urge)}${t.urge<TODAY?' (po termínu)':t.urge===TODAY?' – dnes':''} · Shift+klepnutí změní datum">!</i>`;
   const ref=todoRefOf(t);const age=chkAge(t);const st=ref?'todo':age<=2?'chk d'+age:'';const over=ref&&ref.due&&ref.due<TODAY;const atit=age===1?'Zkontrolováno včera':age===2?'Zkontrolováno předevčírem':'';
   return `<i class="dm ${st} ${over?'over':''}" data-dchk="${t.id}" ${!ref&&atit?`title="${atit}"`:''}>${ref?'☐':age<=2?'✓':''}</i>`}
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
@@ -834,15 +835,24 @@ function cycleCheck(id,mode){const f=findTask(id);if(!f||myRole(f.p)!=='lead')re
   const toTodo=()=>{t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'CHECK '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')};
   if(mode==='chk'){if(ref)S.todos.splice(S.todos.indexOf(ref),1);t.checked=TODAY;toast('Dnes zkontrolováno')}
   else if(mode==='todo'){if(!ref)toTodo()}
-  else if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';toast('Kontrola odebrána z ToDo')}
+  else if(mode==='urge'){if(ref)S.todos.splice(S.todos.indexOf(ref),1);t.checked='';t.urge=TODAY;openUrge(t.id)}
+  else if(t.urge){t.urge='';toast('Urgence zrušena')}
+  else if(ref){S.todos.splice(S.todos.indexOf(ref),1);t.checked='';t.urge=TODAY;commit();openUrge(t.id);return}
   else if(t.checked&&t.checked!==TODAY&&chkOn(t)){t.checked=TODAY;toast('Dnes zkontrolováno')}
   else if(t.checked===TODAY)toTodo();
   else{t.checked=TODAY;toast('Dnes zkontrolováno')}
   commit()}
-g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();cycleCheck(sq.dataset.dchk)});
+g.addEventListener('click',e=>{const sq=e.target.closest('[data-dchk]');if(!sq)return;e.stopPropagation();const f=findTask(sq.dataset.dchk);if(f&&f.t.urge&&(e.shiftKey||e.altKey)){openUrge(f.t.id);return}cycleCheck(sq.dataset.dchk)});
+/* okénko s datem urgence (po 3. klepnutí; výchozí dnes) */
+const ugBox=document.createElement('div');ugBox.id='ug';ugBox.innerHTML=`<span>Urgovat</span><input type="date"><button type="button" data-ugd="0">dnes</button><button type="button" data-ugd="1">zítra</button><button type="button" data-ugd="7">za týden</button><button type="button" data-ugok class="ok">OK</button>`;document.body.appendChild(ugBox);
+function openUrge(id){const f=findTask(id);if(!f)return;const sq=g.querySelector(`[data-dchk="${id}"]`);const r=sq?sq.getBoundingClientRect():{left:innerWidth/2,bottom:innerHeight/2};ugBox.dataset.id=id;const i=ugBox.querySelector('input');i.value=f.t.urge||TODAY;{const tt=$('#tip');if(tt)tt.style.display='none'}ugBox.style.display='flex';ugBox.style.left=Math.min(r.left,innerWidth-360)+'px';ugBox.style.top=Math.min(r.bottom+6,innerHeight-50)+'px';i.focus()}
+function closeUrge(save){if(ugBox.style.display==='none')return;if(save){const f=findTask(ugBox.dataset.id);const v=ugBox.querySelector('input').value;if(f&&v&&f.t.urge!==v){f.t.urge=v;commit()}}ugBox.style.display='none';ugBox.dataset.id=''}
+ugBox.addEventListener('click',e=>{const d=e.target.closest('[data-ugd]');if(d){ugBox.querySelector('input').value=addDays(TODAY,+d.dataset.ugd);closeUrge(true);return}if(e.target.closest('[data-ugok]'))closeUrge(true)});
+ugBox.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();closeUrge(true)}if(e.key==='Escape')closeUrge(true)});
+document.addEventListener('pointerdown',e=>{if(ugBox.style.display!=='none'&&!e.target.closest('#ug,[data-dchk]'))closeUrge(true)});
 /* ---------- Kontrola: filtr harmonogramu na úkoly, které dnes ještě čekají na kontrolu ---------- */
-function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&!(chkAge(t)===0||todoRefOf(t))}
-function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)})}}return out}
+function needsReview(t,p){return myRole(p)==='lead'&&!kidsOf(t,p).length&&!t.milestone&&progressOf(t,p)<100&&!(chkAge(t)===0||todoRefOf(t)||t.urge)}
+function reviewQueue(){const out=[];for(const p of curProjects()){if(myRole(p)!=='lead')continue;for(const t of p.tasks){if(kidsOf(t,p).length||t.milestone||progressOf(t,p)>=100)continue;if(V.person&&t.resp!==V.person&&!(t.collab||[]).includes(V.person))continue;out.push({t,p,age:chkAge(t),ref:!!todoRefOf(t)||!!t.urge})}}return out}
 // při zapnutí filtru se výběr „zmrazí“: úkoly v něm zůstanou i po zkontrolování (kvůli souvislostem a druhému kliknutí → do ToDo)
 function snapReview(){V.reviewIds=reviewQueue().filter(x=>!(x.age===0||x.ref)).map(x=>x.t.id)}
 function openKontrola(){if(V.draft)exitDraft();V.by='project';if(V.status==='review'){V.status='';V.reviewIds=[]}else{V.status='review';snapReview()}commit();if(V.status==='review')scrollToToday()}
@@ -874,7 +884,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=24))miss.push('SCHEMA 24');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=25))miss.push('SCHEMA 25');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
@@ -985,7 +995,7 @@ const HI={sq:'<i class="dm"></i>',chk:'<i class="dm chk">✓</i>',todo:'<i class
   deps:'<span style="color:var(--muted)">⤳</span>',link:'<span style="color:var(--accent)">⤷</span>',kbd:k=>`<kbd>${k}</kbd>`};
 const HELP=[
  {g:'Denní rutina',items:[
-  [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
+  [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → <i class="dm urge">!</i> urgovat (okénko s datem, výchozí dnes; Shift+klepnutí datum změní; filtr „Urgovat dnes“ ukáže urgence s dnešním a starším datem) → prázdný. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
   ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],

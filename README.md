@@ -76,3 +76,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 ## 1.11.0 – Telefonát / e‑mail z ToDo, iPhone
 - Zadání „tel Kozák – …“ / „mail Jandová: …“ označí položku 📞/✉️ a uloží jméno kontaktu (ⓘ v ⋯ lze upravit). Klepnutí spustí zkratku **Zavolat** / **Napsat** (viz `ZKRATKY.md`), jméno je i ve schránce. Vyžaduje `supabase/024_todo_kind.sql`.
 - Na úzké obrazovce (iPhone) se otevře ToDo panel přes celou obrazovku.
+
+## 1.14.0 – Urgovat
+Čtvereček denní kontroly má 4. stav: prázdný → ✓ → ☐ ToDo → **! urgovat** (okénko s datem, výchozí dnes; Shift+klepnutí datum změní) → prázdný. Oranžový obrys = urgence v budoucnu, červený plný = dnes/po termínu. Filtr „Urgovat dnes“ v liště. Vyžaduje `supabase/025_urge.sql`.

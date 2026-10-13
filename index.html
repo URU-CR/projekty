@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.13.2">
+<meta name="app-version" content="1.14.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -302,6 +302,16 @@ body.nostrip #strip{display:none}
 .bar .lbl i.dm.chk.d2{opacity:.3}
 .bar .lbl i.dm.todo{background:var(--accent);border-color:var(--accent);color:#fff}
 .bar .lbl i.dm.todo.over{background:var(--critical);border-color:var(--critical)}
+.bar .lbl i.dm.urge{background:#fff;border-color:#e0881a;color:#e0881a;font-size:12px}
+.bar .lbl i.dm.urge.now{background:var(--critical);border-color:var(--critical);color:#fff}
+#help .dm.urge{border-color:#e0881a;color:#e0881a}
+.pill.urge b{color:var(--critical)}
+#ug{position:fixed;z-index:450;display:none;gap:6px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:12px}
+#ug span{color:var(--muted);font-weight:600}
+#ug input{border:1px solid var(--line);border-radius:5px;padding:4px 6px;font-size:12px;background:var(--bg)}
+#ug button{border:1px solid var(--line);background:var(--panel);border-radius:5px;padding:3px 8px;font-size:12px;cursor:pointer}
+#ug button:hover{border-color:var(--accent)}
+#ug button.ok{background:var(--accent);color:#fff;border-color:var(--accent)}
 :root[data-theme="dark"] .bar .lbl i.dm.chk{background:#114d3a;border-color:#2f9c73;color:#6ee7b7}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .bar .lbl i.dm.chk{background:#114d3a;border-color:#2f9c73;color:#6ee7b7}}
 .bar.done{}
@@ -565,7 +575,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.13.2">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.14.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -619,8 +629,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.13.2"></script>
-<script src="db.js?v=1.13.2"></script>
-<script src="app.js?v=1.13.2"></script>
+<script src="config.js?v=1.14.0"></script>
+<script src="db.js?v=1.14.0"></script>
+<script src="app.js?v=1.14.0"></script>
 </body>
 </html>
