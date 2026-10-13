@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.14.2">
+<meta name="app-version" content="1.14.3">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -263,7 +263,9 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .gantt.noleft .left,.gantt.noleft .splitter{display:none}
 .btn.tog{color:var(--muted)}
 .btn.tog.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
-body.nostrip #strip{display:none}
+.strip.collapsed{padding:0 12px;min-height:14px}
+.stripTog{border:0;background:none;color:var(--muted);font-size:11px;line-height:14px;padding:0 4px;cursor:pointer;border-radius:4px}
+.stripTog:hover{color:var(--text);background:var(--bg)}
 .narrow .c-resp,.narrow .c-prog,.narrow .c-st{display:none}
 .st{display:inline-block;font-size:11px;padding:1px 6px;border-radius:999px;white-space:nowrap}
 .st.late{background:var(--critical);color:#fff}
@@ -576,7 +578,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.14.2">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.14.3">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -588,7 +590,6 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
         <li><button data-m="newproj">Nový projekt</button></li>
         <li class="sep"></li>
         <li><button data-m="leftw">Levá tabulka: <b id="leftwL"></b></button></li>
-        <li><button data-m="strip">Lišta rychlých filtrů: <b id="stripL"></b></button></li>
         <li class="sep"></li>
         <li><button data-m="autodaily">Ráno otevírat ToDo: <b id="autodailyL"></b></button></li>
         <li><button data-m="reviewdays">Kontrola zahrnuje úkoly: <b id="reviewdaysL"></b></button></li>
@@ -631,8 +632,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.14.2"></script>
-<script src="db.js?v=1.14.2"></script>
-<script src="app.js?v=1.14.2"></script>
+<script src="config.js?v=1.14.3"></script>
+<script src="db.js?v=1.14.3"></script>
+<script src="app.js?v=1.14.3"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.2';
+const APP_VERSION='1.14.3';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -171,7 +171,7 @@ function renderTabs(){
     `<button class="tab add" data-p="__new">+ projekt</button>`;
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
   $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
-  {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';$('#stripL').textContent=V.hideStrip?'skrytá':'zobrazena';document.body.classList.toggle('nostrip',!!V.hideStrip)}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
+  {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
 function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
@@ -186,7 +186,9 @@ function renderStrip(){
   const crit=leafs.filter(x=>x.t.critical&&status(x.t,x.p).k!=='done').length;
   const openTd=allTodos().filter(x=>!x.td.done),overTd=openTd.filter(x=>x.td.due&&x.td.due<TODAY).length;
   const stat=[...(S.projects.some(p=>myRole(p)==='lead')?[['review','Ke kontrole',reviewQueue().filter(x=>!(x.age===0||x.ref)).length]]:[]),['urge','Urgovat dnes',leafs.filter(x=>x.t.urge&&x.t.urge<=TODAY&&progressOf(x.t,x.p)<100).length],['late','Po termínu',cnt('late')],['behind','Ve skluzu',cnt('behind')],['risk','Ohrožené',cnt('risk')],['stalled','Nezahájené',cnt('stalled')],['soon','Končí do 7 dnů',cnt('soon')],['critical','Kritické',crit],['changes','Nové změny',curProjects().reduce((n,p)=>n+unreadAll(p).length,0)],['unclear','K upřesnění',S.projects.flatMap(p=>curProjects().includes(p)?p.tasks:[]).filter(t=>t.unclear).length],['open','Vše otevřené',leafs.length-cnt('done')],['todo','ToDo '+(overTd?'('+overTd+' po termínu)':''),openTd.length]];
-  let h=`<div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
+  if(V.hideStrip){el.innerHTML=`<button class="stripTog" data-strip title="Rozbalit lištu filtrů">▾</button>`;el.classList.add('collapsed');return}
+  el.classList.remove('collapsed');
+  let h=`<button class="stripTog" data-strip title="Sbalit lištu filtrů">▴</button><div class="quick"><input id="quick" placeholder="Nový úkol do harmonogramu… (Enter)"></div>`;
   h+=`<span class="sepv"></span>`+stat.map(([k,l,n])=>`<button class="pill ${k} ${V.status===k?'on':''} ${n?'':'zero'}" data-st="${k}"><b>${n}</b> ${l}</button>`).join('')+`<button class="pill ${V.depsHi?'on':''}" data-depshi="1">⤳ Vazby</button><button class="pill ${V.extShow?'on':''}" data-extshow="1">┆ Cizí termíny</button>`+(V.status==='changes'&&proj(V.project)&&unreadAll(proj(V.project)).length?`<button class="pill chg" data-ackall="1">✓ Vzít vše na vědomí</button>`:'');
   const people=[...new Set(ps.flatMap(p=>p.team))];
   h+=`<span class="sepv"></span><select id="person" class="pill"><option value="">Všichni lidé</option>${people.map(n=>`<option ${V.person===n?'selected':''}>${esc(n)}</option>`).join('')}</select>`;
@@ -730,7 +732,7 @@ $('#draftbar').addEventListener('change',e=>{if(e.target.id==='versel'&&e.target
 $('#draftbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const cp=proj(V.project);if(b.hasAttribute('data-savever')){const n=prompt('Název verze (např. „po schůzce s ICZ 24. 9.“):');if(n!==null)saveDraftVersion('manual',n.trim()||'bez názvu');return}if(b.dataset.vdiff){versionAction('diff',b.dataset.vdiff);return}if(b.dataset.vrestore){const vid=b.dataset.vrestore;leaveVersionView();versionAction('restore',vid);return}if(b.hasAttribute('data-vclose')){leaveVersionView();render();return}if(b.dataset.newdraft&&cp){createDraft(cp,b.dataset.newdraft);return}if(b.dataset.enter&&cp){const pr=(cp.proposals||[]).find(x=>x.id===b.dataset.enter);if(pr){enterDraft(cp,pr);commit()}return}if(b.hasAttribute('data-approve'))approveDraft();if(b.hasAttribute('data-reject'))rejectDraft();if(b.hasAttribute('data-reset'))resetDraft();});
 $('#draftbar').addEventListener('change',e=>{if(e.target.id==='draftnote'){const d=activeDraft();if(d){d.pr.note=e.target.value;save();DB.sync(S).catch(err=>toast(err.message,true))}}});
 $('#strip').addEventListener('change',e=>{if(e.target.id==='person'){V.person=e.target.value;commit()}});
-$('#strip').addEventListener('click',e=>{const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
+$('#strip').addEventListener('click',e=>{if(e.target.closest('[data-strip]')){V.hideStrip=!V.hideStrip;save();render();return}const m=e.target.closest('[data-mine]');if(m){V.mine=!V.mine;commit()}});
 $('#strip').addEventListener('keydown',e=>{if(e.target.id==='quick'&&e.key==='Enter'){const v=e.target.value.trim();if(!v)return;const cp=proj(V.project);if(cp&&isRO(cp)){toast('Aktuální harmonogram je pro vás jen ke čtení – otevřete návrh.');return}quickAdd(v);setTimeout(()=>{const q=$('#quick');q.focus()},0)}});
 const menu=$('#menu');
 $('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':'open'));
@@ -746,7 +748,6 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'dump':openDump();break;
     case 'reviewdays':{const seq=[0,7,14,30,-1];const cur=V.reviewDays==null?7:V.reviewDays;V.reviewDays=seq[(seq.indexOf(cur)+1)%seq.length];save();render();break}
     case 'leftw':{const lm=V.leftMode||(V.narrow?'narrow':'full');V.leftMode=lm==='full'?'narrow':lm==='narrow'?'off':'full';V.narrow=V.leftMode==='narrow';save();render();break}
-    case 'strip':V.hideStrip=!V.hideStrip;save();render();break;
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
     case 'shortcuts':{for(const k of ['call','mail','sms','wa']){const K=KIND[k];const v=prompt('Název zkratky – '+K.l+' (aplikace Zkratky na Macu/iPhonu):',V[K.sc]||K.d);if(v===null)break;V[K.sc]=v.trim()||K.d}save();toast('Uloženo');break}
     case 'bartip':V.barTip=V.barTip===false;save();render();toast(V.barTip?'Bublina u názvu a baru zapnuta':'Bublina u názvu a baru vypnuta');break;
@@ -1022,7 +1023,7 @@ const HELP=[
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
   [HI.link,'ToDo z kontroly','Položka „CHECK …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
-  ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. „Lišta rychlých filtrů“ ji skryje/zobrazí (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. „Podle lidí“ seskupí úkoly podle odpovědných.'],
+  ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. Lištu filtrů sbalí/rozbalí malá šipka ▴/▾ vlevo v liště (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. „Podle lidí“ seskupí úkoly podle odpovědných.'],
   [HI.dot,'Barvy','Barva úkolu vychází ze skupiny (Nastavení projektu → skupiny); v detailu lze zvolit vlastní. Klepnutí na čtvereček barvy v řádku otevře detail. Legenda skupin v záhlaví projektu filtruje skupinu.'],
  ]},
  {g:'Role a sdílení',items:[
