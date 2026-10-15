@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.4';
+const APP_VERSION='1.14.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -316,7 +316,8 @@ const tp=document.createElement('div');tp.id='tp';document.body.appendChild(tp);
 const FLAME=`<svg class="flame" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 1.5c.4 3.2-1.1 5-2.7 6.6C7.6 9.9 6 11.7 6 14.6 6 18.4 8.7 21 12 21s6-2.6 6-6.4c0-2.2-.9-4-2.1-5.6-.3 1.3-1 2.2-1.9 2.6.3-3.3-.5-6.6-2-10.1zm0 10.2c1.3 2 2.2 3.4 2.2 4.8 0 1.4-1 2.5-2.2 2.5s-2.2-1.1-2.2-2.5c0-1.4.9-2.8 2.2-4.8z"/></svg>`;
 /* odpočet do deadline (D:H:M) – v záhlaví, pro projekty se zapnutým odpočtem */
 function cdText(deadline){const t=new Date(deadline+'T00:00:00');let ms=t-new Date();const past=ms<0;ms=Math.abs(ms);const dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5),mm=Math.floor(ms%36e5/6e4),ss=Math.floor(ms%6e4/1e3);
-  return {past,dd,html:`${past?'−':''}${String(dd).padStart(2,'0')}<u>d</u>${String(hh).padStart(2,'0')}<u>h</u>${String(mm).padStart(2,'0')}<u>m</u>${String(ss).padStart(2,'0')}<u>s</u>`}}
+  const n=(v,w)=>`<span class="n" style="width:${w}ch">${String(v).padStart(w,'0')}</span>`;  // pevná šířka každé skupiny číslic – odpočet nemění šířku
+  return {past,dd,html:`${past?'−':''}${n(dd,Math.max(2,String(dd).length))}<u>d</u>${n(hh,2)}<u>h</u>${n(mm,2)}<u>m</u>${n(ss,2)}<u>s</u>`}}
 function renderCountdown(){const el=$('#cd');if(!el)return;const ps=(V.project==='ALL'?S.projects:S.projects.filter(p=>p.id===V.project)).filter(p=>p.deadline&&p.countdown);
   el.innerHTML=ps.map(p=>{const c=cdText(p.deadline);
     return `<span class="cdp ${c.past?'past':c.dd<14?'soon':''}" data-cd="${p.id}" title="${esc(p.name)} – deadline ${fmt(p.deadline)}${c.past?' uplynul':''}">${FLAME}${S.projects.length>1?`<i>${esc(p.name)}</i>`:''}<b>${c.html}</b></span>`}).join('')}
