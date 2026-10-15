@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.3';
+const APP_VERSION='1.14.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -315,10 +315,14 @@ const tp=document.createElement('div');tp.id='tp';document.body.appendChild(tp);
 // jednoduchý jednobarevný plamen (currentColor)
 const FLAME=`<svg class="flame" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 1.5c.4 3.2-1.1 5-2.7 6.6C7.6 9.9 6 11.7 6 14.6 6 18.4 8.7 21 12 21s6-2.6 6-6.4c0-2.2-.9-4-2.1-5.6-.3 1.3-1 2.2-1.9 2.6.3-3.3-.5-6.6-2-10.1zm0 10.2c1.3 2 2.2 3.4 2.2 4.8 0 1.4-1 2.5-2.2 2.5s-2.2-1.1-2.2-2.5c0-1.4.9-2.8 2.2-4.8z"/></svg>`;
 /* odpočet do deadline (D:H:M) – v záhlaví, pro projekty se zapnutým odpočtem */
+function cdText(deadline){const t=new Date(deadline+'T00:00:00');let ms=t-new Date();const past=ms<0;ms=Math.abs(ms);const dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5),mm=Math.floor(ms%36e5/6e4),ss=Math.floor(ms%6e4/1e3);
+  return {past,dd,html:`${past?'−':''}${String(dd).padStart(2,'0')}<u>d</u>${String(hh).padStart(2,'0')}<u>h</u>${String(mm).padStart(2,'0')}<u>m</u>${String(ss).padStart(2,'0')}<u>s</u>`}}
 function renderCountdown(){const el=$('#cd');if(!el)return;const ps=(V.project==='ALL'?S.projects:S.projects.filter(p=>p.id===V.project)).filter(p=>p.deadline&&p.countdown);
-  const now=new Date();el.innerHTML=ps.map(p=>{const t=new Date(p.deadline+'T00:00:00');let ms=t-now;const past=ms<0;ms=Math.abs(ms);const dd=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5),mm=Math.floor(ms%36e5/6e4);
-    return `<span class="cdp ${past?'past':dd<14?'soon':''}" title="${esc(p.name)} – deadline ${fmt(p.deadline)}${past?' uplynul':''}">${FLAME}${S.projects.length>1?`<i>${esc(p.name)}</i>`:''}<b>${past?'−':''}${String(dd).padStart(2,'0')}<u>d</u>${String(hh).padStart(2,'0')}<u>h</u>${String(mm).padStart(2,'0')}<u>m</u></b></span>`}).join('')}
-setInterval(()=>{if(S&&S.projects)renderCountdown()},30000);
+  el.innerHTML=ps.map(p=>{const c=cdText(p.deadline);
+    return `<span class="cdp ${c.past?'past':c.dd<14?'soon':''}" data-cd="${p.id}" title="${esc(p.name)} – deadline ${fmt(p.deadline)}${c.past?' uplynul':''}">${FLAME}${S.projects.length>1?`<i>${esc(p.name)}</i>`:''}<b>${c.html}</b></span>`}).join('')}
+// každou sekundu se přepíší jen číslice (bez překreslení záhlaví); na pozadí se tikání zastaví
+function tickCountdown(){if(document.hidden||!S||!S.projects)return;$$('#cd .cdp[data-cd]').forEach(el=>{const p=proj(el.dataset.cd);if(!p||!p.deadline)return;const c=cdText(p.deadline);const b=el.querySelector('b');if(b&&b.innerHTML!==c.html)b.innerHTML=c.html;el.classList.toggle('past',c.past);el.classList.toggle('soon',!c.past&&c.dd<14)})}
+setInterval(tickCountdown,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tickCountdown()});
 function renderTodoPanel(){renderCountdown();
   const mode=V.todoPanel||'';const btn=$('#todoBtn');
   const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
@@ -1016,7 +1020,7 @@ const HELP=[
   [HI.ms,'Milník','Jednodenní kosočtverec; zaškrtnutím splněn (vyžaduje uzavřené blokující ToDo).'],
   [HI.crit,'Kritický úkol','Vždy sytě červený bez ohledu na skupinu; po 100 % se vrátí k barvě skupiny.'],
   [HI.late+' '+HI.behind,'Stavy','Po termínu = konec uplynul a není 100 %. Ve skluzu = termín běží, ale % je nižší, než odpovídá uplynulé části (≥ 1 den, ≥ 5 b.). Dále '+HI.risk+' (blokující ToDo po termínu), '+HI.stalled+' (2 dny po startu a 0 %), „končí do 7 dnů“, „běží“. Filtry v liště ukazují počty.'],
-  [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose) – zobrazí se jen po zapnutí pilulky „┆ Cizí termíny“ v liště, jako Vazby.'],
+  [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví: dny, hodiny, minuty, sekundy). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose) – zobrazí se jen po zapnutí pilulky „┆ Cizí termíny“ v liště, jako Vazby.'],
   [HI.chg,'Změny od kolegů','Žlutý štítek u úkolu a žlutý proužek řádku: co se změnilo, kdo, kdy (bublina). „Vzít na vědomí“ u štítku, nebo hromadně ve filtru „Nové změny“. Vedoucí může změnu vrátit. Vypnout lze v menu ⋯ (Sledování změn).'],
   [HI.ghost+' '+HI.hatch,'Posun termínu (nepřečtený)','Oranžový čárkovaný rámeček = původní rozsah, šrafování = ubrané dny, oranžový proužek = přidané dny, štítek „⟲ posun +3 d“ (bublina „Původně … → nyní …“). Zmizí po vzetí na vědomí.'],
   [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní.'],
