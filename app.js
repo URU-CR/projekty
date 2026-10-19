@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.5';
+const APP_VERSION='1.14.6';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -324,8 +324,9 @@ function renderCountdown(){const el=$('#cd');if(!el)return;const ps=(V.project==
 // každou sekundu se přepíší jen číslice (bez překreslení záhlaví); na pozadí se tikání zastaví
 function tickCountdown(){if(document.hidden||!S||!S.projects)return;$$('#cd .cdp[data-cd]').forEach(el=>{const p=proj(el.dataset.cd);if(!p||!p.deadline)return;const c=cdText(p.deadline);const b=el.querySelector('b');if(b&&b.innerHTML!==c.html)b.innerHTML=c.html;el.classList.toggle('past',c.past);el.classList.toggle('soon',!c.past&&c.dd<14)})}
 setInterval(tickCountdown,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tickCountdown()});
+const MOBILE=matchMedia('(max-width:760px)').matches;  // na mobilu se text položky zalamuje (textarea), aby byl čitelný celý
 function renderTodoPanel(){renderCountdown();
-  const mode=V.todoPanel||'';const btn=$('#todoBtn');
+  if(V.todoPanel==='min')V.todoPanel='open';const mode=V.todoPanel||'';const btn=$('#todoBtn');
   const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
   const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;const vis=all.filter(mine);
   const open=vis.filter(x=>!x.td.done&&!x.td.heading);const TOM=addDays(TODAY,1);
@@ -341,13 +342,13 @@ function renderTodoPanel(){renderCountdown();
   const TRI=`<svg viewBox="0 0 20 18" width="15" height="13" aria-hidden="true"><path d="M10 1.8 18.6 16.4H1.4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 6.6v4.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="13.5" r="1.1" fill="currentColor"/></svg>`;
   const ring=(t,p)=>{const pr=progressOf(t,p),r=6,c=2*Math.PI*r;return `<svg class="ring" viewBox="0 0 16 16" width="14" height="14"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent-soft)" stroke-width="2.5"/><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="${(c*pr/100).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 8 8)"/></svg>`};
   const item=x=>{const td=x.td,over=td.due&&td.due<TODAY&&!td.done,o=V.dopen===td.id;
-    if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab>⠿</span><div class="body"><div class="line"><input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny"></div></div><button class="dopt x" data-ddel-q>✕</button></div>`;
+    if(td.heading)return `<div class="di head" data-td="${td.id}"><span class="grab" data-grab>⠿</span><div class="body"><div class="line">${MOBILE?`<textarea class="dtext" data-df="text" rows="1" placeholder="Nadpis skupiny">${esc(td.text)}</textarea>`:`<input class="dtext" data-df="text" value="${esc(td.text)}" placeholder="Nadpis skupiny">`}</div></div><button class="dopt x" data-ddel-q>✕</button></div>`;
     const pOpts=`<option value="">— mimo projekty —</option>`+S.projects.map(p=>`<option value="${p.id}" ${x.p&&x.p.id===p.id?'selected':''}>${esc(p.name)}</option>`).join('');
     const tOpts=x.p?`<option value="">— inbox projektu —</option>`+x.p.tasks.filter(t=>!kidsOf(t,x.p).length&&progressOf(t,x.p)<100).map(t=>`<option value="${t.id}" ${x.t&&x.t.id===t.id?'selected':''}>${wbsOf(t,x.p)} ${esc(t.name)}</option>`).join(''):'';
     const pill=td.due&&(td.due!==TODAY||over)?`<span class="pill ${over?'over':''}">${over?fmts(td.due):td.due===TOM?'zítra':fmts(td.due)}</span>`:'';
     const pri=+td.pri||0;const ref=td.taskRef?findTask(td.taskRef):null;
     return `<div class="di ${td.done?'done':''} ${over?'over':''} ${o?'open':''} p${pri}" data-td="${td.id}"><span class="grab" data-grab>⠿</span><button class="star ${td.imp?'on':''}" data-dimp>★</button><button class="pri" data-dpri title="${pri?'Priorita '+['','A','B','C'][pri]:''}">${TRI}</button><button class="chk" data-df="done">✓</button>
-      <div class="body"><div class="line">${td.kind&&KIND[td.kind]?`<button class="kind ${td.kind}" data-dkind title="${KIND[td.kind].l}${td.contact?' – '+esc(td.contact):''} (zkratka na Macu/iPhonu)">${KIND[td.kind].i}</button>`:`<button class="kind none" data-dkind title="Označit jako telefonát / e-mail / SMS / WhatsApp">·</button>`}<input class="dtext" data-df="text" value="${esc(td.text)}">${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
+      <div class="body"><div class="line">${td.kind&&KIND[td.kind]?`<button class="kind ${td.kind}" data-dkind title="${KIND[td.kind].l}${td.contact?' – '+esc(td.contact):''} (zkratka na Macu/iPhonu)">${KIND[td.kind].i}</button>`:`<button class="kind none" data-dkind title="Označit jako telefonát / e-mail / SMS / WhatsApp">·</button>`}${MOBILE?`<textarea class="dtext" data-df="text" rows="1">${esc(td.text)}</textarea>`:`<input class="dtext" data-df="text" value="${esc(td.text)}">`}${pill}${x.t?`<span class="tag">⤷ ${esc(x.t.name)}</span>`:''}${ref?`<span class="ringw" title="${esc(ref.t.name)}: ${progressOf(ref.t,ref.p)} %">${ring(ref.t,ref.p)}</span>`:''}${x.p?`<span class="pdot" style="background:${x.p.color}" title="${esc(x.p.name)}"></span>`:''}</div></div>
       ${td.done?`<button class="dopt x" data-ddel-q>✕</button>`:`<button class="dopt" data-dopt="${td.id}">⋯</button>`}</div>
     ${o?`<div class="dopts" data-td="${td.id}"><label>Do kdy <input type="date" data-df="due" value="${td.due||''}"></label><div class="seg"><button data-dd="0">dnes</button><button data-dd="1">zítra</button><button data-dd="7">za týden</button><button data-dd="">bez</button></div>
       <label>Projekt <select data-df="pid">${pOpts}</select></label>${x.p?`<label>Úkol <select data-df="tid">${tOpts}</select></label>`:''}
@@ -357,11 +358,12 @@ function renderTodoPanel(){renderCountdown();
   const l=vis.filter(x=>!x.td.done);const legacy=(a,b)=>{const ao=a.td.due&&a.td.due<TODAY,bo=b.td.due&&b.td.due<TODAY;if(ao!==bo)return ao?-1:1;return prioSort(a,b)};
   l.sort((a,b)=>{const ao=a.td.ord||0,bo=b.td.ord||0;if(ao&&bo)return ao-bo;if(ao||bo)return ao?-1:1;return legacy(a,b)});l.forEach((x,i)=>x.td.ord=i+1);
   const sub=[`${open.length} otevřených`,doneToday.length?`${doneToday.length} hotovo`:'',endToday?`${endToday} končí dnes`:'',lateTasks?`<a data-golate>${lateTasks} po termínu</a>`:'',behindTasks?`<a data-gobehind>${behindTasks} ve skluzu</a>`:'',(()=>{const n=S.projects.reduce((s,p)=>s+unreadAll(p).length,0);return n?`<a data-gochg>${n} ${n===1?'změna':n<5?'změny':'změn'}</a>`:''})()].filter(Boolean).join(' · ');
-  let h=`<div class="tph"><b>ToDo</b><span class="sub">${DAYS[dt.getUTCDay()]} ${fmt(TODAY)}</span><span class="sp"></span><button data-tp="min" title="Zmenšit">–</button><button data-tp="close" class="x" title="Zavřít">✕</button></div>
+  let h=`<div class="tph"><b>ToDo</b><span class="sub">${DAYS[dt.getUTCDay()]} ${fmt(TODAY)}</span><span class="sp"></span><button data-tp="close" class="x" title="Zavřít">✕</button></div>
   <div class="tpsub">${sub}</div>
   <div class="dsec" data-dd="0"><div class="dadd ${V.dhead?'head':''}"><input id="dadd" placeholder="${V.dhead?'Nadpis skupiny… (Enter)':'Co je třeba udělat… (Enter)'}" autocomplete="off"><button class="hb ${V.dhead?'on':''}" data-dhead="0" title="Přidat nadpis skupiny">Nadpis</button></div>
   <div class="tpl">${l.map(item).join('')}${!l.length&&!doneToday.length?`<div class="dempty">Nic otevřeného.</div>`:''}${doneToday.map(item).join('')}</div></div>`;
   tp.innerHTML=h;
+  if(MOBILE)tp.querySelectorAll('textarea.dtext').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=tp.querySelector(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
@@ -375,11 +377,12 @@ function runContact(td){const who=(td.contact||'').trim();if(!who){toast('U polo
   if(navigator.clipboard)navigator.clipboard.writeText(who).catch(()=>{});toast(K.l+': '+who+' – spouštím zkratku „'+name+'“ (jméno je i ve schránce)')}
 function setTodoPanel(m){V.todoPanel=m;save();renderTodoPanel();if(m==='open'){focusTd='dadd';const i=$('#dadd');if(i)i.focus()}}
 tp.addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(!b)return;setTodoPanel(b.dataset.tp==='close'?'':b.dataset.tp)});
+tp.addEventListener('input',e=>{if(e.target.matches('textarea.dtext')){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px'}});
 tp.addEventListener('keydown',e=>{if(e.target.classList.contains('dtext')){const box=e.target.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;
     if(e.key==='Enter'){e.preventDefault();f.td.text=e.target.value;const td={id:uid(),text:'',done:false,who:f.td.who,due:f.td.due,block:false,pri:0,imp:false,ord:(f.td.ord||0)+0.5};f.list.splice(f.list.indexOf(f.td)+1,0,td);focusTd='td:'+td.id;commit()}
     if(e.key==='Backspace'&&e.target.value===''){e.preventDefault();f.list.splice(f.list.indexOf(f.td),1);commit()}
     if(e.key==='Escape')e.target.blur();return}
-  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;quickTodo(v,{personal:true});const f=findTodo(lastTodoId);if(f){f.td.ord=firstOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=0;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){if(V.dhead){V.dhead=false;render()}else setTodoPanel('min')}}});
+  if(e.target.id==='dadd'){if(e.key==='Enter'){const v=e.target.value.trim();if(!v)return;quickTodo(v,{personal:true});const f=findTodo(lastTodoId);if(f){f.td.ord=firstOrd();if(V.dhead){f.td.heading=true;f.td.block=false;f.td.pri=0;f.td.imp=false}}focusTd='dadd';commit()}if(e.key==='Escape'){if(V.dhead){V.dhead=false;render()}else setTodoPanel('')}}});
 tp.addEventListener('change',e=>{const el=e.target;const df=el.dataset.df;if(!df)return;const box=el.closest('[data-td]');const f=findTodo(box.dataset.td);if(!f)return;const td=f.td;
   if(df==='done'){td.done=el.checked;td.doneAt=el.checked?TODAY:'';}
   else if(df==='text')td.text=el.value;
@@ -743,7 +746,7 @@ const menu=$('#menu');
 $('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':'open'));
 $('#kBtn').addEventListener('click',openKontrola);
 $('#helpBtn').addEventListener('click',()=>openHelp());
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.todoPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#tp'))setTodoPanel('min')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.todoPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#tp'))setTodoPanel('')});
 menu.querySelector(':scope > button').onclick=e=>{menu.classList.toggle('open');e.stopPropagation()};
 document.addEventListener('click',()=>menu.classList.remove('open'));
 menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;menu.classList.remove('open');
@@ -1008,7 +1011,7 @@ const HELP=[
   [HI.sq,'Čtvereček denní kontroly','Za barem (jen vedoucí). Klepnutí: '+HI.chk+' dnes zkontrolováno → '+HI.todo+' do mého ToDo („CHECK …“, drží do odškrtnutí; červený po termínu) → <i class="dm urge">!</i> urgovat (okénko s datem, výchozí dnes). Urgence svítí červeně od svého data dál, dokud ji nevyřídíte: klepnutí na „!“ otevře okénko, kde buď nastavíte další termín urgování (dnes/zítra/za 3 dny/za týden/datum), nebo klepnete „✓ Vyřízeno“ – čtvereček se vyprázdní. Filtr „Urgovat dnes“ ukáže urgence s dnešním a starším datem. ✓ drží 3 dny a slábne; klepnutí na vybledlou ✓ ji obnoví. U fází se ✓ doplní samo, když jsou všechny otevřené podúkoly zkontrolované nebo v ToDo. Hotové úkoly a milníky čtvereček nemají.'],
   ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Budoucí úkoly se zahrnou jen pokud začínají do N dní (menu ⋯ → „Kontrola zahrnuje úkoly“; výchozí 7, lze jen běžící / 14 / 30 / všechny). Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
-  ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: – zmenší na lištu, ✕ zavře, Esc zmenší. Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
+  ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: ✕ nebo Esc zavře (znovu otevře tlačítko ToDo). Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
   ['📞 ✉️ 💬','Telefonát / e-mail / SMS / WhatsApp z ToDo','Zadání „tel Kozák – termín“, „mail Jandová: smlouva“, „sms Míka …“ nebo „wa Míka …“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na ikonu spustí zkratku „Zavolat“ / „Napsat“ / „SMS“ / „WhatsApp“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře zprávu s textem položky; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
  ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],
