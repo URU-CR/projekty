@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.15.1">
+<meta name="app-version" content="1.15.2">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -483,6 +483,16 @@ dialog.proj{width:min(760px,96vw)}
 #np .nth .x:hover{color:var(--critical);background:var(--bg)}
 #np .ntb{display:block;margin:0 6px 6px 26px;width:calc(100% - 32px);border:0;background:none;font:inherit;font-size:13px;line-height:1.45;resize:none;overflow:hidden;color:var(--text);white-space:pre-wrap;word-break:break-word;padding:2px 4px}
 #np .ntb:focus{outline:none}
+#np .ntv{margin:0 6px 6px 26px;padding:2px 4px;font-size:13px;line-height:1.45;cursor:text;min-height:24px;word-break:break-word}
+#np .ntv .h{font-weight:700;margin:6px 0 2px}
+#np .ntv .h1{font-size:13.5px}
+#np .ntv .h2{font-size:13px;color:var(--muted)}
+#np .ntv .h3{font-size:12.5px;color:var(--muted)}
+#np .ntv .p{white-space:pre-wrap}
+#np .ntv .li{display:flex;gap:6px;padding-left:calc(var(--d,0)*14px)}
+#np .ntv .li .m{flex:none;color:var(--muted);min-width:8px;text-align:right}
+#np .ntv .br{height:8px}
+@media (max-width:760px){#np .ntv{font-size:15px}}
 #help .nb{display:inline-flex;vertical-align:middle;color:var(--muted)}
 @media (max-width:760px){#np.open{position:fixed;inset:0;width:auto;max-height:none;border-radius:0;border:0;top:0}#np.open.shift{right:0}#np .tph{padding-top:max(8px,env(safe-area-inset-top))}#np .ntb,#np .nth .ntt{font-size:15px}#np .nth .x{color:var(--muted)}}
 #tp{position:fixed;top:52px;right:10px;z-index:300;width:clamp(360px,30vw,560px);max-height:calc(100vh - 64px);display:none;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.22);font-size:13px}
@@ -625,7 +635,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.15.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.15.2">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -680,8 +690,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.15.1"></script>
-<script src="db.js?v=1.15.1"></script>
-<script src="app.js?v=1.15.1"></script>
+<script src="config.js?v=1.15.2"></script>
+<script src="db.js?v=1.15.2"></script>
+<script src="app.js?v=1.15.2"></script>
 </body>
 </html>

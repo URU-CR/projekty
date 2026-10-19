@@ -90,3 +90,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 - Horní lišta je vždy jednořádková: záložky projektů se nezalamují; co se nevejde, skryje se do tlačítka „▾ +N“ se seznamem všech projektů (aktivní projekt zůstává vidět vždy). „Všechny projekty“ → „Vše“, „+ projekt“ → „+“.
 - Tlačítko „Harmonogram“ zrušeno – „Podle lidí“ je přepínač (vypnuto = celý harmonogram).
 - Menší odsazení tlačítek a záložek; jméno uživatele u loga se skrývá pod 1280 px.
+
+## 1.15.2 – Formátování v poznámkách
+- Řádek začínající `# ` je tučný mezinadpis uvnitř poznámky (`## `, `### ` menší), `**text**` nebo ⌘B / Ctrl+B nad výběrem je tučně (opakované ⌘B zruší). Mimo editaci se tělo zobrazuje naformátované (nadpisy, odrážky, číslování); klepnutím do textu se otevře editor s kurzorem na konci. Prázdná poznámka je rovnou v editoru.
