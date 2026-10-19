@@ -93,3 +93,8 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.15.2 – Formátování v poznámkách
 - Řádek začínající `# ` je tučný mezinadpis uvnitř poznámky (`## `, `### ` menší), `**text**` nebo ⌘B / Ctrl+B nad výběrem je tučně (opakované ⌘B zruší). Mimo editaci se tělo zobrazuje naformátované (nadpisy, odrážky, číslování); klepnutím do textu se otevře editor s kurzorem na konci. Prázdná poznámka je rovnou v editoru.
+
+## 1.15.3 – Poznámky WYSIWYG
+- Tělo poznámky je rovnou formátovaný editor (contenteditable) – žádné přepínání mezi náhledem a zdrojem, tučné zůstává tučné i při psaní a kopírování. ⌘B / Ctrl+B = tučně; „- “ / „1. “ na začátku řádku založí seznam; „# “ / „## “ mezinadpis (Enter za ním pokračuje obyčejným řádkem). Vkládání ze schránky jako prostý text (víceřádkový se převede na odstavce/odrážky). ⌘+klik otevře odkaz.
+- Ukládá se očištěné HTML (b, i, u, br, div, ul/ol/li, h4/h5, a). Starší poznámky psané značkami (`# `, `**x**`, `- `) se při prvním zobrazení převedou.
+- Globální klávesové zkratky (l, n, ?) se nespouštějí při psaní v editoru.
