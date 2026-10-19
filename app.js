@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.15.0';
+const APP_VERSION='1.15.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -166,11 +166,13 @@ function buildRows(){
 
 /* ---------- render ---------- */
 function renderTabs(){
-  $('#tabs').innerHTML=`<button class="tab ${V.project==='ALL'?'on':''}" data-p="ALL">Všechny projekty</button>`+
+  const tabs=$('#tabs');tabs.innerHTML=`<button class="tab ${V.project==='ALL'?'on':''}" data-p="ALL">Vše</button>`+
     S.projects.map(p=>`<button class="tab ${V.project===p.id?'on':''}" data-p="${p.id}"><span class="pd" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('')+
-    `<button class="tab add" data-p="__new">+ projekt</button>`;
+    `<button class="tab add" data-p="__new" title="Nový projekt">+</button>`;
+  requestAnimationFrame(()=>{const fits=()=>tabs.scrollWidth<=tabs.clientWidth+1;const cands=[...tabs.querySelectorAll('.tab:not(.on):not(.add):not([data-p="ALL"])')].reverse();let hid=0;
+    if(!fits()){const m=document.createElement('button');m.className='more';m.dataset.more='1';m.title='Další projekty';tabs.appendChild(m);for(const t of cands){if(fits())break;t.style.display='none';hid++;m.textContent='▾ +'+hid}if(!hid)m.remove()}});
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
-  $$('#by button').forEach(b=>b.classList.toggle('on',b.dataset.b===V.by));
+  $('#by').classList.toggle('on',V.by==='person');
   {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
@@ -723,7 +725,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove
 /* ---------- events ---------- */
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;if(b.dataset.p==='__new'){newProject();return}if(V.draft)exitDraft();V.project=b.dataset.p;V.person='';V.group='';commit();scrollToToday()});
 $('#zoom').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.zoom=b.dataset.z;commit();scrollToToday()});
-$('#by').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.b!=='project'&&V.draft)exitDraft();V.by=b.dataset.b;V.prevBy=V.by;V.status='';commit();scrollToToday()});
+$('#by').addEventListener('click',()=>{const nb=V.by==='person'?'project':'person';if(nb==='person'&&V.draft)exitDraft();V.by=nb;V.prevBy=V.by;V.status='';commit();scrollToToday()});
+let rsT;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(S.projects)renderTabs()},150)});
+const tabMenu=document.createElement('div');tabMenu.className='tabmenu';document.body.appendChild(tabMenu);
+$('#tabs').addEventListener('click',e=>{const m=e.target.closest('[data-more]');if(!m)return;e.stopPropagation();if(tabMenu.classList.contains('open')){tabMenu.classList.remove('open');return}
+  tabMenu.innerHTML=`<button data-p="ALL" class="${V.project==='ALL'?'on':''}">Všechny projekty</button>`+S.projects.map(p=>`<button data-p="${p.id}" class="${V.project===p.id?'on':''}"><span class="pd" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('');
+  const r=m.getBoundingClientRect();tabMenu.style.top=(r.bottom+4)+'px';tabMenu.style.left=Math.max(8,Math.min(r.left,innerWidth-260))+'px';tabMenu.classList.add('open')});
+tabMenu.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;tabMenu.classList.remove('open');const t=$(`#tabs .tab[data-p="${b.dataset.p}"]`);if(t)t.click()});
+document.addEventListener('click',e=>{if(!e.target.closest('.tabmenu'))tabMenu.classList.remove('open')});
 $('#bToday').onclick=scrollToToday;
 
 $('#strip').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
@@ -1071,7 +1080,7 @@ const HELP=[
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
   [HI.link,'ToDo z kontroly','Položka „CHECK …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
-  ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. Lištu filtrů sbalí/rozbalí malá šipka ▴/▾ vlevo v liště (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. „Podle lidí“ seskupí úkoly podle odpovědných.'],
+  ['<b>⋯</b>','Zobrazení','V menu ⋯: „Levá tabulka“ přepíná plná → úzká → skrytá (jen Gantt); šířku lze táhnout za její okraj. Lištu filtrů sbalí/rozbalí malá šipka ▴/▾ vlevo v liště (filtry platí dál). Den/Týden/Měsíc = měřítko, „Dnes“ posune graf na dnešek. Tlačítko „Podle lidí“ je přepínač: zapnuté seskupí úkoly podle odpovědných.'],
   [HI.dot,'Barvy','Barva úkolu vychází ze skupiny (Nastavení projektu → skupiny); v detailu lze zvolit vlastní. Klepnutí na čtvereček barvy v řádku otevře detail. Legenda skupin v záhlaví projektu filtruje skupinu.'],
  ]},
  {g:'Role a sdílení',items:[

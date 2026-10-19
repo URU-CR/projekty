@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.15.0">
+<meta name="app-version" content="1.15.1">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -38,20 +38,29 @@ button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 
 /* top bar */
-.top{display:flex;align-items:center;gap:12px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-.brand{font-weight:600;font-size:15px;letter-spacing:-.01em;padding-right:6px}
-.tabs{display:flex;gap:4px;flex-wrap:wrap;flex:1}
-.tab{border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 10px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.top{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:nowrap}
+.brand{font-weight:600;font-size:15px;letter-spacing:-.01em;padding-right:2px;flex:none;white-space:nowrap}
+@media (max-width:1280px){.brand .hint{display:none}}
+.tabs{display:flex;gap:2px;flex-wrap:nowrap;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;align-items:center}
+.tabs::-webkit-scrollbar{display:none}
+.tabs .more{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:3px 7px;color:var(--muted);font-size:12px}
+.tabmenu{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;min-width:200px;max-height:70vh;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.14);display:none}
+.tabmenu.open{display:block}
+.tabmenu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:5px;font-size:13px}
+.tabmenu button:hover,.tabmenu button.on{background:var(--bg)}
+.tabmenu button.on{font-weight:600}
+.tab{border:1px solid transparent;background:transparent;border-radius:6px;padding:3px 8px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap;flex:none;font-size:12.5px}
 .tab:hover{background:var(--bg)}
 .tab.on{background:var(--accent-soft);color:var(--text);border-color:transparent}
-.tab .pd{width:9px;height:9px;border-radius:3px;display:inline-block}
+.tab .pd,.tabmenu .pd{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none}
 .tab.add{color:var(--muted);font-weight:500}
-.tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 10px}
+.tools{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;flex:none}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:4px 9px;white-space:nowrap}
+.btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
 .btn:hover{border-color:var(--muted)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
 .seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.seg button{border:0;background:transparent;padding:5px 10px;color:var(--muted)}
+.seg button{border:0;background:transparent;padding:4px 9px;color:var(--muted)}
 .seg button.on{background:var(--accent-soft);color:var(--text)}
 .tools select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px;max-width:160px}
 .chk{display:flex;align-items:center;gap:5px;color:var(--muted);padding:0 4px;cursor:pointer;user-select:none}
@@ -255,7 +264,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .team input{flex:1}
 .team button{border:0;background:none;color:var(--muted)}
 .hint{color:var(--muted);font-size:12px}
-@media (max-width:760px){ :root{--leftw:min(60vw,320px)} .brand{display:none} }
+@media (max-width:760px){ :root{--leftw:min(60vw,320px)} .brand{display:none} .top{flex-wrap:wrap} .tools{flex-wrap:wrap} }
 
 .lhead,.lrow{grid-template-columns:44px minmax(180px,1fr) 96px 74px 76px 28px}
 .narrow .lhead,.narrow .lrow{grid-template-columns:44px 1fr 0 0 0 28px}
@@ -616,10 +625,10 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.15.0">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.15.1">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
-    <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
+    <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
     <div class="seg" id="zoom"><button data-z="day">Den</button><button data-z="week">Týden</button><button data-z="month">Měsíc</button></div>
     <button class="btn" id="bToday">Dnes</button>
     <div class="menu" id="menu"><button class="btn">⋯</button>
@@ -671,8 +680,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.15.0"></script>
-<script src="db.js?v=1.15.0"></script>
-<script src="app.js?v=1.15.0"></script>
+<script src="config.js?v=1.15.1"></script>
+<script src="db.js?v=1.15.1"></script>
+<script src="app.js?v=1.15.1"></script>
 </body>
 </html>

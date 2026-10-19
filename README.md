@@ -85,3 +85,8 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 - Enter v nadpisu založí poznámku, tělo se ukládá samo (1,2 s po dopsání nebo při odchodu z pole). Řádek začínající `- `, `• ` nebo `1. ` po Enteru pokračuje další odrážkou; prázdná odrážka ji ukončí; Shift+Enter = obyčejný řádek.
 - ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj. Na mobilu přes celou obrazovku.
 - Vyžaduje migraci `supabase/026_notes.sql`.
+
+## 1.15.1 – Užší horní lišta
+- Horní lišta je vždy jednořádková: záložky projektů se nezalamují; co se nevejde, skryje se do tlačítka „▾ +N“ se seznamem všech projektů (aktivní projekt zůstává vidět vždy). „Všechny projekty“ → „Vše“, „+ projekt“ → „+“.
+- Tlačítko „Harmonogram“ zrušeno – „Podle lidí“ je přepínač (vypnuto = celý harmonogram).
+- Menší odsazení tlačítek a záložek; jméno uživatele u loga se skrývá pod 1280 px.
