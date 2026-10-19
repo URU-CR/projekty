@@ -79,3 +79,9 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.14.0 – Urgovat
 Čtvereček denní kontroly má 4. stav: prázdný → ✓ → ☐ ToDo → **! urgovat** (okénko s datem, výchozí dnes; Shift+klepnutí datum změní) → prázdný. Oranžový obrys = urgence v budoucnu, červený plný = dnes/po termínu. Filtr „Urgovat dnes“ v liště. Vyžaduje `supabase/025_urge.sql`.
+
+## 1.15.0 – Poznámky
+- Malá ikonka vedle tlačítka ToDo otevře plovoucí panel **Poznámky** (nadpis + volný text / odrážky). Poznámky vidí a upravuje **jen jejich autor** (RLS `owner = auth.uid()`), ukládají se do tabulky `notes`.
+- Enter v nadpisu založí poznámku, tělo se ukládá samo (1,2 s po dopsání nebo při odchodu z pole). Řádek začínající `- `, `• ` nebo `1. ` po Enteru pokračuje další odrážkou; prázdná odrážka ji ukončí; Shift+Enter = obyčejný řádek.
+- ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj. Na mobilu přes celou obrazovku.
+- Vyžaduje migraci `supabase/026_notes.sql`.

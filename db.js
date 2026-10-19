@@ -29,13 +29,13 @@ const DB = (() => {
   async function claimInvites() { try { const { data } = await sb.rpc('claim_invites'); return data || 0; } catch (e) { return 0; } }
   async function load() {
     const q = async (t, sel = '*', order) => { let r = sb.from(t).select(sel); if (order) r = r.order(order); const { data, error } = await r; if (error) throw error; return data || []; };
-    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks, versions, changes, reads] = await Promise.all([
+    const [profiles, projects, members, invites, team, groups, tasks, links, log, docs, todos, access, proposals, ptasks, versions, changes, reads, notes] = await Promise.all([
       q('profiles'), q('projects', '*', 'created_at'), q('project_members'), q('project_invites'), q('project_team', '*', 'sort'),
       q('task_groups', '*', 'sort'), q('tasks', '*', 'sort'), q('task_links', '*', 'sort'), q('task_log', '*', 'created_at'),
-      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort'), q('proposal_versions', 'id,proposal_id,project_id,name,kind,author,created_at', 'created_at'), q('task_changes', '*', 'created_at'), q('change_reads')]);
+      q('documents', '*', 'created_at'), q('todos', '*', 'sort'), q('group_access'), q('proposals', '*', 'created_at'), q('proposal_tasks', '*', 'sort'), q('proposal_versions', 'id,proposal_id,project_id,name,kind,author,created_at', 'created_at'), q('task_changes', '*', 'created_at'), q('change_reads'), q('notes', '*', 'sort').catch(() => [])]);
     const prof = Object.fromEntries(profiles.map(p => [p.id, p]));
     const myProfile = prof[user.id] || { name: user.email.split('@')[0], email: user.email };
-    const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, trackChanges: myProfile.track_changes !== false, profiles: prof, projects: [], todos: [] };
+    const S = { me: myProfile.name || '', meId: user.id, meEmail: user.email, trackChanges: myProfile.track_changes !== false, profiles: prof, projects: [], todos: [], notes: (notes || []).map(n => ({ id: n.id, title: n.title || '', body: n.body || '', open: !!n.open, updated: n.updated_at || '' })) };
     const readSet = new Set(reads.filter(r => r.user_id === user.id).map(r => r.change_id));
     const byTask = {}; const tMap = {};
     for (const p of projects) {
@@ -88,7 +88,7 @@ const DB = (() => {
 
   /* ---------- rozložení stavu na řádky tabulek ---------- */
   function flatten(S) {
-    const F = { projects: {}, team: {}, groups: {}, tasks: {}, links: {}, log: {}, todos: {}, proposals: {}, ptasks: {} };
+    const F = { projects: {}, team: {}, groups: {}, tasks: {}, links: {}, log: {}, todos: {}, proposals: {}, ptasks: {}, notes: {} };
     let sortT = 0;
     for (const p of S.projects) {
       F.projects[p.id] = { id: p.id, name: p.name, lead_name: p.lead || '', color: p.color, archived: !!p.archived, created_by: p.created_by || user.id, deadline: p.deadline || null, countdown: !!p.countdown };
@@ -112,13 +112,14 @@ const DB = (() => {
       }
     }
     S.todos.forEach((td, j) => { F.todos[td.id] = todoRow(td, null, null, j); });
+    (S.notes || []).forEach((n, j) => { F.notes[n.id] = { id: n.id, owner: user.id, title: n.title || '', body: n.body || '', open: !!n.open, sort: j }; });
     return F;
   }
   const todoRow = (td, pid, tid, sort) => ({ id: td.id, owner: td.owner || user.id, project_id: pid, task_id: tid, text: td.text || '', who: td.who || '', done: !!td.done, done_at: td.doneAt || null, due: td.due || null, block: !!td.block, pri: td.pri || 0, imp: !!td.imp, sort, task_ref: td.taskRef || null, heading: !!td.heading, ord: Math.max(-2000000000, Math.min(2000000000, Math.round(td.ord || 0))), kind: td.kind || '', contact: td.contact || '' });
 
   /* ---------- synchronizace rozdílů ---------- */
-  const TABLES = { projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };
-  const ORDER = ['projects', 'team', 'groups', 'tasks', 'links', 'log', 'todos', 'proposals', 'ptasks'];
+  const TABLES = { notes: 'notes', projects: 'projects', team: 'project_team', groups: 'task_groups', tasks: 'tasks', links: 'task_links', log: 'task_log', todos: 'todos', proposals: 'proposals', ptasks: 'proposal_tasks' };
+  const ORDER = ['projects', 'team', 'groups', 'tasks', 'links', 'log', 'todos', 'proposals', 'ptasks', 'notes'];
   let syncing = null;
   async function sync(S) {
     if (!user) return;
@@ -183,6 +184,7 @@ const DB = (() => {
     channel = sb.channel('projekty')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'todos' }, handler)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_log' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposal_tasks' }, handler)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, handler)
@@ -190,18 +192,19 @@ const DB = (() => {
       .subscribe();
   }
 
-  const SCHEMA = 25; // poslední potřebná migrace
+  const SCHEMA = 26; // poslední potřebná migrace
   // kontrola, že databáze má sloupce z posledních migrací; vrátí seznam chybějících migrací (název souboru + SQL)
   const SCHEMA_CHECKS = [
     ['023_external.sql', 'tasks', 'external', "alter table public.tasks add column if not exists external boolean not null default false;"],
     ['024_todo_kind.sql', 'todos', 'kind', "alter table public.todos add column if not exists kind text not null default ''; alter table public.todos add column if not exists contact text not null default '';"],
     ['025_urge.sql', 'tasks', 'urge_on', "alter table public.tasks add column if not exists urge_on date;"],
+    ['026_notes.sql', 'notes', 'id', "create table if not exists public.notes (id uuid primary key default gen_random_uuid(), owner uuid not null references auth.users(id) on delete cascade, title text not null default '', body text not null default '', open boolean not null default true, sort int not null default 0, created_at timestamptz default now(), updated_at timestamptz default now()); alter table public.notes enable row level security; drop policy if exists notes_own on public.notes; create policy notes_own on public.notes for all to authenticated using (owner = auth.uid()) with check (owner = auth.uid());"],
   ];
   async function checkSchema() {
     const missing = [];
     for (const [file, table, col, sql] of SCHEMA_CHECKS) {
       const { error } = await sb.from(table).select(col).limit(0);
-      if (error && /column|schema cache/i.test(error.message || '')) missing.push({ file, sql });
+      if (error && /column|schema cache|relation|does not exist/i.test(error.message || '')) missing.push({ file, sql });
     }
     return missing;
   }

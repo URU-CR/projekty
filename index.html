@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.14.7">
+<meta name="app-version" content="1.15.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -441,6 +441,41 @@ dialog.proj{width:min(760px,96vw)}
 #todoBtn b{background:rgba(255,255,255,.22);border-radius:999px;padding:0 7px;font-weight:700;line-height:18px}
 #todoBtn i.ov{font-style:normal;background:var(--critical);border-radius:999px;padding:0 6px;font-size:11px;line-height:18px}
 #todoBtn.on{background:#174a99;border-color:#174a99}
+#noteBtn{display:inline-flex;align-items:center;gap:4px;padding:6px 8px;color:var(--muted)}
+#noteBtn svg{display:block}
+#noteBtn b{font-size:11px;font-weight:600;line-height:1}
+#noteBtn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+#np{position:fixed;top:52px;right:10px;z-index:299;width:clamp(340px,28vw,520px);max-height:calc(100vh - 64px);display:none;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.22);font-size:13px}
+#np.open{display:flex}
+#np.shift{right:calc(18px + clamp(360px,30vw,560px))}
+#np .tph{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line2)}
+#np .tph b{font-size:14px}
+#np .tph .sub{color:var(--muted);font-size:12px}
+#np .tph .sp{flex:1;align-self:stretch;display:flex;align-items:center;justify-content:flex-end;gap:6px;margin:-8px -8px -8px 4px;padding:0 12px 0 8px;border:0;border-radius:0 10px 0 0;background:color-mix(in srgb,var(--bg) 70%,transparent);color:var(--muted);font-size:14px;cursor:pointer}
+#np .tph .sp span{font-size:11px;letter-spacing:.02em;opacity:.8}
+#np .tph .sp:hover{background:var(--accent-soft);color:var(--text)}
+#np .dadd{display:flex;gap:6px;align-items:center;padding:8px 10px 6px 12px}
+#np .dadd input{flex:1;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:6px 8px;font-size:13px;min-width:0}
+#np .dadd input.q{flex:0 0 110px}
+#np .dadd input:focus{outline:none;border-color:var(--accent)}
+#np .tpl{overflow:auto;padding:2px 8px 10px}
+#np .tpsub{color:var(--muted);font-size:11.5px;padding:6px 6px 0}
+#np .nt{border:1px solid var(--line2);border-radius:7px;margin:5px 0;background:var(--bg)}
+#np .nt.open{background:var(--panel)}
+#np .nth{display:flex;align-items:center;gap:4px;padding:3px 4px 3px 2px}
+#np .nth .tog{border:0;background:none;color:var(--muted);width:20px;height:22px;cursor:pointer;border-radius:4px;font-size:12px;flex:none}
+#np .nth .tog:hover{background:var(--accent-soft);color:var(--text)}
+#np .nth .ntt{flex:0 1 auto;min-width:40%;border:0;background:none;font:inherit;font-weight:700;font-size:13px;padding:3px 4px;border-radius:4px;color:var(--text)}
+#np .nt.open .nth .ntt{flex:1}
+#np .nth .ntt:focus{outline:none;background:var(--accent-soft)}
+#np .nth .pv{flex:1;min-width:0;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#np .nth .x{border:0;background:none;color:transparent;font-size:13px;padding:2px 6px;border-radius:4px;cursor:pointer;flex:none}
+#np .nt:hover .nth .x{color:var(--muted)}
+#np .nth .x:hover{color:var(--critical);background:var(--bg)}
+#np .ntb{display:block;margin:0 6px 6px 26px;width:calc(100% - 32px);border:0;background:none;font:inherit;font-size:13px;line-height:1.45;resize:none;overflow:hidden;color:var(--text);white-space:pre-wrap;word-break:break-word;padding:2px 4px}
+#np .ntb:focus{outline:none}
+#help .nb{display:inline-flex;vertical-align:middle;color:var(--muted)}
+@media (max-width:760px){#np.open{position:fixed;inset:0;width:auto;max-height:none;border-radius:0;border:0;top:0}#np.open.shift{right:0}#np .tph{padding-top:max(8px,env(safe-area-inset-top))}#np .ntb,#np .nth .ntt{font-size:15px}#np .nth .x{color:var(--muted)}}
 #tp{position:fixed;top:52px;right:10px;z-index:300;width:clamp(360px,30vw,560px);max-height:calc(100vh - 64px);display:none;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.22);font-size:13px}
 #tp.open{display:flex}
 #tp.min{display:flex;width:auto;max-height:none}
@@ -581,7 +616,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.14.7">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.15.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <div class="seg" id="by"><button data-b="project">Harmonogram</button><button data-b="person">Podle lidí</button></div>
@@ -614,6 +649,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
     <button class="btn" id="helpBtn" title="Nápověda (?)">?</button>
     <button class="btn" id="kBtn">Kontrola</button>
     <span id="cd"></span>
+    <button class="btn note" id="noteBtn" title="Poznámky"></button>
     <button class="btn todo" id="todoBtn">ToDo</button>
     <input type="file" id="file" accept="application/json" hidden>
     <input type="file" id="xfile" accept=".xlsx" hidden>
@@ -635,8 +671,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.14.7"></script>
-<script src="db.js?v=1.14.7"></script>
-<script src="app.js?v=1.14.7"></script>
+<script src="config.js?v=1.15.0"></script>
+<script src="db.js?v=1.15.0"></script>
+<script src="app.js?v=1.15.0"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.14.7';
+const APP_VERSION='1.15.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -206,7 +206,7 @@ function renderStrip(){
 function render(){
   renderTabs();renderStrip();
   const g=$('#gantt');const lm=V.leftMode||(V.narrow?'narrow':'full'); g.classList.toggle('narrow',lm==='narrow');g.classList.toggle('noleft',lm==='off');g.classList.toggle('depshi',!!V.depsHi);renderDraftBar();const cp=proj(V.project);g.classList.toggle('draft',!!V.draft);g.classList.toggle('viewver',!!V.viewVer);g.classList.toggle('ro',!!V.viewVer||!!(cp&&isRO(cp)&&V.by==='project'));g.style.setProperty('--leftw',lm!=='full'?'':(V.leftw?V.leftw+'px':''));
-  renderTodoPanel();const kb=$('#kBtn');if(kb){const qn=S.projects.some(p=>myRole(p)==='lead');kb.style.display=qn?'':'none';if(qn){const q=reviewQueue();const left=q.filter(x=>!(x.age===0||x.ref)).length;kb.innerHTML=`Kontrola <b>${left}</b>`;kb.classList.toggle('done',!left);kb.classList.toggle('on',V.status==='review')}}
+  renderTodoPanel();renderNotes();const kb=$('#kBtn');if(kb){const qn=S.projects.some(p=>myRole(p)==='lead');kb.style.display=qn?'':'none';if(qn){const q=reviewQueue();const left=q.filter(x=>!(x.age===0||x.ref)).length;kb.innerHTML=`Kontrola <b>${left}</b>`;kb.classList.toggle('done',!left);kb.classList.toggle('on',V.status==='review')}}
   if(!S.projects.length){g.innerHTML='<div class="empty"><p>Zatím žádný projekt.</p><p>Pokud jste byl pozván jako navrhovatel, zkontrolujte, že jste se zaregistroval na stejný e-mail, na který přišla pozvánka, a obnovte stránku. Jinak založte projekt tlačítkem „+ projekt“ nahoře.</p></div>';return}
   const rows=buildRows();
   const px=ZOOM[V.zoom];
@@ -312,6 +312,7 @@ const DAYS=['neděle','pondělí','úterý','středa','čtvrtek','pátek','sobot
 function ctxOf(x){return x.t?`${esc(x.t.name)}${x.p?' · '+esc(x.p.name):''}`:x.p?esc(x.p.name):'mimo projekty'}
 /* ---------- plovoucí panel ToDo (pravý horní roh) ---------- */
 const tp=document.createElement('div');tp.id='tp';document.body.appendChild(tp);
+const np=document.createElement('div');np.id='np';document.body.appendChild(np);
 // jednoduchý jednobarevný plamen (currentColor)
 const FLAME=`<svg class="flame" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 1.5c.4 3.2-1.1 5-2.7 6.6C7.6 9.9 6 11.7 6 14.6 6 18.4 8.7 21 12 21s6-2.6 6-6.4c0-2.2-.9-4-2.1-5.6-.3 1.3-1 2.2-1.9 2.6.3-3.3-.5-6.6-2-10.1zm0 10.2c1.3 2 2.2 3.4 2.2 4.8 0 1.4-1 2.5-2.2 2.5s-2.2-1.1-2.2-2.5c0-1.4.9-2.8 2.2-4.8z"/></svg>`;
 /* odpočet do deadline (D:H:M) – v záhlaví, pro projekty se zapnutým odpočtem */
@@ -745,8 +746,46 @@ $('#strip').addEventListener('keydown',e=>{if(e.target.id==='quick'&&e.key==='En
 const menu=$('#menu');
 $('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':'open'));
 $('#kBtn').addEventListener('click',openKontrola);
+// ---------- Poznámky (osobní, jen autor) ----------
+const NOTE_ICON=`<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h9l4 4v14H6z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 12h6M9 16h6M15 3v4h4"/></svg>`;
+let noteFocus=null,noteTimer=null;
+function renderNotes(){const mode=V.notesPanel||'';const btn=$('#noteBtn');S.notes=S.notes||[];
+  if(btn){btn.classList.toggle('on',mode==='open');btn.innerHTML=NOTE_ICON+(S.notes.length?`<b>${S.notes.length}</b>`:'')}
+  np.className=(mode?'open':'')+(mode&&V.todoPanel==='open'?' shift':'');if(!mode){np.innerHTML='';return}
+  const q=(V.noteQ||'').trim().toLowerCase();
+  const list=S.notes.filter(n=>!q||(n.title+'\n'+n.body).toLowerCase().includes(q));
+  const item=n=>`<div class="nt${n.open?' open':''}" data-nid="${n.id}">
+    <div class="nth"><button class="tog" data-ntog>${n.open?'▾':'▸'}</button><input class="ntt" data-nf="title" value="${esc(n.title)}" placeholder="Nadpis">${n.open?'':`<span class="pv">${esc(n.body.split('\n').find(l=>l.trim())||'')}</span>`}<button class="x" data-ndel>✕</button></div>
+    ${n.open?`<textarea class="ntb" data-nf="body" rows="1" placeholder="Text poznámky… (řádek začínající „- “ pokračuje jako odrážka)">${esc(n.body)}</textarea>`:''}</div>`;
+  np.innerHTML=`<div class="tph"><b>Poznámky</b><span class="sub">${S.notes.length?S.notes.length+(S.notes.length===1?' poznámka':S.notes.length<5?' poznámky':' poznámek'):'jen pro vás'}</span><button class="sp" data-np="close" title="Zavřít (Esc)"><span>zavřít</span> ✕</button></div>
+  <div class="dadd"><input id="nadd" placeholder="Nová poznámka – nadpis… (Enter)">${S.notes.length>3?`<input id="nq" class="q" placeholder="Hledat" value="${esc(V.noteQ||'')}">`:''}</div>
+  <div class="tpl">${list.map(item).join('')||`<div class="tpsub">${q?'Nic nenalezeno.':'Zatím žádná poznámka. Napište nadpis nahoře a stiskněte Enter.'}</div>`}</div>`;
+  np.querySelectorAll('textarea.ntb').forEach(autoH);
+  if(noteFocus){const f=noteFocus;noteFocus=null;let el=f.id==='nadd'?$('#nadd'):f.id==='nq'?$('#nq'):np.querySelector(`[data-nid="${f.id}"] [data-nf="${f.f}"]`);if(el){el.focus();if(f.pos!=null&&el.setSelectionRange)try{el.setSelectionRange(f.pos,f.pos)}catch(e){}}}
+}
+function autoH(ta){ta.style.height='auto';ta.style.height=Math.max(60,ta.scrollHeight+2)+'px'}
+function setNotesPanel(m){V.notesPanel=m;save();renderNotes();if(m==='open'){const i=$('#nadd');if(i&&!matchMedia('(max-width:760px)').matches)i.focus()}}
+const noteOf=id=>(S.notes||[]).find(n=>n.id===id);
+function noteCommit(){clearTimeout(noteTimer);noteTimer=null;const a=document.activeElement;if(a&&np.contains(a)){const nt=a.closest('[data-nid]');noteFocus={id:nt?nt.dataset.nid:a.id,f:a.dataset.nf,pos:a.selectionStart}}commit()}
+np.addEventListener('click',e=>{const b=e.target.closest('[data-np="close"]');if(b){setNotesPanel('');return}
+  const tg=e.target.closest('[data-ntog]');if(tg){const n=noteOf(tg.closest('[data-nid]').dataset.nid);if(n){n.open=!n.open;noteCommit()}return}
+  const d=e.target.closest('[data-ndel]');if(d){const n=noteOf(d.closest('[data-nid]').dataset.nid);if(!n)return;if((n.body.trim()||n.title.trim())&&!confirm(`Smazat poznámku „${n.title||'bez nadpisu'}“?`))return;S.notes=S.notes.filter(x=>x!==n);noteCommit()}});
+np.addEventListener('input',e=>{const el=e.target;if(el.id==='nq'){V.noteQ=el.value;save();noteFocus={id:'nq',pos:el.selectionStart};renderNotes();return}
+  const nt=el.closest('[data-nid]');if(!nt||!el.dataset.nf)return;const n=noteOf(nt.dataset.nid);if(!n)return;n[el.dataset.nf]=el.value;if(el.tagName==='TEXTAREA')autoH(el);save();clearTimeout(noteTimer);noteTimer=setTimeout(noteCommit,1200)});
+np.addEventListener('focusout',e=>{if(noteTimer&&!np.contains(e.relatedTarget))noteCommit()});
+np.addEventListener('keydown',e=>{const el=e.target;
+  if(el.id==='nadd'){if(e.key==='Enter'){e.preventDefault();const v=el.value.trim();if(!v)return;S.notes.unshift({id:uid(),title:v,body:'',open:true});noteFocus={id:S.notes[0].id,f:'body'};commit()}if(e.key==='Escape'){if(el.value){el.value=''}else setNotesPanel('')}return}
+  if(el.id==='nq'){if(e.key==='Escape'){V.noteQ='';save();renderNotes()}return}
+  if(e.key==='Escape'){el.blur();return}
+  if(el.dataset.nf==='title'&&e.key==='Enter'){e.preventDefault();const n=noteOf(el.closest('[data-nid]').dataset.nid);if(n){n.open=true;noteFocus={id:n.id,f:'body',pos:n.body.length};noteCommit()}return}
+  if(el.dataset.nf==='body'&&e.key==='Enter'&&!e.shiftKey){const v=el.value,pos=el.selectionStart,ls=v.lastIndexOf('\n',pos-1)+1,line=v.slice(ls,pos);const m=line.match(/^(\s*)([-•*]|\d+\.)\s/);if(!m)return;e.preventDefault();
+    if(line.trim()===m[0].trim()){el.setRangeText('',ls,pos,'end')}else{const pre=m[1]+(/\d/.test(m[2])?(parseInt(m[2])+1)+'.':m[2])+' ';el.setRangeText('\n'+pre,pos,el.selectionEnd,'end')}
+    el.dispatchEvent(new Event('input',{bubbles:true}))}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.notesPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#np')&&!e.target.closest('#tp'))setNotesPanel('')});
+$('#noteBtn').addEventListener('click',()=>setNotesPanel(V.notesPanel==='open'?'':'open'));
+
 $('#helpBtn').addEventListener('click',()=>openHelp());
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.todoPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#tp'))setTodoPanel('')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.todoPanel==='open'&&!$('dialog[open]')&&!e.target.closest('#tp')&&!e.target.closest('#np'))setTodoPanel('')});
 menu.querySelector(':scope > button').onclick=e=>{menu.classList.toggle('open');e.stopPropagation()};
 document.addEventListener('click',()=>menu.classList.remove('open'));
 menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;menu.classList.remove('open');
@@ -896,10 +935,10 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=25))miss.push('SCHEMA 25');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
-  load();S={me:'',projects:[],todos:[]};
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=26))miss.push('SCHEMA 26');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  load();S={me:'',projects:[],todos:[],notes:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
-  const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[]};render();showAuth()}});
+  const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[],notes:[]};render();showAuth()}});
   if(u)await start();else{render();showAuth()}
 }
 async function start(){
@@ -1012,6 +1051,7 @@ const HELP=[
   ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Budoucí úkoly se zahrnou jen pokud začínají do N dní (menu ⋯ → „Kontrola zahrnuje úkoly“; výchozí 7, lze jen běžící / 14 / 30 / všechny). Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: zavře klepnutí kamkoli do záhlaví vpravo od data (celá plocha je tlačítko) nebo Esc (znovu otevře tlačítko ToDo). Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
+  ['<i class="nb">'+NOTE_ICON+'</i>','Poznámky','Malá ikonka vedle ToDo otevře plovoucí panel osobních poznámek (vidí je jen jejich autor, ukládají se do databáze). Nahoře napište nadpis a Enter založí poznámku; tělo je volný text – řádek začínající „- “, „• “ nebo „1. “ po Enteru pokračuje další odrážkou (prázdná odrážka ji ukončí, Shift+Enter vloží obyčejný řádek). ▸/▾ sbalí poznámku na jeden řádek (vidíte nadpis a první řádek textu). Změny se ukládají samy. Při více než třech poznámkách se objeví hledání. Esc zavře panel; otevřený zároveň s ToDo se posune vlevo od něj.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
   ['📞 ✉️ 💬','Telefonát / e-mail / SMS / WhatsApp z ToDo','Zadání „tel Kozák – termín“, „mail Jandová: smlouva“, „sms Míka …“ nebo „wa Míka …“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na ikonu spustí zkratku „Zavolat“ / „Napsat“ / „SMS“ / „WhatsApp“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře zprávu s textem položky; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
  ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],
