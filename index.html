@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.17.1">
+<meta name="app-version" content="1.17.2">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -626,6 +626,9 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 .vghost{position:absolute;height:24px;border-radius:2px;box-sizing:border-box;z-index:2;pointer-events:auto;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 42%,var(--panel)) 0 7px,color-mix(in srgb,var(--c) 14%,var(--panel)) 7px 14px);display:flex;align-items:center;padding-left:8px;color:#fff;font-size:12px}
 .vghost span{font-size:11px;font-weight:600;white-space:nowrap;color:color-mix(in srgb,var(--c) 70%,#000);text-shadow:0 0 2px var(--panel)}
 .vghost::after{content:'';position:absolute;inset:0;border-radius:2px;border:1px solid color-mix(in srgb,var(--c) 55%,var(--panel));pointer-events:none}
+.vghost.ms{width:24px;background:none;padding:0;overflow:visible}
+.vghost.ms::after{border:0;left:4px;top:4px;width:16px;height:16px;transform:rotate(45deg);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 42%,var(--panel)) 0 4px,color-mix(in srgb,var(--c) 12%,var(--panel)) 4px 8px);outline:1px solid color-mix(in srgb,var(--c) 55%,var(--panel))}
+.vghost.ms span{position:absolute;left:28px;top:0;line-height:24px}
 .f3{display:grid;grid-template-columns:1fr 1fr 120px;gap:10px}
 .f4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .decf .chk,.varf .chk{display:flex;gap:6px;align-items:center;color:var(--text);font-size:13px}
@@ -650,7 +653,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.17.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.17.2">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -706,8 +709,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.17.1"></script>
-<script src="db.js?v=1.17.1"></script>
-<script src="app.js?v=1.17.1"></script>
+<script src="config.js?v=1.17.2"></script>
+<script src="db.js?v=1.17.2"></script>
+<script src="app.js?v=1.17.2"></script>
 </body>
 </html>
