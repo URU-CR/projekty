@@ -111,3 +111,7 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 - V detailu úkolu „Tento úkol je rozhodnutí“: varianty A/B s vlastními názvy (např. Ano/Ne) a která zatím platí (předpoklad). U navazujících úkolů sekce „Varianta podle rozhodnutí“: termíny pro obě varianty; úkol se drží platné varianty, druhá se v grafu kreslí čárkovaně (`.vghost`). Posun baru mění termíny platné varianty (`syncVariants` při commitu).
 - „Rozhodnuto: A/B“ přepne navazující úkoly, zapíše deník, štítek ⑂ zezelená (✓); „Znovu otevřít“ vrátí předpoklad.
 - Data: `tasks.decision` jsonb `{a,b,pick,resolved,on}`, `tasks.variants` jsonb `{dec,a:{start,end},b:{start,end}}` – migrace `028_decision.sql`. Import/export JSON je přenáší.
+
+## 1.18.0 – Export grafu jako věrný výřez harmonogramu
+- Export už nekreslí vlastní zjednodušený SVG, ale vyrenderuje skutečný harmonogram s dočasným nastavením (projekt, měřítko den/týden/měsíc, levá tabulka plná/úzká/žádná, jen vybrané úkoly přes `XP.ids` v `buildRows`) a vezme klon `#gantt` oříznutý na období; stav `V` se vzápětí vrátí. Výsledek má stejné sloupce, osoby, stavy, štítky rozhodnutí, šrafované varianty, vazby i linky dnes/deadline/cizí termíny.
+- PNG: SVG `foreignObject` → canvas 2× (formulářové prvky jsou nahrazené textem, jinak by canvas „zašpinily“; Google fonty se vloží jako data URL). Tisk/PDF: samostatná stránka s CSS aplikace, přizpůsobení šířce A4 (na šířku / na výšku).

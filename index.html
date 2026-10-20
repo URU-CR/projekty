@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.17.3">
+<meta name="app-version" content="1.18.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -262,7 +262,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .pic4{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;gap:10px}
 .pichk{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
 .pichk label{display:flex;gap:5px;align-items:center}
-.picprev{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:46vh;background:#fff}
+.picprev{border:1px solid var(--line);border-radius:8px;overflow:hidden;height:min(46vh,420px);background:#fff}
 .picprev svg{display:block;max-width:100%;height:auto}
 @media (max-width:760px){.pic2,.pic4{grid-template-columns:1fr 1fr}}
 .btn.danger{color:var(--critical);border-color:transparent}
@@ -653,7 +653,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.17.3">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.18.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -709,8 +709,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.17.3"></script>
-<script src="db.js?v=1.17.3"></script>
-<script src="app.js?v=1.17.3"></script>
+<script src="config.js?v=1.18.0"></script>
+<script src="db.js?v=1.18.0"></script>
+<script src="app.js?v=1.18.0"></script>
 </body>
 </html>
