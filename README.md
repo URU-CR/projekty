@@ -106,3 +106,8 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 ## 1.16.0 – Export grafu (PNG / PDF k tisku)
 - Menu ⋯ → „Export grafu“: výřez projektu **od úkolu – do úkolu** (v pořadí harmonogramu; podúkoly posledního a nadřazené fáze prvního se doplní, hloubku lze omezit), období se předvyplní podle vybraných úkolů (lze přepsat), měřítko auto/týdny/měsíce, volitelné sloupce Odpovědný a %, popisky u krátkých barů, čára „dnes“, deadline projektu. Živý náhled v dialogu.
 - „Stáhnout PNG“ (2× rozlišení, do prezentace) nebo „Otevřít k tisku / PDF“ (stránka na šířku s tlačítkem Tisk).
+
+## 1.17.0 – Rozhodovací bod a varianty navazujících úkolů
+- V detailu úkolu „Tento úkol je rozhodnutí“: varianty A/B s vlastními názvy (např. Ano/Ne) a která zatím platí (předpoklad). U navazujících úkolů sekce „Varianta podle rozhodnutí“: termíny pro obě varianty; úkol se drží platné varianty, druhá se v grafu kreslí čárkovaně (`.vghost`). Posun baru mění termíny platné varianty (`syncVariants` při commitu).
+- „Rozhodnuto: A/B“ přepne navazující úkoly, zapíše deník, štítek ⑂ zezelená (✓); „Znovu otevřít“ vrátí předpoklad.
+- Data: `tasks.decision` jsonb `{a,b,pick,resolved,on}`, `tasks.variants` jsonb `{dec,a:{start,end},b:{start,end}}` – migrace `028_decision.sql`. Import/export JSON je přenáší.

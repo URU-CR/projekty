@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.16.0">
+<meta name="app-version" content="1.17.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -80,7 +80,7 @@ button{cursor:pointer}
 .splitter:hover,.splitter.on{background:color-mix(in srgb,var(--accent) 35%,transparent)}
 .lhead{position:sticky;top:0;z-index:4;height:48px;display:grid;align-items:end;background:var(--panel);border-bottom:1px solid var(--line);color:var(--muted);font-size:12px;padding-bottom:6px}
 .lhead span,.lrow>span{padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c-name .nm{font-weight:500;font-size:13.5px}
+.c-name .nm{font-weight:500;font-size:13.5px;flex:1 1 60px;min-width:60px}
 .c-resp select{color:var(--muted);font-size:12px}
 .lrow{display:grid;align-items:center;height:var(--rowh);border-bottom:1px solid var(--line2)}
 .lrow:hover{background:var(--bg)}
@@ -620,6 +620,16 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 :root[data-theme="dark"] .chgtag{background:#4a3d12;color:#ffd666}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chgtag{background:#4a3d12;color:#ffd666}}
 /* změna termínu (nepřečtená): původní rozsah = oranžový čárkovaný rámeček nad barem, ubrané dny šrafované, přidané dny oranžový proužek */
+.dec,.var{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;border-radius:4px;padding:1px 6px;flex:none;cursor:pointer;white-space:nowrap;font-weight:600}
+.dec{background:#ede9fe;color:#5b21b6}.dec.res{background:#dcfce7;color:#166534}
+.var{background:#f3f4f6;color:#4a5361;border:1px dashed #b8bfc9;font-weight:500}.var.res{border-style:solid}
+.vghost{position:absolute;height:24px;border:1.5px dashed var(--c);border-radius:4px;box-sizing:border-box;z-index:1;pointer-events:auto;background:color-mix(in srgb,var(--c) 6%,transparent);display:flex;align-items:flex-end;padding-left:4px;opacity:.85}
+.vghost span{font-size:9.5px;line-height:1;color:var(--c);font-weight:600;white-space:nowrap;margin-bottom:1px}
+.f3{display:grid;grid-template-columns:1fr 1fr 120px;gap:10px}
+.f4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.decf .chk,.varf .chk{display:flex;gap:6px;align-items:center;color:var(--text);font-size:13px}
+.decres{align-items:center;gap:6px}
+#decbox,#varbox{display:grid;gap:8px;margin-top:6px;padding:10px;border:1px dashed var(--line);border-radius:8px}
 .chgold{position:absolute;height:24px;border:1.5px dashed #d97706;border-radius:2px;box-sizing:border-box;z-index:3;pointer-events:none;background:transparent}
 .chgcut{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-radius:2px;background:repeating-linear-gradient(135deg,rgba(217,119,6,.55) 0 3px,transparent 3px 7px);pointer-events:none}
 .chgadd{position:absolute;height:24px;z-index:3;box-sizing:border-box;border-top:3px solid #d97706;border-bottom:3px solid #d97706;background:transparent;pointer-events:none}
@@ -639,7 +649,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.16.0">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.17.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -695,8 +705,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.16.0"></script>
-<script src="db.js?v=1.16.0"></script>
-<script src="app.js?v=1.16.0"></script>
+<script src="config.js?v=1.17.0"></script>
+<script src="db.js?v=1.17.0"></script>
+<script src="app.js?v=1.17.0"></script>
 </body>
 </html>

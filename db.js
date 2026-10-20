@@ -60,7 +60,7 @@ const DB = (() => {
       const conv = t => { const T = {
         id: t.id, name: t.name, start: t.start_date, end: t.end_date, color: t.color || '', group: t.group_id || '', resp: t.resp || '', collab: t.collab || [],
         critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, autoProg: !!t.auto_prog, collapsed: !!t.collapsed, parent: t.parent_id || null,
-        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '', checked: t.checked_on || '', quick: t.quick_note || '', external: !!t.external, urge: t.urge_on || '',
+        note: t.note || '', deps: t.deps || [], created_by: t.created_by, unclear: !!t.unclear, question: t.question || '', checked: t.checked_on || '', quick: t.quick_note || '', external: !!t.external, urge: t.urge_on || '', decision: t.decision || null, variants: t.variants || null,
         links: links.filter(l => l.task_id === t.id).map(l => ({ id: l.id, name: l.name, url: l.url })),
         log: log.filter(l => l.task_id === t.id).map(l => ({ id: l.id, d: l.d, text: l.text, author: l.author, authorName: prof[l.author]?.name || '' })),
         docs: docs.filter(d => d.task_id === t.id).map(d => ({ id: d.id, name: d.name, path: d.path, size: d.size, uploaded_by: d.uploaded_by, created_at: d.created_at })),
@@ -98,7 +98,7 @@ const DB = (() => {
       const live = p._draft ? p._liveTasks : p.tasks;
       live.forEach((t, i) => {
         F.tasks[t.id] = { id: t.id, project_id: p.id, parent_id: t.parent || null, sort: i, name: t.name || '', start_date: t.start, end_date: t.end, group_id: t.group || null, color: t.color || '',
-          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '', checked_on: t.checked || null, quick_note: t.quick || '', external: !!t.external, urge_on: t.urge || null };
+          resp: t.resp || '', collab: t.collab || [], critical: !!t.critical, milestone: !!t.milestone, progress: t.progress || 0, auto_prog: !!t.autoProg, collapsed: !!t.collapsed, note: t.note || '', deps: t.deps || [], created_by: t.created_by || user.id, unclear: !!t.unclear, question: t.question || '', checked_on: t.checked || null, quick_note: t.quick || '', external: !!t.external, urge_on: t.urge || null, decision: t.decision || null, variants: t.variants || null };
         (t.links || []).forEach((l, j) => { l.id ||= uuid(); F.links[l.id] = { id: l.id, task_id: t.id, name: l.name || '', url: l.url || '', sort: j }; });
         (t.log || []).forEach(l => { l.id ||= uuid(); F.log[l.id] = { id: l.id, task_id: t.id, d: l.d, text: l.text, author: l.author || user.id }; });
         (t.todos || []).forEach((td, j) => { F.todos[td.id] = todoRow(td, p.id, t.id, j); });
@@ -192,12 +192,13 @@ const DB = (() => {
       .subscribe();
   }
 
-  const SCHEMA = 27; // poslední potřebná migrace
+  const SCHEMA = 28; // poslední potřebná migrace
   // kontrola, že databáze má sloupce z posledních migrací; vrátí seznam chybějících migrací (název souboru + SQL)
   const SCHEMA_CHECKS = [
     ['023_external.sql', 'tasks', 'external', "alter table public.tasks add column if not exists external boolean not null default false;"],
     ['024_todo_kind.sql', 'todos', 'kind', "alter table public.todos add column if not exists kind text not null default ''; alter table public.todos add column if not exists contact text not null default '';"],
     ['025_urge.sql', 'tasks', 'urge_on', "alter table public.tasks add column if not exists urge_on date;"],
+    ['028_decision.sql', 'tasks', 'decision', "alter table public.tasks add column if not exists decision jsonb; alter table public.tasks add column if not exists variants jsonb;"],
     ['026_notes.sql', 'notes', 'id', "create table if not exists public.notes (id uuid primary key default gen_random_uuid(), owner uuid not null references auth.users(id) on delete cascade, title text not null default '', body text not null default '', open boolean not null default true, sort int not null default 0, created_at timestamptz default now(), updated_at timestamptz default now()); alter table public.notes enable row level security; drop policy if exists notes_own on public.notes; create policy notes_own on public.notes for all to authenticated using (owner = auth.uid()) with check (owner = auth.uid());"],
   ];
   async function checkSchema() {
