@@ -98,3 +98,7 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 - Tělo poznámky je rovnou formátovaný editor (contenteditable) – žádné přepínání mezi náhledem a zdrojem, tučné zůstává tučné i při psaní a kopírování. ⌘B / Ctrl+B = tučně; „- “ / „1. “ na začátku řádku založí seznam; „# “ / „## “ mezinadpis (Enter za ním pokračuje obyčejným řádkem). Vkládání ze schránky jako prostý text (víceřádkový se převede na odstavce/odrážky). ⌘+klik otevře odkaz.
 - Ukládá se očištěné HTML (b, i, u, br, div, ul/ol/li, h4/h5, a). Starší poznámky psané značkami (`# `, `**x**`, `- `) se při prvním zobrazení převedou.
 - Globální klávesové zkratky (l, n, ?) se nespouštějí při psaní v editoru.
+
+## 1.15.4 – Oprava: „task_log … row-level security“
+- Kopírování/vkládání úkolu (klon) přenášelo záznamy deníku a odkazy se stejnými id → při uložení šlo o UPDATE cizího řádku, který RLS zamítla. Klon teď dostává nová id.
+- Migrace `027_log_update.sql`: deník úkolu smí aktualizovat každý, kdo smí upravovat úkol (dosud byl povolen jen INSERT), mazat autor nebo editor úkolu.

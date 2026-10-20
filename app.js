@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.15.3';
+const APP_VERSION='1.15.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -473,7 +473,7 @@ function quickTodo(text,o={}){const p=proj(V.project);let init={};let s=text.rep
   if(!init.who&&S.me)init.who=S.me;
   lastTodoId=addTodo(key,s.replace(/\s+/g,' '),init)?.id;if(key==='me'||key.startsWith('p:'))V.open=[...new Set([...V.open,key])];commit()}
 function cloneSubtree(t,p){const sub=[t,...descendants(t,p)];const map={};sub.forEach(x=>map[x.id]=uid());
-  return sub.map(x=>{const c=JSON.parse(JSON.stringify(x));c.id=map[x.id];c.parent=x.parent&&map[x.parent]?map[x.parent]:null;c.deps=(x.deps||[]).map(d=>map[d]).filter(Boolean);c.todos=(x.todos||[]).map(td=>({...td,id:uid()}));c.collapsed=false;return c})}
+  return sub.map(x=>{const c=JSON.parse(JSON.stringify(x));c.id=map[x.id];c.parent=x.parent&&map[x.parent]?map[x.parent]:null;c.deps=(x.deps||[]).map(d=>map[d]).filter(Boolean);c.todos=(x.todos||[]).map(td=>({...td,id:uid()}));c.log=(x.log||[]).map(l=>({...l,id:uid()}));c.links=(x.links||[]).map(l=>({...l,id:uid()}));c.collapsed=false;return c})}
 function copyTask(id){const f=findTask(id);if(!f)return;clip={tasks:cloneSubtree(f.t,f.p),pid:f.p.id,name:f.t.name};}
 function pasteTask(afterId,asChild){if(!clip){alert('Schránka je prázdná – nejdřív úkol zkopírujte.');return}
   let p,anchor=null;if(afterId){const f=findTask(afterId);p=f.p;anchor=f.t}else{p=proj(V.project)||S.projects[0]}if(!p)return;
@@ -970,7 +970,7 @@ function hideAuth(){$('#auth').style.display='none'}
 async function changePassword(){const p=prompt('Nové heslo (min. 8 znaků):');if(!p)return;try{await DB.updatePassword(p);toast('Heslo změněno')}catch(e){toast(e.message,true)}}
 async function boot(){
   {const hv=(document.querySelector('meta[name=app-version]')||{}).content;if(hv&&hv!==APP_VERSION){toast('Stránka je z jiné verze ('+hv+') než aplikace ('+APP_VERSION+') – obnovte ji (Cmd/Ctrl+Shift+R).',true)}}
-  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=26))miss.push('SCHEMA 26');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
+  const NEED=['saveVersion','claimInvites','setScoped','setInviteScoped','markRead','setTrack'];const miss=NEED.filter(f=>typeof DB[f]!=='function');if(!(DB.SCHEMA>=27))miss.push('SCHEMA 27');if(miss.length){alert('Soubor db.js na serveru je starší než aplikace (chybí: '+miss.join(', ')+'). Nahrajte prosím aktuální db.js z balíčku a obnovte stránku (Cmd/Ctrl+Shift+R).')}
   load();S={me:'',projects:[],todos:[],notes:[]};
   try{const c=JSON.parse(localStorage.getItem(CACHE));if(c&&c.projects)S=c}catch(e){}
   const u=await DB.init(async user=>{if(user){await start()}else{S={me:'',projects:[],todos:[],notes:[]};render();showAuth()}});

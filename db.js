@@ -192,7 +192,7 @@ const DB = (() => {
       .subscribe();
   }
 
-  const SCHEMA = 26; // poslední potřebná migrace
+  const SCHEMA = 27; // poslední potřebná migrace
   // kontrola, že databáze má sloupce z posledních migrací; vrátí seznam chybějících migrací (název souboru + SQL)
   const SCHEMA_CHECKS = [
     ['023_external.sql', 'tasks', 'external', "alter table public.tasks add column if not exists external boolean not null default false;"],
