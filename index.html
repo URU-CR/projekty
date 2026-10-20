@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.15.4">
+<meta name="app-version" content="1.15.5">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -128,9 +128,9 @@ button{cursor:pointer}
 .col.td{background:none;border-left:2px dashed var(--today);opacity:.9;z-index:3}
 /* deadline projektu: plná červená linka přes graf + 🔥 v časové ose; odpočet v záhlaví */
 .col.dl{background:none;border-left:2px solid var(--critical);z-index:3;opacity:.85}
-.dlm{position:absolute;top:0;height:48px;display:flex;align-items:flex-start;gap:3px;transform:translateX(-9px);z-index:5;pointer-events:auto;white-space:nowrap}
-.dlm .fl{font-size:15px;line-height:22px;filter:drop-shadow(0 0 2px #fff)}
-.dlm b{font-size:11px;color:var(--critical);line-height:22px;font-weight:600}
+.dlm{position:absolute;top:25px;height:22px;display:inline-flex;align-items:center;gap:3px;transform:translateX(-9px);z-index:6;pointer-events:auto;white-space:nowrap;background:var(--panel);border:1px solid color-mix(in srgb,var(--critical) 45%,var(--panel));border-radius:4px;padding:0 6px 0 3px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.dlm .fl{font-size:15px;line-height:1;display:inline-flex}
+.dlm b{font-size:10.5px;color:var(--critical);line-height:1;font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis}
 #cd{display:inline-flex;gap:6px}
 .cdp{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--critical);color:var(--critical);border-radius:6px;padding:2px 9px 2px 6px;font-size:12px;white-space:nowrap}
 .cdp i{font-style:normal;font-size:11px;font-weight:600}
@@ -632,7 +632,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.15.4">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.15.5">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -687,8 +687,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.15.4"></script>
-<script src="db.js?v=1.15.4"></script>
-<script src="app.js?v=1.15.4"></script>
+<script src="config.js?v=1.15.5"></script>
+<script src="db.js?v=1.15.5"></script>
+<script src="app.js?v=1.15.5"></script>
 </body>
 </html>
