@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.15.5';
+const APP_VERSION='1.16.0';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -756,6 +756,79 @@ $('#strip').addEventListener('keydown',e=>{if(e.target.id==='quick'&&e.key==='En
 const menu=$('#menu');
 $('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':'open'));
 $('#kBtn').addEventListener('click',openKontrola);
+// ---------- Export grafu (PNG / tisk) – výřez projektu od úkolu do úkolu ----------
+function picRange(p,fromId,toId,maxDepth){const T=p.tasks;let a=T.findIndex(t=>t.id===fromId),b=T.findIndex(t=>t.id===toId);if(a<0)a=0;if(b<0)b=T.length-1;if(a>b)[a,b]=[b,a];
+  const to=T[b];const sub=new Set(descendants(to,p).map(x=>x.id));let out=[];for(let i=a;i<T.length;i++){const t=T[i];if(i>b&&!sub.has(t.id))break;out.push(t)}
+  // doplnit rodiče prvního úkolu, aby struktura dávala smysl
+  const ids=new Set(out.map(t=>t.id));const parents=[];let c=T[a];while(c&&c.parent){c=T.find(x=>x.id===c.parent);if(c&&!ids.has(c.id)){parents.unshift(c);ids.add(c.id)}}
+  out=[...parents,...out];const base=Math.min(...out.map(t=>depth(t,p)));
+  return out.filter(t=>maxDepth<0||depth(t,p)-base<=maxDepth).map(t=>({t,lv:depth(t,p)-base}))}
+function picSvg(p,rows,opt){const PX=opt.zoom==='month'?6:opt.zoom==='week'?18:null;const days=diff(opt.from,opt.to)+1;
+  const px=PX||(days<=130?18:days<=400?6:3);const W=Math.max(900,Math.min(1700,days*px));const dpx=W/days;
+  const LW=Math.min(440,Math.max(220,Math.max(...rows.map(r=>r.t.name.length))*6.6+40));const RW=opt.resp?130:0,PW=opt.prog?44:0;const L=LW+RW+PW;
+  const RH=28,H0=56,H=H0+rows.length*RH+16,F='IBM Plex Sans, Helvetica Neue, Arial, sans-serif';
+  const X=d=>L+Math.max(0,Math.min(days,diff(opt.from,d)))*dpx;const E=s=>esc(s||'');const cut=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
+  let o=`<svg xmlns="http://www.w3.org/2000/svg" width="${L+W}" height="${H}" viewBox="0 0 ${L+W} ${H}" font-family="${F}" font-size="12">`;
+  o+=`<rect width="100%" height="100%" fill="#fff"/>`;
+  // víkendy + měsíce + týdny
+  let d=opt.from;const mon=[];let ms=0;for(let i=0;i<days;i++,d=addDays(d,1)){const dt=parse(d),wd=(dt.getUTCDay()+6)%7;
+    if(wd>=5&&dpx>=4)o+=`<rect x="${L+i*dpx}" y="${H0}" width="${dpx}" height="${H-H0}" fill="#f3f4f6"/>`;
+    if(wd===0&&dpx>=6)o+=`<line x1="${L+i*dpx}" y1="${H0-18}" x2="${L+i*dpx}" y2="${H}" stroke="#eef0f3"/>`;
+    if(wd===0&&dpx>=6&&days<=200)o+=`<text x="${L+i*dpx+2}" y="${H0-6}" fill="#6a7381" font-size="10">${dt.getUTCDate()}.</text>`;
+    const nd=addDays(d,1);if(parse(nd).getUTCMonth()!==dt.getUTCMonth()||i===days-1){mon.push([ms,i,dt]);ms=i+1}}
+  for(const [a,b,dt] of mon){const x=L+a*dpx,w=(b-a+1)*dpx;o+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="#dfe3e8"/>`;if(w>40)o+=`<text x="${x+6}" y="${H0-24}" fill="#1b222c" font-weight="600" font-size="12">${MON[dt.getUTCMonth()]} ${dt.getUTCFullYear()}</text>`}
+  o+=`<line x1="0" y1="${H0}" x2="${L+W}" y2="${H0}" stroke="#dfe3e8"/>`;
+  // záhlaví levé části
+  o+=`<text x="10" y="${H0-24}" fill="#1b222c" font-weight="700" font-size="14">${E(opt.title)}</text><text x="10" y="${H0-7}" fill="#6a7381" font-size="10.5">${fmt(opt.from)} – ${fmt(opt.to)} · stav k ${fmt(TODAY)}</text>`;
+  if(opt.resp)o+=`<text x="${LW+6}" y="${H0-7}" fill="#6a7381" font-size="10">Odpovědný</text>`;if(opt.prog)o+=`<text x="${LW+RW+PW-6}" y="${H0-7}" fill="#6a7381" font-size="10" text-anchor="end">%</text>`;
+  rows.forEach((r,i)=>{const {t,lv}=r;const y=H0+i*RH;const sp=span(t,p),pr=progressOf(t,p),grp=sp.group,st=status(t,p).k;
+    o+=`<line x1="0" y1="${y+RH}" x2="${L+W}" y2="${y+RH}" stroke="#eef0f3"/>`;
+    const nm=cut(t.name,Math.floor((LW-14-lv*14)/6.4));o+=`<text x="${10+lv*14}" y="${y+18}" fill="#1b222c" font-weight="${grp?700:400}" font-size="${grp?12.5:12}">${E(nm)}</text>`;
+    if(opt.resp&&t.resp)o+=`<text x="${LW+6}" y="${y+18}" fill="#4a5361" font-size="11">${E(cut(t.resp,18))}</text>`;
+    if(opt.prog&&!t.milestone)o+=`<text x="${LW+RW+PW-6}" y="${y+18}" fill="${pr>=100?'#1a8f4f':'#4a5361'}" font-size="11" text-anchor="end">${pr}</text>`;
+    if(sp.end<opt.from||sp.start>opt.to)return;const x1=X(sp.start),x2=Math.max(X(addDays(sp.end,1)),x1+(t.milestone?0:3));const col=colorOf(t,p)===CRIT?'#e60012':colorOf(t,p);
+    if(t.milestone){const cx=X(sp.start)+dpx/2,cy=y+RH/2;o+=`<path d="M${cx} ${cy-7}l7 7-7 7-7-7z" fill="${col}"/>`;if(opt.labels)o+=`<text x="${cx+11}" y="${y+18}" fill="#1b222c" font-size="11">${E(cut(t.name,40))}</text>`;return}
+    if(grp){o+=`<path d="M${x1} ${y+6}h${x2-x1}v9l-5 -5h${-(x2-x1-10)}l-5 5z" fill="${col}" opacity=".9"/>`;return}
+    o+=`<rect x="${x1}" y="${y+7}" width="${x2-x1}" height="${RH-14}" rx="3" fill="${col}" opacity=".45"/>`;
+    if(pr>0)o+=`<rect x="${x1}" y="${y+7}" width="${(x2-x1)*Math.min(pr,100)/100}" height="${RH-14}" rx="3" fill="${col}"/>`;
+    if(st==='late')o+=`<rect x="${x1}" y="${y+7}" width="${x2-x1}" height="${RH-14}" rx="3" fill="none" stroke="#e60012" stroke-width="1.5"/>`;
+    if(opt.labels&&x2-x1<60)o+=`<text x="${x2+5}" y="${y+18}" fill="#4a5361" font-size="10.5">${E(cut(t.name,36))}</text>`;});
+  if(opt.today&&TODAY>=opt.from&&TODAY<=opt.to){const x=X(TODAY)+dpx/2;o+=`<line x1="${x}" y1="${H0-18}" x2="${x}" y2="${H}" stroke="#d6453d" stroke-width="2" stroke-dasharray="5 4"/><text x="${x+4}" y="${H-5}" fill="#d6453d" font-size="10" font-weight="600">dnes</text>`}
+  if(p.deadline&&p.deadline>=opt.from&&p.deadline<=opt.to){const x=X(p.deadline);o+=`<line x1="${x}" y1="${H0-18}" x2="${x}" y2="${H}" stroke="#e60012" stroke-width="2"/><text x="${x+4}" y="${H-5}" fill="#e60012" font-size="10" font-weight="700">deadline ${fmt(p.deadline)}</text>`}
+  o+=`<rect x=".5" y=".5" width="${L+W-1}" height="${H-1}" fill="none" stroke="#dfe3e8"/></svg>`;return o}
+function openPic(){const dlg=$('#pdlg');dlg.classList.remove('proj');dlg.classList.add('wide');
+  const projs=S.projects.filter(p=>p.tasks.length);if(!projs.length){toast('Žádný projekt s úkoly.');return}
+  let pid=projs.some(p=>p.id===V.project)?V.project:projs[0].id;
+  const opts=p=>p.tasks.map(t=>`<option value="${t.id}">${'  '.repeat(depth(t,p))}${esc(t.name)}</option>`).join('');
+  dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Export grafu – obrázek nebo tisk</span><button type="button" data-x>×</button></div><div class="db">
+    <div class="hint">Vyberte výřez projektu: od kterého úkolu po který (v pořadí harmonogramu, včetně podúkolů posledního). Výsledek stáhnete jako PNG (vložíte do prezentace) nebo otevřete k tisku / uložení do PDF.</div>
+    <div class="pic2"><div class="f"><label>Projekt</label><select name="p">${projs.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
+      <div class="f"><label>Hloubka</label><select name="depth"><option value="-1">vše</option><option value="0">jen vybraná úroveň</option><option value="1">+1 úroveň</option><option value="2">+2 úrovně</option></select></div></div>
+    <div class="pic2"><div class="f"><label>Od úkolu</label><select name="from"></select></div><div class="f"><label>Do úkolu</label><select name="to"></select></div></div>
+    <div class="pic4"><div class="f"><label>Období od</label><input type="date" name="d1"></div><div class="f"><label>do</label><input type="date" name="d2"></div>
+      <div class="f"><label>Měřítko</label><select name="zoom"><option value="auto">automaticky</option><option value="week">týdny</option><option value="month">měsíce</option></select></div>
+      <div class="f"><label>Název</label><input type="text" name="title"></div></div>
+    <div class="pichk"><label><input type="checkbox" name="resp" checked> sloupec Odpovědný</label><label><input type="checkbox" name="prog" checked> sloupec %</label><label><input type="checkbox" name="labels"> názvy u krátkých barů a milníků</label><label><input type="checkbox" name="today" checked> čára „dnes“</label></div>
+    <div class="picprev" id="picprev"></div>
+    </div><div class="df"><span class="hint" id="picinfo" style="margin-right:auto"></span><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn" data-print>Otevřít k tisku / PDF</button><button type="button" class="btn pri" data-png>Stáhnout PNG</button></div></form>`;
+  const fm=dlg.querySelector('form'),E=n=>fm.elements[n];let auto=true;
+  const fill=()=>{const p=proj(E('p').value);E('from').innerHTML=opts(p);E('to').innerHTML=opts(p);E('to').value=p.tasks[p.tasks.length-1].id;E('title').value=p.name;auto=true;dates()};
+  const cur=()=>{const p=proj(E('p').value);const rows=picRange(p,E('from').value,E('to').value,+E('depth').value);return {p,rows}};
+  const dates=()=>{if(!auto)return;const {p,rows}=cur();const sps=rows.map(r=>span(r.t,p));if(!sps.length)return;let a=sps.reduce((m,s)=>s.start<m?s.start:m,sps[0].start),b=sps.reduce((m,s)=>s.end>m?s.end:m,sps[0].end);
+    a=addDays(a,-((parse(a).getUTCDay()+6)%7)-7);b=addDays(b,7+(6-(parse(b).getUTCDay()+6)%7));E('d1').value=a;E('d2').value=b};
+  const build=()=>{const {p,rows}=cur();if(!rows.length||!E('d1').value||!E('d2').value||E('d1').value>=E('d2').value)return '';return picSvg(p,rows,{from:E('d1').value,to:E('d2').value,zoom:E('zoom').value,title:E('title').value||p.name,resp:E('resp').checked,prog:E('prog').checked,labels:E('labels').checked,today:E('today').checked})};
+  const prev=()=>{const svg=build();$('#picprev').innerHTML=svg;const {rows}=cur();$('#picinfo').textContent=rows.length+' řádků · '+(diff(E('d1').value,E('d2').value)+1)+' dní'};
+  fm.addEventListener('change',e=>{if(e.target.name==='p')fill();else if(e.target.name==='d1'||e.target.name==='d2')auto=false;else if(['from','to','depth'].includes(e.target.name))dates();prev()});
+  fm.addEventListener('input',e=>{if(e.target.name==='title')prev()});
+  fm.addEventListener('click',e=>{if(e.target.closest('[data-x]')){dlg.close();dlg.classList.remove('wide');return}
+    if(e.target.closest('[data-png]')){const svg=build();if(!svg)return;const {p}=cur();const img=new Image();const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml;charset=utf-8'}));
+      img.onload=()=>{const c=document.createElement('canvas');const k=2;c.width=img.width*k;c.height=img.height*k;const g=c.getContext('2d');g.scale(k,k);g.drawImage(img,0,0);URL.revokeObjectURL(url);
+        c.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(E('title').value||p.name).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\\/:*?"<>|]+/g,'_')+'.png';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},5000)},'image/png')};
+      img.onerror=()=>toast('Obrázek se nepodařilo vykreslit.',true);img.src=url;return}
+    if(e.target.closest('[data-print]')){const svg=build();if(!svg)return;const w=window.open('','_blank');if(!w){toast('Prohlížeč zablokoval nové okno.',true);return}
+      w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(E('title').value)}</title><style>@page{size:landscape;margin:10mm}html,body{margin:0;background:#fff}svg{width:100%;height:auto;display:block}.b{position:fixed;top:8px;right:8px;font:13px system-ui;padding:6px 12px;border:1px solid #ccc;border-radius:6px;background:#fff}@media print{.b{display:none}}</style></head><body>${svg}<button class="b" onclick="print()">Tisk / uložit PDF</button></body></html>`);w.document.close()}});
+  fill();prev();dlg.showModal()}
+
 // ---------- Poznámky (osobní, jen autor) ----------
 const NOTE_ICON=`<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h9l4 4v14H6z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 12h6M9 16h6M15 3v4h4"/></svg>`;
 let noteFocus=null,noteTimer=null;
@@ -828,6 +901,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'proj':{const p=proj(V.project)||S.projects[0];if(p)openProj(p.id);else newProject();break}
     case 'newproj':newProject();break;
     case 'dump':openDump();break;
+    case 'pic':openPic();break;
     case 'reviewdays':{const seq=[0,7,14,30,-1];const cur=V.reviewDays==null?7:V.reviewDays;V.reviewDays=seq[(seq.indexOf(cur)+1)%seq.length];save();render();break}
     case 'leftw':{const lm=V.leftMode||(V.narrow?'narrow':'full');V.leftMode=lm==='full'?'narrow':lm==='narrow'?'off':'full';V.narrow=V.leftMode==='narrow';save();render();break}
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
@@ -1087,6 +1161,7 @@ const HELP=[
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: zavře klepnutí kamkoli do záhlaví vpravo od data (celá plocha je tlačítko) nebo Esc (znovu otevře tlačítko ToDo). Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   ['<i class="nb">'+NOTE_ICON+'</i>','Poznámky','Malá ikonka vedle ToDo otevře plovoucí panel osobních poznámek (vidí je jen jejich autor, ukládají se do databáze). Nahoře napište nadpis a Enter založí poznámku. Tělo se píše rovnou naformátované: označený text + ⌘B / Ctrl+B = tučně; „- “ na začátku řádku založí odrážky, „1. “ číslování (Enter pokračuje, Enter na prázdné položce ukončí); „# “ na začátku řádku udělá mezinadpis, „## “ menší (Enter za ním pokračuje obyčejným řádkem). Vložený text se vloží jako prostý (bez cizího formátování). ⌘+klik na odkaz ho otevře. ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání, změny se ukládají samy. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj.'],
+  ['🖼','Export grafu (PNG / PDF)','Menu ⋯ → „Export grafu“. Vyberete projekt a výřez „od úkolu – do úkolu“ (v pořadí harmonogramu; podúkoly posledního se přidají, nadřazené fáze prvního také, hloubku lze omezit). Období se nabídne podle vybraných úkolů, můžete ho přepsat. Náhled je rovnou v dialogu. „Stáhnout PNG“ uloží obrázek ve dvojnásobném rozlišení (vložíte do prezentace), „Otevřít k tisku / PDF“ otevře stránku na šířku, odkud ji vytisknete nebo uložíte jako PDF.'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
   ['📞 ✉️ 💬','Telefonát / e-mail / SMS / WhatsApp z ToDo','Zadání „tel Kozák – termín“, „mail Jandová: smlouva“, „sms Míka …“ nebo „wa Míka …“ označí položku a uloží jméno kontaktu (upravit v ⋯). Klepnutí na ikonu spustí zkratku „Zavolat“ / „Napsat“ / „SMS“ / „WhatsApp“ v aplikaci Zkratky (Mac i iPhone), která najde osobu v Kontaktech a vytočí ji / otevře zprávu s textem položky; jméno je zároveň ve schránce. Shift+klepnutí přepíná druh. Názvy zkratek v menu ⋯.'],
  ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],

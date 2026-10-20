@@ -102,3 +102,7 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 ## 1.15.4 – Oprava: „task_log … row-level security“
 - Kopírování/vkládání úkolu (klon) přenášelo záznamy deníku a odkazy se stejnými id → při uložení šlo o UPDATE cizího řádku, který RLS zamítla. Klon teď dostává nová id.
 - Migrace `027_log_update.sql`: deník úkolu smí aktualizovat každý, kdo smí upravovat úkol (dosud byl povolen jen INSERT), mazat autor nebo editor úkolu.
+
+## 1.16.0 – Export grafu (PNG / PDF k tisku)
+- Menu ⋯ → „Export grafu“: výřez projektu **od úkolu – do úkolu** (v pořadí harmonogramu; podúkoly posledního a nadřazené fáze prvního se doplní, hloubku lze omezit), období se předvyplní podle vybraných úkolů (lze přepsat), měřítko auto/týdny/měsíce, volitelné sloupce Odpovědný a %, popisky u krátkých barů, čára „dnes“, deadline projektu. Živý náhled v dialogu.
+- „Stáhnout PNG“ (2× rozlišení, do prezentace) nebo „Otevřít k tisku / PDF“ (stránka na šířku s tlačítkem Tisk).

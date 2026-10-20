@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.15.5">
+<meta name="app-version" content="1.16.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -258,6 +258,13 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 .fx label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text);font-size:13px}
 .df{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line);justify-content:flex-end;align-items:center}
 .df .left-actions{margin-right:auto;display:flex;gap:6px}
+.pic2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pic4{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;gap:10px}
+.pichk{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.pichk label{display:flex;gap:5px;align-items:center}
+.picprev{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:46vh;background:#fff}
+.picprev svg{display:block;max-width:100%;height:auto}
+@media (max-width:760px){.pic2,.pic4{grid-template-columns:1fr 1fr}}
 .btn.danger{color:var(--critical);border-color:transparent}
 .team{display:grid;gap:6px}
 .team div{display:flex;gap:6px;align-items:center}
@@ -632,7 +639,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.15.5">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.16.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -651,6 +658,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
         <li><button data-m="bartip">Bublina s údaji u názvu úkolu a baru: <b id="bartipL"></b></button></li>
         <li><button data-m="track">Sledování změn: <b id="trackL"></b></button></li>
         <li class="sep"></li>
+        <li><button data-m="pic">Export grafu (PNG / PDF k tisku)…</button></li>
         <li><button data-m="export">Export JSON (záloha)</button></li>
         <li><button data-m="import">Import JSON (např. z prototypu)</button></li>
         <li><button data-m="gpro">Import z GanttPRO (export .xlsx)</button></li>
@@ -687,8 +695,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.15.5"></script>
-<script src="db.js?v=1.15.5"></script>
-<script src="app.js?v=1.15.5"></script>
+<script src="config.js?v=1.16.0"></script>
+<script src="db.js?v=1.16.0"></script>
+<script src="app.js?v=1.16.0"></script>
 </body>
 </html>
