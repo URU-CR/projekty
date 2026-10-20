@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.17.2';
+const APP_VERSION='1.17.3';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -291,11 +291,16 @@ function render(){
         chd=ds===de?`posun ${sg(ds)}`:ds===0?`konec ${sg(de)}`:de===0?`začátek ${sg(ds)}`:`začátek ${sg(ds)}, konec ${sg(de)}`}}}
     const dts=(t.milestone?fmts(t.start):`${fmts(sp.start)} – ${fmts(sp.end)}`)+(st.k==='late'||st.k==='behind'?` · ${st.l}`:'');const dtc=st.k==='late'?'dt late':st.k==='behind'?'dt behind':'dt';
     const who=`${esc(t.resp||'')}${t.collab&&t.collab.length?' + '+esc(t.collab.join(', ')):''}`;
-    const inside=false;const nol=x<220;
+    let VG=null;{const d=decOf(t,p);if(d&&!d.decision.resolved){const k=d.decision.pick||'a',o=k==='a'?'b':'a',ov=t.variants[o];if(ov&&ov.start&&(ov.start!==sp.start||(ov.end||ov.start)!==sp.end)){const oe=ov.end||ov.start;if(oe>=start&&ov.start<=end){const vl=`${esc(decLabel(d,o))} · ${fmts(ov.start)}${oe!==ov.start&&!t.milestone?' – '+fmts(oe):''}`;
+      const gx=t.milestone?X(ov.start)+px/2-12:X(ov.start),gw=t.milestone?24+vl.length*6.5+30:Math.max(px,(diff(ov.start,oe)+1)*px);
+      VG={x:gx,w:gw,html:t.milestone?`<div class="vghost ms" style="left:${gx}px;top:${top+6}px;--c:${baseColor(t,p)}" title="Varianta „${esc(decLabel(d,o))}“: ${fmt(ov.start)}"><span>${vl}</span></div>`:`<div class="vghost" style="left:${gx}px;top:${top+6}px;width:${gw}px;--c:${baseColor(t,p)}" title="Varianta „${esc(decLabel(d,o))}“: ${fmt(ov.start)}${oe!==ov.start?' – '+fmt(oe):''}"><span>${vl}</span></div>`}}}}}
+    const inside=false;let nol=x<220;let lblStyle='';
+    if(VG){const estW=(dts.length+who.length+(chd?chd.length+4:0))*6.4+56;const bx2=x+w;if(VG.x<bx2+8+estW&&VG.x+VG.w>bx2){lblStyle=` style="left:${w+(VG.x+VG.w-bx2)+10}px"`}
+      const nmW=t.name.length*6.8+16;if(VG.x+VG.w>x-8-nmW&&VG.x<x)nol=true}
     B+=`<div class="bar ${t.milestone?'ms':''} ${sp.group?'grp':''} ${t.critical?'crit':''} ${st.k==='late'?'late':''} ${st.k==='behind'?'behind':''} ${st.k==='done'?'done':''} ${nol?'nol':''} ${t.unclear?'unclear':''}" data-id="${t.id}" style="left:${x}px;top:${top+6}px;width:${w}px;background:${col};--c:${col};--gc:${baseColor(t,p)}"${V.barTip===false?'':` title="${esc(t.name)}: ${fmt(sp.start)} – ${fmt(sp.end)}${st.l?' · '+st.l:''}${who?' · '+who:''}${chtip?'\n'+esc(chtip):''}"`}>
       <div class="prog" style="width:${prog}%"></div><span class="h h-l"></span><span class="h h-r"></span>
-      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl">${dmark(t,p)}${qnote(t,p)}<b>${esc(t.name)} · </b><i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd" title="${esc(chtip)}">⟲ ${chd}</i>`:''}</span></div>`+CH;
-    {const d=decOf(t,p);if(d&&!d.decision.resolved){const k=d.decision.pick||'a',o=k==='a'?'b':'a',ov=t.variants[o];if(ov&&ov.start&&(ov.start!==sp.start||(ov.end||ov.start)!==sp.end)){const oe=ov.end||ov.start;if(oe>=start&&ov.start<=end){const vl=`${esc(decLabel(d,o))} · ${fmts(ov.start)}${oe!==ov.start&&!t.milestone?' – '+fmts(oe):''}`;B+=t.milestone?`<div class="vghost ms" style="left:${X(ov.start)+px/2-12}px;top:${top+6}px;--c:${baseColor(t,p)}" title="Varianta „${esc(decLabel(d,o))}“: ${fmt(ov.start)}"><span>${vl}</span></div>`:`<div class="vghost" style="left:${X(ov.start)}px;top:${top+6}px;width:${Math.max(px,(diff(ov.start,oe)+1)*px)}px;--c:${baseColor(t,p)}" title="Varianta „${esc(decLabel(d,o))}“: ${fmt(ov.start)}${oe!==ov.start?' – '+fmt(oe):''}"><span>${vl}</span></div>`}}}}
+      <span class="nml"><b>${esc(t.name)}</b></span><span class="lbl"${lblStyle}>${dmark(t,p)}${qnote(t,p)}<b>${esc(t.name)} · </b><i class="${dtc}">${dts}</i>${who?` <i>· ${who}</i>`:''}${chd?` <i class="chgd" title="${esc(chtip)}">⟲ ${chd}</i>`:''}</span></div>`+CH;
+    if(VG)B+=VG.html;
     for(const td of t.todos){if(!td.due||td.due<start||td.due>end)continue;B+=`<div class="tdot ${td.due<TODAY&&!td.done?'over':''} ${td.done?'done':''} ${td.block?'blk':''}" style="left:${X(td.due)+px/2-5}px;top:${top}px" title="${esc(td.text)} · ${fmt(td.due)}${td.who?' · '+esc(td.who):''}"></div>`}
     ri++;
   }
