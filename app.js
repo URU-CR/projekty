@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.18.3';
+const APP_VERSION='1.18.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -340,8 +340,9 @@ function renderCountdown(){const el=$('#cd');if(!el)return;const ps=(V.project==
 // každou sekundu se přepíší jen číslice (bez překreslení záhlaví); na pozadí se tikání zastaví
 function tickCountdown(){if(document.hidden||!S||!S.projects)return;$$('#cd .cdp[data-cd]').forEach(el=>{const p=proj(el.dataset.cd);if(!p||!p.deadline)return;const c=cdText(p.deadline);const b=el.querySelector('b');if(b&&b.innerHTML!==c.html)b.innerHTML=c.html;el.classList.toggle('past',c.past);el.classList.toggle('soon',!c.past&&c.dd<14)})}
 setInterval(tickCountdown,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)tickCountdown()});
-const MOBILE=matchMedia('(max-width:760px)').matches;  // na mobilu se text položky zalamuje (textarea), aby byl čitelný celý
-function renderTodoPanel(){renderCountdown();
+// na mobilu (dotyk) se text položky zalamuje (textarea), aby byl čitelný celý – vyhodnocuje se při každém vykreslení, ne jen při načtení
+let MOBILE=false;const isMobile=()=>matchMedia('(max-width:760px)').matches&&matchMedia('(pointer:coarse)').matches;
+function renderTodoPanel(){renderCountdown();MOBILE=isMobile();
   if(V.todoPanel==='min')V.todoPanel='open';const mode=V.todoPanel||'';const btn=$('#todoBtn');
   const all=[];for(const p of S.projects){p.todos.forEach(td=>all.push({td,p,t:null}))}S.todos.forEach(td=>all.push({td,p:null,t:null}));
   const MY=myNames();const mine=x=>!MY.size||MY.has(x.td.who)||!x.td.who;const vis=all.filter(mine);
@@ -379,7 +380,7 @@ function renderTodoPanel(){renderCountdown();
   <div class="dsec" data-dd="0"><div class="dadd ${V.dhead?'head':''}"><input id="dadd" placeholder="${V.dhead?'Nadpis skupiny… (Enter)':'Co je třeba udělat… (Enter)'}" autocomplete="off"><button class="hb ${V.dhead?'on':''}" data-dhead="0" title="Přidat nadpis skupiny">Nadpis</button></div>
   <div class="tpl">${l.map(item).join('')}${!l.length&&!doneToday.length?`<div class="dempty">Nic otevřeného.</div>`:''}${doneToday.map(item).join('')}</div></div>`;
   tp.innerHTML=h;
-  if(MOBILE)tp.querySelectorAll('textarea.dtext').forEach(t=>{t.style.height='auto';t.style.height=t.scrollHeight+'px'});
+  if(MOBILE)requestAnimationFrame(()=>tp.querySelectorAll('textarea.dtext').forEach(t=>{if(t.clientWidth<40)return;t.style.height='auto';t.style.height=t.scrollHeight+'px'}));
   if(focusTd==='dadd'){const i=$('#dadd');if(i)i.focus();focusTd=null}
   else if(focusTd&&focusTd.startsWith('td:')){const i=tp.querySelector(`.di[data-td="${focusTd.slice(3)}"] .dtext`);if(i){i.focus()}focusTd=null}
 }
@@ -758,7 +759,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')ctx.classList.remove
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;if(b.dataset.p==='__new'){newProject();return}if(V.draft)exitDraft();V.project=b.dataset.p;V.person='';V.group='';commit();scrollToToday()});
 $('#zoom').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;V.zoom=b.dataset.z;commit();scrollToToday()});
 $('#by').addEventListener('click',()=>{const nb=V.by==='person'?'project':'person';if(nb==='person'&&V.draft)exitDraft();V.by=nb;V.prevBy=V.by;V.status='';commit();scrollToToday()});
-let rsT;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(S.projects)renderTabs()},150)});
+let rsT;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(S.projects){renderTabs();if(V.todoPanel==='open'&&MOBILE!==isMobile())renderTodoPanel()}},150)});
 const tabMenu=document.createElement('div');tabMenu.className='tabmenu';document.body.appendChild(tabMenu);
 $('#tabs').addEventListener('click',e=>{const m=e.target.closest('[data-more]');if(!m)return;e.stopPropagation();if(tabMenu.classList.contains('open')){tabMenu.classList.remove('open');return}
   tabMenu.innerHTML=`<button data-p="ALL" class="${V.project==='ALL'?'on':''}">Všechny projekty</button>`+S.projects.map(p=>`<button data-p="${p.id}" class="${V.project===p.id?'on':''}"><span class="pd" style="background:${p.color}"></span>${esc(p.name)}</button>`).join('');
