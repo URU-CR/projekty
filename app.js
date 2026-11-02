@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.18.5';
+const APP_VERSION='1.18.6';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -27,7 +27,8 @@ const NOBODY='Nepřiřazeno';
 let S=null;
 let V={project:'ALL',zoom:'week',by:'project',person:'',status:'',group:'',narrow:false,open:[],mine:true,autoDaily:true,lastDaily:'',dopen:'',draft:''};
 let focusId=null,focusTd=null,sel=null,clip=null,lastTodoId=null;
-function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v)V={...V,...v}}catch(e){}return false}
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v)V={...V,...v}}catch(e){}applyTheme();return false}
+function applyTheme(){const t=V.theme||'light';if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(V));localStorage.setItem(CACHE,JSON.stringify(S))}catch(e){}}
 function toast(msg,err){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.onclick=()=>t.style.display='none';document.body.appendChild(t)}t.textContent=msg+(err?'  (klepnutím zavřít)':'');t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);if(err){try{const l=JSON.parse(localStorage.getItem('projekty-errors')||'[]');l.push(new Date().toISOString().slice(0,16)+' '+msg);localStorage.setItem('projekty-errors',JSON.stringify(l.slice(-10)))}catch(e){}}else t._h=setTimeout(()=>t.style.display='none',2000)}
 
@@ -180,7 +181,7 @@ function renderTabs(){
     if(!fits()){const m=document.createElement('button');m.className='more';m.dataset.more='1';m.title='Další projekty';tabs.appendChild(m);for(const t of cands){if(fits())break;t.style.display='none';hid++;m.textContent='▾ +'+hid}if(!hid)m.remove()}});
   $$('#zoom button').forEach(b=>b.classList.toggle('on',b.dataset.z===V.zoom));
   $('#by').classList.toggle('on',V.by==='person');
-  {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
+  {const lm=V.leftMode||(V.narrow?'narrow':'full');{const d=V.reviewDays==null?7:V.reviewDays;const el=$('#reviewdaysL');if(el)el.textContent=d<0?'všechny':d===0?'jen už běžící':'začínající do '+d+' dní'}$('#leftwL').textContent=lm==='full'?'plná':lm==='narrow'?'úzká':'skrytá (jen Gantt)';}$('#autodailyL').textContent=V.autoDaily?'ano':'ne';{const el=$('#themeL');if(el)el.textContent=({light:'světlý',dark:'tmavý',auto:'podle systému'})[V.theme||'light']}$('#bartipL').textContent=V.barTip===false?'ne':'ano';const tl=$('#trackL');if(tl)tl.textContent=S.trackChanges===false?'vypnuto':'zapnuto';
 
 }
 function renderDraftBar(){const el=$('#draftbar');const d=activeDraft();const cp=proj(V.project);if(!d&&cp&&isRO(cp)&&V.by==='project'){const props=(cp.proposals||[]).filter(x=>x.status==='open');el.className='on';el.innerHTML=`<b>JEN KE ČTENÍ</b> <span class="stat">Jste navrhovatel – aktuální harmonogram nelze upravovat. Změny dělejte v návrhu:</span> ${props.map(pr=>`<button class="btn pri" data-enter="${pr.id}">Otevřít návrh ${esc(groupNameOf(cp,pr.group))}</button>`).join('')}${cp.groups.filter(g=>canEditGroup(cp,g.id)&&!props.some(x=>x.group===g.id)).map(g=>`<button class="btn pri" data-newdraft="${g.id}">+ Založit návrh pro ${esc(g.name)}</button>`).join('')}`;return}
@@ -956,6 +957,7 @@ menu.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)ret
     case 'autodaily':V.autoDaily=!V.autoDaily;commit();break;
     case 'shortcuts':{for(const k of ['call','mail','sms','wa']){const K=KIND[k];const v=prompt('Název zkratky – '+K.l+' (aplikace Zkratky na Macu/iPhonu):',V[K.sc]||K.d);if(v===null)break;V[K.sc]=v.trim()||K.d}save();toast('Uloženo');break}
     case 'bartip':V.barTip=V.barTip===false;save();render();toast(V.barTip?'Bublina u názvu a baru zapnuta':'Bublina u názvu a baru vypnuta');break;
+    case 'theme':{const seq=['light','dark','auto'];V.theme=seq[(seq.indexOf(V.theme||'light')+1)%3];save();applyTheme();render();break}
     case 'track':S.trackChanges=!S.trackChanges;DB.setTrack(S.trackChanges).catch(e=>toast(e.message,true));render();break;
     case 'export':{exitDraft();$('#pdlg').classList.remove('proj');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,(k,v)=>k.startsWith('_')?undefined:v,2)],{type:'application/json'}));a.download=`projekty-${TODAY}.json`;a.click();break}
     case 'gpro':$('#xfile').click();break;
