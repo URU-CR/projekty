@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.0';
+const APP_VERSION='1.19.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -292,7 +292,7 @@ function render(){
         if(sp.start<os)CH+=seg(sp.start,addDays(os,-1),'chgadd');if(sp.end>oe)CH+=seg(addDays(oe,1),sp.end,'chgadd');
         const ds=diff(os,sp.start),de=diff(oe,sp.end),sg=n=>(n>0?'+':'−')+Math.abs(n)+' d';
         chd=ds===de?`posun ${sg(ds)}`:ds===0?`konec ${sg(de)}`:de===0?`začátek ${sg(ds)}`:`začátek ${sg(ds)}, konec ${sg(de)}`}}}
-    const dts=(t.milestone?fmts(t.start)+(t.time?' '+t.time:''):`${fmts(sp.start)} – ${fmts(sp.end)}`)+(st.k==='late'||st.k==='behind'?` · ${st.l}`:'');const dtc=st.k==='late'?'dt late':st.k==='behind'?'dt behind':'dt';
+    const dts=(t.milestone?fmts(t.start)+(t.time?` <b class="tm">${esc(t.time)}</b>`:''):`${fmts(sp.start)} – ${fmts(sp.end)}`)+(st.k==='late'||st.k==='behind'?` · ${st.l}`:'');const dtc=st.k==='late'?'dt late':st.k==='behind'?'dt behind':'dt';
     const who=`${esc(t.resp||'')}${t.collab&&t.collab.length?' + '+esc(t.collab.join(', ')):''}`;
     let VG=null;{const d=decOf(t,p);if(d&&!d.decision.resolved){const k=d.decision.pick||'a',o=k==='a'?'b':'a',ov=t.variants[o];if(ov&&ov.start&&(ov.start!==sp.start||(ov.end||ov.start)!==sp.end)){const oe=ov.end||ov.start;if(oe>=start&&ov.start<=end){const vl=`${esc(decLabel(d,o))} · ${fmts(ov.start)}${oe!==ov.start&&!t.milestone?' – '+fmts(oe):''}`;
       const gx=t.milestone?X(ov.start)+px/2-12:X(ov.start),gw=t.milestone?24+vl.length*6.5+30:Math.max(px,(diff(ov.start,oe)+1)*px);
