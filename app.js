@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.18.6';
+const APP_VERSION='1.18.7';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -1038,7 +1038,7 @@ function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';if(t.milestone||pro
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
 let lastBarDown={id:null,t:0};
-g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.target.closest('[data-dchk],[data-qn]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
+g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('psum')||e.target.closest('[data-dchk],[data-qn]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
 g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 function cycleCheck(id,mode){const f=findTask(id);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   const toTodo=()=>{t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'CHECK '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')};
@@ -1070,9 +1070,10 @@ function openKontrola(){if(V.draft)exitDraft();V.by='project';if(V.status==='rev
 g.addEventListener('contextmenu',e=>{const el=e.target.closest('.bar[data-id],.lrow[data-id]');if(!el)return;e.preventDefault();openCtx(el.dataset.id,e.clientX,e.clientY)});
 g.addEventListener('click',e=>{if(e.target.closest('button,input,select,.bar'))return;const row=e.target.closest('.lrow[data-id]');if(!row)return;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=row.dataset.id;row.classList.add('sel')});
 let drag=null;
-g.addEventListener('pointerdown',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('grp')||e.button!==0||e.target.closest('.lbl'))return;
+g.addEventListener('pointerdown',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('psum')||e.button!==0||e.target.closest('.lbl'))return;
   // dvojí stisk na stejném baru do 400 ms = nabídka (záloha, pokud prohlížeč dblclick po zachycení ukazatele nepošle)
   const now=Date.now();if(lastBarDown.id===bar.dataset.id&&now-lastBarDown.t<400){lastBarDown.t=0;drag=null;openTask(bar.dataset.id);return}lastBarDown={id:bar.dataset.id,t:now};
+  if(bar.classList.contains('grp'))return;
   if(g.classList.contains('ro'))return;const f=findTask(bar.dataset.id);if(!f)return;if(!f.p._draft&&!taskWritable(f.t,f.p))return;
   const mode=e.target.classList.contains('h-l')?'l':e.target.classList.contains('h-r')?'r':'m';
   drag={bar,t:f.t,mode,x0:e.clientX,start:f.t.start,end:f.t.end,left:parseFloat(bar.style.left),moved:false,px:+g.dataset.px,pid:e.pointerId};
@@ -1084,7 +1085,7 @@ g.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x0;
   else if(drag.mode==='r'){const d=Math.max(1,diff(drag.start,drag.end)+1+dd);drag.bar.style.width=d*px+'px';drag.ns=drag.start;drag.ne=addDays(drag.start,d-1)}
   else{const d=Math.max(1,diff(drag.start,drag.end)+1-dd);const ns=addDays(drag.end,-(d-1));drag.bar.style.left=(drag.left+diff(drag.start,ns)*px)+'px';drag.bar.style.width=d*px+'px';drag.ns=ns;drag.ne=drag.end}
   const dl=drag.bar.querySelector('.lbl i.dt');if(dl)dl.textContent=`${fmts(drag.ns)} – ${fmts(drag.ne)}`});
-const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r){if(r.scrollIntoView)r.scrollIntoView({block:"nearest"});r.classList.add("sel")}}};
+const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r)r.classList.add("sel")}};  // bez scrollIntoView – posun řádku pod kurzorem rozbíjel dvojklik
 g.addEventListener('pointerup',endDrag);g.addEventListener('pointercancel',endDrag);document.addEventListener('pointerup',e=>{if(drag&&!e.target.closest('.gantt'))drag=null});
 document.addEventListener('keydown',e=>{if(e.key==='l'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();openDump()}
   if(e.key==='n'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();$('#quick').focus()}});
