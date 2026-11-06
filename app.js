@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.2';
+const APP_VERSION='1.19.3';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -793,10 +793,12 @@ $('#todoBtn').addEventListener('click',()=>setTodoPanel(V.todoPanel==='open'?'':
 $('#kBtn').addEventListener('click',openKontrola);
 // ---------- Export grafu (PNG / tisk) – věrný výřez živého harmonogramu ----------
 let XP=null; // {ids:Set} – během exportního renderu omezí řádky
-function picRange(p,fromId,toId,maxDepth){const T=p.tasks;let a=T.findIndex(t=>t.id===fromId),b=T.findIndex(t=>t.id===toId);if(a<0)a=0;if(b<0)b=T.length-1;if(a>b)[a,b]=[b,a];
+// pořadí úkolů tak, jak jdou v harmonogramu (rodič, pak jeho podúkoly)
+function treeList(p){const out=[];const walk=par=>{for(const t of p.tasks)if((t.parent||null)===par){out.push(t);walk(t.id)}};walk(null);p.tasks.forEach(t=>{if(!out.includes(t))out.push(t)});return out}
+function picRange(p,fromId,toId,maxDepth,withParents){const T=treeList(p);let a=T.findIndex(t=>t.id===fromId),b=T.findIndex(t=>t.id===toId);if(a<0)a=0;if(b<0)b=T.length-1;if(a>b)[a,b]=[b,a];
   const to=T[b];const sub=new Set(descendants(to,p).map(x=>x.id));let out=[];for(let i=a;i<T.length;i++){const t=T[i];if(i>b&&!sub.has(t.id))break;out.push(t)}
-  const ids=new Set(out.map(t=>t.id));const parents=[];let c=T[a];while(c&&c.parent){c=T.find(x=>x.id===c.parent);if(c&&!ids.has(c.id)){parents.unshift(c);ids.add(c.id)}}
-  out=[...parents,...out];const base=Math.min(...out.map(t=>depth(t,p)));
+  if(withParents){const ids=new Set(out.map(t=>t.id));const parents=[];let c=T[a];while(c&&c.parent){c=T.find(x=>x.id===c.parent);if(c&&!ids.has(c.id)){parents.unshift(c);ids.add(c.id)}}out=[...parents,...out]}
+  const base=Math.min(...out.map(t=>depth(t,p)));
   return out.filter(t=>maxDepth<0||depth(t,p)-base<=maxDepth).map(t=>({t,lv:depth(t,p)-base}))}
 // vyrenderuje harmonogram s dočasným nastavením a vrátí klon #gantt oříznutý na období
 function picSnapshot(opt){const keep=JSON.stringify(V);const g=$('#gantt');const sl=g.scrollLeft,st=g.scrollTop;
@@ -844,27 +846,27 @@ function picPng2(snap,opt,cb,fcss){const css=fcss+'\n'+[...document.querySelecto
 function openPic(){const dlg=$('#pdlg');dlg.classList.remove('proj');dlg.classList.add('wide');
   const projs=S.projects.filter(p=>p.tasks.length);if(!projs.length){toast('Žádný projekt s úkoly.');return}
   let pid=projs.some(p=>p.id===V.project)?V.project:projs[0].id;
-  const opts=p=>p.tasks.map(t=>`<option value="${t.id}">${'  '.repeat(depth(t,p))}${esc(t.name)}</option>`).join('');
+  const opts=p=>treeList(p).map(t=>`<option value="${t.id}">${'  '.repeat(depth(t,p))}${esc(t.name)}</option>`).join('');
   dlg.innerHTML=`<form method="dialog"><div class="dh"><span>Export grafu – obrázek nebo tisk</span><button type="button" data-x>×</button></div><div class="db">
-    <div class="hint">Výřez živého harmonogramu – vypadá stejně jako na obrazovce (sloupce, osoby, varianty, vazby, linky). Vyberte od kterého úkolu po který (v pořadí harmonogramu, podúkoly posledního se přidají) a období.</div>
+    <div class="hint">Výřez živého harmonogramu – vypadá stejně jako na obrazovce (sloupce, osoby, varianty, vazby, linky). Vyberte od kterého úkolu po který (v pořadí harmonogramu, podúkoly posledního se přidají, nadřazené fáze jen na přání) a období – to se předvyplní jen podle vybraných úkolů.</div>
     <div class="pic2"><div class="f"><label>Projekt</label><select name="p">${projs.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>
       <div class="f"><label>Hloubka</label><select name="depth"><option value="-1">vše</option><option value="0">jen vybraná úroveň</option><option value="1">+1 úroveň</option><option value="2">+2 úrovně</option></select></div></div>
     <div class="pic2"><div class="f"><label>Od úkolu</label><select name="from"></select></div><div class="f"><label>Do úkolu</label><select name="to"></select></div></div>
     <div class="pic4"><div class="f"><label>Období od</label><input type="date" name="d1"></div><div class="f"><label>do</label><input type="date" name="d2"></div>
       <div class="f"><label>Měřítko</label><select name="zoom"><option value="day">den</option><option value="week" selected>týden</option><option value="month">měsíc</option></select></div>
       <div class="f"><label>Levá tabulka</label><select name="left"><option value="full">plná</option><option value="narrow">úzká</option><option value="off">jen graf</option></select></div></div>
-    <div class="pic2"><div class="f"><label>Název</label><input type="text" name="title"></div><div class="pichk" style="align-self:end;padding-bottom:6px"><label><input type="checkbox" name="depsHi"> zvýraznit vazby</label><label><input type="checkbox" name="ext" ${V.extShow?'checked':''}> cizí termíny</label><label><input type="checkbox" name="portrait"> tisk na výšku</label></div></div>
+    <div class="pic2"><div class="f"><label>Název</label><input type="text" name="title"></div><div class="pichk" style="align-self:end;padding-bottom:6px"><label><input type="checkbox" name="parents"> včetně nadřazených fází</label><label><input type="checkbox" name="depsHi"> zvýraznit vazby</label><label><input type="checkbox" name="ext" ${V.extShow?'checked':''}> cizí termíny</label><label><input type="checkbox" name="portrait"> tisk na výšku</label></div></div>
     <div class="picprev" id="picprev"><iframe id="picif" title="Náhled" style="width:100%;height:100%;border:0;background:#fff"></iframe></div>
     </div><div class="df"><span class="hint" id="picinfo" style="margin-right:auto"></span><button type="button" class="btn" data-x>Zavřít</button><button type="button" class="btn" data-print>Otevřít k tisku / PDF</button><button type="button" class="btn pri" data-png>Stáhnout PNG</button></div></form>`;
   const fm=dlg.querySelector('form'),E=n=>fm.elements[n];let auto=true;E('zoom').value=V.zoom||'week';E('left').value=V.leftMode||'full';
-  const fill=()=>{const p=proj(E('p').value);E('from').innerHTML=opts(p);E('to').innerHTML=opts(p);E('to').value=p.tasks[p.tasks.length-1].id;E('title').value=p.name;auto=true;dates()};
-  const cur=()=>{const p=proj(E('p').value);const rows=picRange(p,E('from').value,E('to').value,+E('depth').value);return {p,rows}};
+  const fill=()=>{const p=proj(E('p').value);E('from').innerHTML=opts(p);E('to').innerHTML=opts(p);const TL=treeList(p);E('to').value=TL[TL.length-1].id;E('title').value=p.name;auto=true;dates()};
+  const cur=()=>{const p=proj(E('p').value);const rows=picRange(p,E('from').value,E('to').value,+E('depth').value,E('parents').checked);return {p,rows}};
   const dates=()=>{if(!auto)return;const {p,rows}=cur();const sps=rows.map(r=>span(r.t,p));if(!sps.length)return;let a=sps.reduce((m,s)=>s.start<m?s.start:m,sps[0].start),b=sps.reduce((m,s)=>s.end>m?s.end:m,sps[0].end);
     a=addDays(a,-((parse(a).getUTCDay()+6)%7)-7);b=addDays(b,7+(6-(parse(b).getUTCDay()+6)%7));E('d1').value=a;E('d2').value=b};
   const optOf=()=>{const {p,rows}=cur();return {pid:p.id,ids:rows.map(r=>r.t.id),from:E('d1').value,to:E('d2').value,zoom:E('zoom').value,left:E('left').value,depsHi:E('depsHi').checked,ext:E('ext').checked,portrait:E('portrait').checked,title:E('title').value||p.name}};
   const valid=o=>o.ids.length&&o.from&&o.to&&o.from<o.to;
   let snap=null;const prev=()=>{const o=optOf();if(!valid(o)){$('#picinfo').textContent='Zadejte platné období.';return}snap=picSnapshot(o);const ifw=$('#picif').clientWidth||900;$('#picif').srcdoc=picDoc(snap,o).replace('<button class="xb"','<button hidden class="xb"').replace('</head>',`<style>body{zoom:${Math.min(1,(ifw-24)/(snap.width+8)).toFixed(3)}}</style></head>`);$('#picinfo').textContent=`${o.ids.length} úkolů · ${diff(o.from,o.to)+1} dní · ${Math.round(snap.width)} × ${Math.round(snap.height)} px`};
-  fm.addEventListener('change',e=>{if(e.target.name==='p')fill();else if(e.target.name==='d1'||e.target.name==='d2')auto=false;else if(['from','to','depth'].includes(e.target.name))dates();prev()});
+  fm.addEventListener('change',e=>{if(e.target.name==='p')fill();else if(e.target.name==='d1'||e.target.name==='d2')auto=false;else if(['from','to','depth','parents'].includes(e.target.name))dates();prev()});
   fm.addEventListener('click',e=>{if(e.target.closest('[data-x]')){dlg.close();dlg.classList.remove('wide');return}
     const o=optOf();if(!valid(o))return;
     if(e.target.closest('[data-png]')){const s=picSnapshot(o);const b=e.target.closest('[data-png]');b.disabled=true;b.textContent='Vytvářím…';
@@ -1224,7 +1226,7 @@ const HELP=[
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: zavře klepnutí kamkoli do záhlaví vpravo od data (celá plocha je tlačítko) nebo Esc (znovu otevře tlačítko ToDo). Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
   ['<i class="nb">'+NOTE_ICON+'</i>','Poznámky','Malá ikonka vedle ToDo otevře plovoucí panel osobních poznámek (vidí je jen jejich autor, ukládají se do databáze). Nahoře napište nadpis a Enter založí poznámku. Tělo se píše rovnou naformátované: označte text a pravým tlačítkem vyberte Tučně / Nadpis / Menší nadpis / Odrážky / Číslování / Obyčejný text; nebo ⌘B / Ctrl+B = tučně; „- “ na začátku řádku založí odrážky, „1. “ číslování (Enter pokračuje, Enter na prázdné položce ukončí); „# “ na začátku řádku udělá mezinadpis, „## “ menší (Enter za ním pokračuje obyčejným řádkem). Vložený text se vloží jako prostý (bez cizího formátování). ⌘+klik na odkaz ho otevře. ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání, změny se ukládají samy. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj.'],
   ['<span class="dec">⑂ Ano ?</span>','Rozhodovací bod a varianty','V detailu úkolu zaškrtněte „Tento úkol je rozhodnutí“ a pojmenujte varianty A/B (např. Ano/Ne) a která zatím platí (předpoklad). U navazujících úkolů pak v sekci „Varianta podle rozhodnutí“ vyberte toto rozhodnutí a zadejte termíny pro A i B – úkol se drží platné varianty, druhá se v grafu kreslí čárkovaně. Posunete‑li úkol v grafu, mění se termíny právě platné varianty. Až je rozhodnuto, v detailu rozhodovacího úkolu klepněte „Rozhodnuto: A/B“ – navazující úkoly se přepnou, čárkované varianty zmizí, do deníku se zapíše záznam. „Znovu otevřít“ vrátí stav předpokladu. Štítek ⑂ u názvu ukazuje platnou variantu (? = předpoklad, ✓ = rozhodnuto), štítek u navazujícího úkolu název platné varianty.'],
-  ['🖼','Export grafu (PNG / PDF)','Menu ⋯ → „Export grafu“. Vyberete projekt a výřez „od úkolu – do úkolu“ (v pořadí harmonogramu; podúkoly posledního a nadřazené fáze prvního se přidají, hloubku lze omezit), období (předvyplní se podle úkolů), měřítko den/týden/měsíc a šířku levé tabulky. Výsledek je věrný výřez živého harmonogramu – stejné sloupce, osoby, stavy, varianty rozhodnutí, vazby i svislé linky; sbalené fáze zůstanou sbalené. Náhled je v dialogu. „Stáhnout PNG“ uloží obrázek ve dvojnásobném rozlišení (Chrome; v Safari použijte PDF), „Otevřít k tisku / PDF“ otevře stránku přizpůsobenou šířce A4 na šířku (volitelně na výšku).'],
+  ['🖼','Export grafu (PNG / PDF)','Menu ⋯ → „Export grafu“. Vyberete projekt a výřez „od úkolu – do úkolu“ (v pořadí harmonogramu; podúkoly posledního se přidají, nadřazené fáze jen při zaškrtnutí, hloubku lze omezit), období (předvyplní se podle úkolů), měřítko den/týden/měsíc a šířku levé tabulky. Výsledek je věrný výřez živého harmonogramu – stejné sloupce, osoby, stavy, varianty rozhodnutí, vazby i svislé linky; sbalené fáze zůstanou sbalené. Náhled je v dialogu. „Stáhnout PNG“ uloží obrázek ve dvojnásobném rozlišení (Chrome; v Safari použijte PDF), „Otevřít k tisku / PDF“ otevře stránku přizpůsobenou šířce A4 na šířku (volitelně na výšku).'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],
   ['📞 ✉️ 💬','Telefonát / e-mail / SMS / WhatsApp z ToDo','Zadání „tel Kozák – termín“, „mail Jandová: smlouva“, „sms Míka …“ nebo „wa Míka …“ označí položku druhem komunikace a uloží jméno kontaktu (upravit v ⋯). Klepnutí na ikonku vlevo přepíná druh v pořadí tečka → 📞 → ✉️ → SMS → WhatsApp → tečka. Je to jen vizuální štítek, nic se nespouští.'],
  ['📱','iPhone','Na úzké obrazovce se po přihlášení otevře rovnou ToDo panel přes celou obrazovku (harmonogram zůstává dostupný po zavření panelu, ale pro mobil je příliš široký).'],
