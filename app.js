@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.18.7';
+const APP_VERSION='1.18.8';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -800,21 +800,29 @@ function picRange(p,fromId,toId,maxDepth){const T=p.tasks;let a=T.findIndex(t=>t
 function picSnapshot(opt){const keep=JSON.stringify(V);const g=$('#gantt');const sl=g.scrollLeft,st=g.scrollTop;
   try{XP={ids:new Set(opt.ids)};Object.assign(V,{project:opt.pid,zoom:opt.zoom,status:'',group:'',person:'',by:'project',leftMode:opt.left,depsHi:!!opt.depsHi,extShow:!!opt.ext,viewVer:'',draft:''});
     render();
-    const px=+g.dataset.px,start=g.dataset.start;const off=diff(start,opt.from)*px,days=diff(opt.from,opt.to)+1,cw=days*px;
-    const c=g.cloneNode(true);c.removeAttribute('id');c.classList.add('xport');c.querySelectorAll('.splitter,.c-act,.tdc.empty,.tg.none,.bar .h,.lbl .dm,.lbl .qn,.bar.psum').forEach(e=>e.remove());
+    const px=+g.dataset.px,start=g.dataset.start;let off=diff(start,opt.from)*px,days=diff(opt.from,opt.to)+1,cw=days*px;
+    // rozšířit výřez tak, aby se vešly popisky před bary (názvy) i za nimi (termíny, osoby) a varianty
+    {const rb=g.querySelector('.rbody');if(rb){const r0=rb.getBoundingClientRect();let mn=off,mx=off+cw;rb.querySelectorAll('.bar:not(.psum),.vghost').forEach(el=>{for(const x of [el,...el.querySelectorAll('.nml,.lbl')]){const r=x.getBoundingClientRect();if(r.width<2)continue;const l=r.left-r0.left,rt=r.right-r0.left;if(l<mn)mn=l;if(rt>mx)mx=rt}});
+      const total=parseFloat(rb.style.width)||Infinity;off=Math.max(0,Math.floor(mn-10));cw=Math.min(total-off,Math.ceil(mx+12)-off)}}
+    // šířky sloupců levé tabulky podle obsahu (název + odpovědný)
+    const cols=(()=>{if(opt.left==='off')return null;const cv=document.createElement('canvas').getContext('2d');const fam=getComputedStyle(document.body).fontFamily;const mw=(t,f)=>{cv.font=f;return cv.measureText(t||'').width*1.08};
+      let nw=180,rw=96;g.querySelectorAll('.lrow[data-id]').forEach(row=>{const f=findTask(row.dataset.id);if(!f)return;const lv=+getComputedStyle(row).getPropertyValue('--lv')||0;const bad=[...row.querySelectorAll('.c-name .dec,.c-name .var,.c-name .qm,.c-name .chgtag,.c-name .cl')].reduce((a,e)=>a+e.offsetWidth+4,0);
+        nw=Math.max(nw,lv*22+28+mw(f.t.name,'500 13.5px '+fam)+bad+16);rw=Math.max(rw,mw(f.t.resp||'','12px '+fam)*1.05+30)});
+      nw=Math.min(nw,620);rw=Math.min(rw,260);return opt.left==='narrow'?{tpl:`44px ${Math.round(nw)}px 0 0 0 28px`,w:44+nw+28}:{tpl:`44px ${Math.round(nw)}px ${Math.round(rw)}px 96px 76px 28px`,w:44+nw+rw+96+76+28}})();
+    const c=g.cloneNode(true);if(cols){c.style.setProperty('--leftw',Math.round(cols.w)+'px');c.querySelectorAll('.lhead,.lrow').forEach(e=>e.style.gridTemplateColumns=cols.tpl)}c.removeAttribute('id');c.classList.add('xport');c.querySelectorAll('.splitter,.c-act,.tdc.empty,.tg.none,.bar .h,.lbl .dm,.lbl .qn,.bar.psum').forEach(e=>e.remove());
     // formulářové prvky nahradit textem (v obrázku by „zašpinily“ canvas a v tisku nemají co dělat)
     c.querySelectorAll('input,select,textarea,button').forEach(e=>{const sp=document.createElement('span');sp.className='xin '+(e.className||'');for(const a of e.attributes)if(/^data-|^style$|^title$/.test(a.name))sp.setAttribute(a.name,a.value);
       if(e.tagName==='INPUT'&&e.type==='checkbox')sp.textContent=e.checked?'✓':'';else if(e.tagName==='INPUT')sp.textContent=e.value;else if(e.tagName==='SELECT')sp.textContent=e.selectedIndex>=0?e.options[e.selectedIndex].textContent:'';else sp.innerHTML=e.innerHTML;
       e.replaceWith(sp)});
     const r=c.querySelector('.right');const W=parseFloat(r.style.width);const inner=document.createElement('div');inner.style.cssText=`position:relative;width:${W}px;margin-left:${-off}px`;while(r.firstChild)inner.appendChild(r.firstChild);r.appendChild(inner);r.style.width=cw+'px';r.style.overflow='hidden';
-    const lw=opt.left==='off'?0:c.querySelector('.left')?.offsetWidth||(opt.left==='narrow'?300:parseInt(getComputedStyle(g).getPropertyValue('--leftw'))||520);
+    const lw=opt.left==='off'?0:cols?Math.round(cols.w)+2:520;
     const h=c.querySelector('.rbody')?parseFloat(c.querySelector('.rbody').style.height)+48:400;
     return {node:c,width:lw+cw+2,height:h}}
   finally{XP=null;const back=JSON.parse(keep);for(const k of Object.keys(V))delete V[k];Object.assign(V,back);render();g.scrollLeft=sl;g.scrollTop=st}}
 function picDoc(snap,opt){const css=[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');const links=[...document.querySelectorAll('link[rel="stylesheet"],link[rel="preconnect"]')].map(l=>l.outerHTML).join('');
   const extra=`html,body{margin:0;background:#fff;color:#1b222c}body{padding:10px}.xh{display:flex;align-items:baseline;gap:12px;margin:0 0 8px 2px;font-family:'IBM Plex Sans',system-ui,sans-serif}.xh b{font-size:16px}.xh span{color:#6a7381;font-size:12px}
     .gantt.xport{overflow:visible !important;display:flex;height:auto;width:max-content;border:1px solid #dfe3e8;border-radius:6px}.gantt.xport .left{position:static}.gantt.xport .lhead,.gantt.xport .rhead{position:static}.gantt.xport .right{flex:none}
-    .gantt.xport .lrow:hover,.gantt.xport .bar:hover{background:inherit}.gantt.xport .xin{display:inline-block;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;vertical-align:middle;box-sizing:border-box}.gantt.xport .lrow>span>.xin.nm{min-width:0;flex:1}.gantt.xport .xin.tg,.gantt.xport .xin.dot{display:inline-flex;align-items:center;justify-content:center;padding:0}.gantt.xport .lrow.sel{background:transparent;box-shadow:none}
+    .gantt.xport .lrow:hover,.gantt.xport .bar:hover{background:inherit}.gantt.xport .xin{display:inline-block;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;vertical-align:middle;box-sizing:border-box}.gantt.xport .lrow>span>.xin.nm{min-width:0;flex:1}.gantt.xport .xin.tg,.gantt.xport .xin.dot{display:inline-flex;align-items:center;justify-content:center;padding:0}.gantt.xport .c-resp .xin{font-size:12px;color:var(--muted)}.gantt.xport .c-prog .xin{font-size:12px}.gantt.xport .lrow.sel{background:transparent;box-shadow:none}
     .xb{position:fixed;top:8px;right:8px;font:13px system-ui;padding:6px 12px;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer}@page{size:${opt.portrait?'portrait':'landscape'};margin:8mm}@media print{.xb{display:none}body{padding:0}.gantt.xport{zoom:var(--z,1)}}`;
   const z=Math.min(1,(opt.portrait?(210-16):(297-16))/25.4*96/(snap.width+4));
   return `<!doctype html><html lang="cs" data-theme="light"><head><meta charset="utf-8"><title>${esc(opt.title)}</title>${links}<style>${css}</style><style>${extra}</style></head><body><div class="xh"><b>${esc(opt.title)}</b><span>${fmt(opt.from)} – ${fmt(opt.to)} · stav k ${fmt(TODAY)}</span></div><div style="--z:${z.toFixed(3)}">${snap.node.outerHTML}</div><button class="xb" onclick="print()">Tisk / uložit PDF</button></body></html>`}
@@ -825,7 +833,7 @@ async function picFonts(){if(picFontCss!=null)return picFontCss;try{const l=docu
     css=css.replace(/url\((https:[^)]+)\)/g,(m,u)=>map[u]?`url(${map[u]})`:m);return picFontCss=css}catch(e){return picFontCss=''}}
 function picPng(snap,opt,cb){picFonts().then(fcss=>picPng2(snap,opt,cb,fcss))}
 function picPng2(snap,opt,cb,fcss){const css=fcss+'\n'+[...document.querySelectorAll('style')].map(s=>s.textContent).join('\n');
-  const extra=`.gantt.xport{overflow:visible;display:flex;height:auto;width:max-content;background:#fff}.gantt.xport .left,.gantt.xport .lhead,.gantt.xport .rhead{position:static}.gantt.xport .right{flex:none}.gantt.xport .xin{display:inline-block;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;vertical-align:middle;box-sizing:border-box}.gantt.xport .lrow>span>.xin.nm{min-width:0;flex:1}.gantt.xport .xin.tg,.gantt.xport .xin.dot{display:inline-flex;align-items:center;justify-content:center;padding:0}.gantt.xport .lrow.sel{background:transparent;box-shadow:none}`;
+  const extra=`.gantt.xport{overflow:visible;display:flex;height:auto;width:max-content;background:#fff}.gantt.xport .left,.gantt.xport .lhead,.gantt.xport .rhead{position:static}.gantt.xport .right{flex:none}.gantt.xport .xin{display:inline-block;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;vertical-align:middle;box-sizing:border-box}.gantt.xport .lrow>span>.xin.nm{min-width:0;flex:1}.gantt.xport .xin.tg,.gantt.xport .xin.dot{display:inline-flex;align-items:center;justify-content:center;padding:0}.gantt.xport .c-resp .xin{font-size:12px;color:var(--muted)}.gantt.xport .c-prog .xin{font-size:12px}.gantt.xport .lrow.sel{background:transparent;box-shadow:none}`;
   const x=new XMLSerializer().serializeToString(snap.node);const Wd=Math.ceil(snap.width),Hd=Math.ceil(snap.height);
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${Wd}" height="${Hd}"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml" style="width:${Wd}px;height:${Hd}px;background:#fff;font-family:'IBM Plex Sans',system-ui,sans-serif"><style><![CDATA[${css}\n${extra}]]></style>${x}</div></foreignObject></svg>`;
   const img=new Image();const url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
