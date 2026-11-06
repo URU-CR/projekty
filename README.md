@@ -118,3 +118,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.18.6 – Vzhled
 - Menu ⋯ → „Vzhled: světlý / tmavý / podle systému“ (`V.theme`, nastavuje `data-theme` na `<html>`). Výchozí je **světlý** – tmavý režim se už nezapíná sám podle systému (iPhone v noci).
+
+## 1.19.0 – Čas milníku
+- V detailu milníku nepovinné pole „Čas“ (HH:MM, `tasks.at_time`, migrace `029_time.sql`). Zobrazuje se v popisku u milníku a v bublině („10. 11. 14:30“); export JSON ho přenáší.
