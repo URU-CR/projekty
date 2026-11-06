@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.19.3">
+<meta name="app-version" content="1.19.4">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -586,6 +586,8 @@ dialog.proj{width:min(760px,96vw)}
 #auth .f input{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 10px;width:100%}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--panel);padding:9px 16px;border-radius:8px;z-index:300;font-size:13px;display:none;max-width:90vw}
 #toast.err{background:var(--critical);color:#fff}
+#newver{position:fixed;left:50%;top:52px;transform:translateX(-50%);background:var(--panel);color:var(--text);border:1px solid var(--accent);padding:7px 12px;border-radius:8px;z-index:310;font-size:13px;display:none;gap:10px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+#newver button{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer}
 .brand .hint{font-weight:400;font-size:12px;margin-left:6px}
 
 .qm{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#d97706;color:#fff;font-size:11px;font-weight:700;flex:none;cursor:help}
@@ -661,7 +663,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.19.3">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.19.4">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -717,8 +719,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.19.3"></script>
-<script src="db.js?v=1.19.3"></script>
-<script src="app.js?v=1.19.3"></script>
+<script src="config.js?v=1.19.4"></script>
+<script src="db.js?v=1.19.4"></script>
+<script src="app.js?v=1.19.4"></script>
 </body>
 </html>

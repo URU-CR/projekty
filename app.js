@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.3';
+const APP_VERSION='1.19.4';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -30,6 +30,10 @@ let focusId=null,focusTd=null,sel=null,clip=null,lastTodoId=null;
 function load(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v)V={...V,...v}}catch(e){}applyTheme();return false}
 function applyTheme(){const t=V.theme||'light';if(t==='auto')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(V));localStorage.setItem(CACHE,JSON.stringify(S))}catch(e){}}
+// kontrola nové verze (GitHub Pages drží index.html v cache až 10 min) – nabídne obnovení
+async function checkNewVersion(){try{const r=await fetch('version.txt?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();if(!v||v===APP_VERSION)return;
+    let b=$('#newver');if(!b){b=document.createElement('div');b.id='newver';document.body.appendChild(b)}b.innerHTML=`K dispozici je nová verze <b>${esc(v)}</b> (máte ${APP_VERSION}). <button type="button">Obnovit</button>`;b.querySelector('button').onclick=()=>location.reload(true);b.style.display='flex'}catch(e){}}
+setTimeout(checkNewVersion,4000);setInterval(checkNewVersion,10*60*1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkNewVersion()});
 function toast(msg,err){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';t.onclick=()=>t.style.display='none';document.body.appendChild(t)}t.textContent=msg+(err?'  (klepnutím zavřít)':'');t.className=err?'err':'';t.style.display='block';clearTimeout(t._h);if(err){try{const l=JSON.parse(localStorage.getItem('projekty-errors')||'[]');l.push(new Date().toISOString().slice(0,16)+' '+msg);localStorage.setItem('projekty-errors',JSON.stringify(l.slice(-10)))}catch(e){}}else t._h=setTimeout(()=>t.style.display='none',2000)}
 
 function sample(){return {me:'',projects:[],todos:[]}}

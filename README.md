@@ -121,3 +121,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.19.0 – Čas milníku
 - V detailu milníku nepovinné pole „Čas“ (HH:MM, `tasks.at_time`, migrace `029_time.sql`). Zobrazuje se v popisku u milníku a v bublině („10. 11. 14:30“); export JSON ho přenáší.
+
+## 1.19.4 – Hlídání nové verze
+- `version.txt` v kořeni repa drží aktuální verzi; aplikace ho stahuje bez cache (po startu, každých 10 min a při návratu do záložky) a při rozdílu zobrazí lištu „K dispozici je nová verze – Obnovit“. Při každém vydání je nutné `version.txt` zvednout spolu s `APP_VERSION`.
