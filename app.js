@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.4';
+const APP_VERSION='1.19.5';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -880,7 +880,7 @@ function openPic(){const dlg=$('#pdlg');dlg.classList.remove('proj');dlg.classLi
   fill();prev();dlg.showModal()}
 // ---------- Poznámky (osobní, jen autor) ----------
 const NOTE_ICON=`<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M6 3h9l4 4v14H6z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 12h6M9 16h6M15 3v4h4"/></svg>`;
-let noteFocus=null,noteTimer=null,noteForce=false;
+let noteFocus=null,noteTimer=null,noteForce=false,noteEdit=null; // noteEdit = id poznámky právě v režimu úprav (ostatní jsou jen ke čtení/kopírování)
 // tělo poznámky = HTML s povolenou podmnožinou značek (WYSIWYG, contenteditable)
 const NOTE_TAGS={B:'b',STRONG:'b',I:'i',EM:'i',U:'u',BR:'br',DIV:'div',P:'div',LI:'li',UL:'ul',OL:'ol',H1:'h4',H2:'h4',H3:'h4',H4:'h4',H5:'h5',H6:'h5',A:'a'};
 function noteClean(root){let out='';for(const nd of root.childNodes){if(nd.nodeType===3){out+=esc(nd.nodeValue);continue}if(nd.nodeType!==1)continue;
@@ -905,8 +905,8 @@ function renderNotes(){const mode=V.notesPanel||'';const btn=$('#noteBtn');S.not
   const q=(V.noteQ||'').trim().toLowerCase();
   const list=S.notes.filter(n=>!q||(n.title+'\n'+noteText(n.body)).toLowerCase().includes(q));
   const item=n=>`<div class="nt${n.open?' open':''}" data-nid="${n.id}">
-    <div class="nth"><button class="tog" data-ntog>${n.open?'▾':'▸'}</button><input class="ntt" data-nf="title" value="${esc(n.title)}" placeholder="Nadpis">${n.open?'':`<span class="pv">${esc(noteText(n.body).split('\n').find(l=>l.trim())||'')}</span>`}<button class="x" data-ndel>✕</button></div>
-    ${n.open?`<div class="ntb" data-nf="body" contenteditable="true" data-ph="Text poznámky… („- “ odrážka, „# “ nadpis, ⌘B tučně)">${n.body}</div>`:''}</div>`;
+    <div class="nth"><button class="tog" data-ntog>${n.open?'▾':'▸'}</button><input class="ntt" data-nf="title" value="${esc(n.title)}" placeholder="Nadpis" ${noteEdit===n.id?'':'readonly tabindex="-1"'}>${n.open?'':`<span class="pv">${esc(noteText(n.body).split('\n').find(l=>l.trim())||'')}</span>`}${n.open?`<button class="pen${noteEdit===n.id?' on':''}" data-npen title="${noteEdit===n.id?'Ukončit úpravy':'Upravit poznámku'}">${noteEdit===n.id?'✓':'✎'}</button>`:''}<button class="x" data-ndel>✕</button></div>
+    ${n.open?`<div class="ntb${noteEdit===n.id?' editing':''}" data-nf="body" contenteditable="${noteEdit===n.id?'true':'false'}" data-ph="${noteEdit===n.id?'Text poznámky… („- “ odrážka, „# “ nadpis, ⌘B tučně)':'Prázdná poznámka – ✎ zahájí úpravy'}">${n.body}</div>`:''}</div>`;
   np.innerHTML=`<div class="tph"><b>Poznámky</b><span class="sub">${S.notes.length?S.notes.length+(S.notes.length===1?' poznámka':S.notes.length<5?' poznámky':' poznámek'):'jen pro vás'}</span><button class="sp" data-np="close" title="Zavřít (Esc)"><span>zavřít</span> ✕</button></div>
   <div class="dadd"><input id="nadd" placeholder="Nová poznámka – nadpis… (Enter)">${S.notes.length>3?`<input id="nq" class="q" placeholder="Hledat" value="${esc(V.noteQ||'')}">`:''}</div>
   <div class="tpl">${list.map(item).join('')||`<div class="tpsub">${q?'Nic nenalezeno.':'Zatím žádná poznámka. Napište nadpis nahoře a stiskněte Enter.'}</div>`}</div>`;
@@ -914,24 +914,25 @@ function renderNotes(){const mode=V.notesPanel||'';const btn=$('#noteBtn');S.not
 }
 function caretGet(el){const s=getSelection();if(!s.rangeCount||!el.contains(s.anchorNode))return null;const r=s.getRangeAt(0).cloneRange();r.selectNodeContents(el);r.setEnd(s.anchorNode,s.anchorOffset);return r.toString().length}
 function caretSet(el,pos){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n,acc=0;const r=document.createRange();while(n=w.nextNode()){const L=n.nodeValue.length;if(acc+L>=pos){r.setStart(n,pos-acc);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);return}acc+=L}r.selectNodeContents(el);r.collapse(false);const s=getSelection();s.removeAllRanges();s.addRange(r)}
-function setNotesPanel(m){V.notesPanel=m;save();noteForce=true;renderNotes();if(m==='open'){const i=$('#nadd');if(i&&!matchMedia('(max-width:760px)').matches)i.focus()}}
+function setNotesPanel(m){V.notesPanel=m;if(!m)noteEdit=null;save();noteForce=true;renderNotes();if(m==='open'){const i=$('#nadd');if(i&&!matchMedia('(max-width:760px)').matches)i.focus()}}
 const noteOf=id=>(S.notes||[]).find(n=>n.id===id);
 function noteCommit(force){clearTimeout(noteTimer);noteTimer=null;noteForce=!!force;const a=document.activeElement;if(a&&np.contains(a)){const nt=a.closest('[data-nid]');noteFocus={id:nt?nt.dataset.nid:a.id,f:a.dataset.nf,pos:a.isContentEditable?caretGet(a):a.selectionStart}}commit()}
 const blockOf=el=>{let n=getSelection().anchorNode;if(!n||!el.contains(n))return null;if(n.nodeType===3)n=n.parentNode;while(n&&n!==el&&!/^(DIV|LI|H4|H5|P)$/.test(n.tagName))n=n.parentNode;return n===el?null:n};
 np.addEventListener('click',e=>{const b=e.target.closest('[data-np="close"]');if(b){setNotesPanel('');return}
   const a=e.target.closest('.ntb a[href]');if(a&&(e.metaKey||e.ctrlKey)){window.open(a.href,'_blank');e.preventDefault();return}
-  const tg=e.target.closest('[data-ntog]');if(tg){const n=noteOf(tg.closest('[data-nid]').dataset.nid);if(n){n.open=!n.open;noteCommit(true)}return}
+  const pen=e.target.closest('[data-npen]');if(pen){const id=pen.closest('[data-nid]').dataset.nid;if(noteEdit===id){noteEdit=null;noteForce=true;if(noteTimer)noteCommit(true);else renderNotes()}else{noteEdit=id;noteFocus={id,f:'body',pos:1e9};noteForce=true;renderNotes()}return}
+  const tg=e.target.closest('[data-ntog]');if(tg){const n=noteOf(tg.closest('[data-nid]').dataset.nid);if(n){n.open=!n.open;if(!n.open&&noteEdit===n.id)noteEdit=null;noteCommit(true)}return}
   const d=e.target.closest('[data-ndel]');if(d){const n=noteOf(d.closest('[data-nid]').dataset.nid);if(!n)return;if((noteText(n.body).trim()||n.title.trim())&&!confirm(`Smazat poznámku „${n.title||'bez nadpisu'}“?`))return;S.notes=S.notes.filter(x=>x!==n);noteCommit(true)}});
 np.addEventListener('input',e=>{const el=e.target;if(el.id==='nq'){V.noteQ=el.value;save();noteFocus={id:'nq',pos:el.selectionStart};renderNotes();return}
   const nt=el.closest('[data-nid]');if(!nt||!el.dataset.nf)return;const n=noteOf(nt.dataset.nid);if(!n)return;n[el.dataset.nf]=el.isContentEditable?noteSan(el.innerHTML):el.value;save();clearTimeout(noteTimer);noteTimer=setTimeout(noteCommit,1200)});
 np.addEventListener('focusout',e=>{if(noteTimer&&!np.contains(e.relatedTarget))noteCommit()});
-np.addEventListener('paste',e=>{const el=e.target.closest('.ntb');if(!el)return;e.preventDefault();const t=e.clipboardData.getData('text/plain');if(!t)return;
+np.addEventListener('paste',e=>{const el=e.target.closest('.ntb.editing');if(!el)return;e.preventDefault();const t=e.clipboardData.getData('text/plain');if(!t)return;
   const html=/\n/.test(t)?noteHtml(t):esc(t);document.execCommand('insertHTML',false,html)});
 np.addEventListener('keydown',e=>{const el=e.target;
-  if(el.id==='nadd'){if(e.key==='Enter'){e.preventDefault();const v=el.value.trim();if(!v)return;S.notes.unshift({id:uid(),title:v,body:'',open:true});noteFocus={id:S.notes[0].id,f:'body'};noteForce=true;commit()}if(e.key==='Escape'){if(el.value){el.value=''}else setNotesPanel('')}return}
+  if(el.id==='nadd'){if(e.key==='Enter'){e.preventDefault();const v=el.value.trim();if(!v)return;S.notes.unshift({id:uid(),title:v,body:'',open:true});noteEdit=S.notes[0].id;noteFocus={id:S.notes[0].id,f:'body'};noteForce=true;commit()}if(e.key==='Escape'){if(el.value){el.value=''}else setNotesPanel('')}return}
   if(el.id==='nq'){if(e.key==='Escape'){V.noteQ='';save();renderNotes()}return}
-  if(e.key==='Escape'){el.blur();return}
-  if(el.dataset.nf==='title'&&e.key==='Enter'){e.preventDefault();const n=noteOf(el.closest('[data-nid]').dataset.nid);if(n){n.open=true;noteFocus={id:n.id,f:'body',pos:1e9};noteCommit(true)}return}
+  if(e.key==='Escape'){e.stopPropagation();const nt=el.closest('[data-nid]');el.blur();if(nt&&noteEdit===nt.dataset.nid){noteEdit=null;noteForce=true;if(noteTimer)noteCommit(true);else renderNotes()}return}
+  if(el.dataset.nf==='title'&&e.key==='Enter'){e.preventDefault();const n=noteOf(el.closest('[data-nid]').dataset.nid);if(n){n.open=true;noteEdit=n.id;noteFocus={id:n.id,f:'body',pos:1e9};noteCommit(true)}return}
   if(el.dataset.nf==='body'){
     if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='b'){e.preventDefault();document.execCommand('bold');el.dispatchEvent(new Event('input',{bubbles:true}));return}
     if(e.key===' '){let blk=blockOf(el);if(!blk){document.execCommand('formatBlock',false,'div');blk=blockOf(el)}if(!blk)return;const s=getSelection();const r=s.getRangeAt(0).cloneRange();r.selectNodeContents(blk);r.setEnd(s.anchorNode,s.anchorOffset);const before=r.toString();
@@ -943,7 +944,7 @@ np.addEventListener('keydown',e=>{const el=e.target;
 // kontextové menu formátování v editoru poznámky (pravé tlačítko)
 const nctx=document.createElement('div');nctx.className='ctx nctx';document.body.appendChild(nctx);let nctxRange=null,nctxEl=null;
 const NFMT=[['bold','<b>Tučně</b>','⌘B'],['h4','<b style="font-size:13.5px">Nadpis</b>',''],['h5','<b style="color:var(--muted)">Menší nadpis</b>',''],['sep'],['ul','• Odrážky',''],['ol','1. Číslování',''],['sep'],['plain','Obyčejný text','']];
-np.addEventListener('contextmenu',e=>{const el=e.target.closest('.ntb');if(!el)return;e.preventDefault();const sel=getSelection();nctxRange=sel.rangeCount?sel.getRangeAt(0).cloneRange():null;nctxEl=el;
+np.addEventListener('contextmenu',e=>{const el=e.target.closest('.ntb.editing');if(!el)return;e.preventDefault();const sel=getSelection();nctxRange=sel.rangeCount?sel.getRangeAt(0).cloneRange():null;nctxEl=el;
   nctx.innerHTML=NFMT.map(f=>f[0]==='sep'?'<div class="sep"></div>':`<button type="button" data-nf="${f[0]}"><span>${f[1]}</span><kbd>${f[2]}</kbd></button>`).join('');
   nctx.style.left=Math.min(e.clientX,innerWidth-230)+'px';nctx.style.top=Math.min(e.clientY,innerHeight-260)+'px';nctx.classList.add('open')});
 nctx.addEventListener('mousedown',e=>e.preventDefault());
@@ -1228,7 +1229,7 @@ const HELP=[
   ['<b>Kontrola 14</b>','Denní kontrola','Tlačítko v záhlaví (nebo pilulka „Ke kontrole“ v liště) přepne harmonogram na filtr: zůstanou jen úkoly, které dnes ještě čekají na kontrolu (otevřené, bez dnešní ✓ a bez položky v ToDo), i s nadřazenými fázemi kvůli souvislostem. Číslo = kolik zbývá. Budoucí úkoly se zahrnou jen pokud začínají do N dní (menu ⋯ → „Kontrola zahrnuje úkoly“; výchozí 7, lze jen běžící / 14 / 30 / všechny). Výběr se při zapnutí zmrazí – zkontrolované úkoly v něm zůstávají (kvůli souvislostem i pro druhé klepnutí „do ToDo“), jen číslo na tlačítku klesá. Opětovné klepnutí na tlačítko filtr vypne; další zapnutí vybere znovu jen nezkontrolované.'],
   [HI.qn,'Rychlá poznámka','„+“ za čtverečkem otevře jednořádkový editor (Enter uloží, Esc zavře). Uložená poznámka je '+HI.qnon+', text v bublině. Při přepsání nebo zrušení se předchozí text sám zapíše do deníku úkolu s datem.'],
   ['<b>ToDo 6</b>','ToDo panel','Tlačítko vpravo nahoře (počet otevřených · po termínu). Plovoucí panel v pravém horním rohu: zavře klepnutí kamkoli do záhlaví vpravo od data (celá plocha je tlačítko) nebo Esc (znovu otevře tlačítko ToDo). Nová položka jde nahoru, mimo projekty, bez priority; „Nadpis“ založí nadpis skupiny. Enter v položce založí další pod ní, Backspace v prázdné ji smaže. Vložení více řádků = více položek.'],
-  ['<i class="nb">'+NOTE_ICON+'</i>','Poznámky','Malá ikonka vedle ToDo otevře plovoucí panel osobních poznámek (vidí je jen jejich autor, ukládají se do databáze). Nahoře napište nadpis a Enter založí poznámku. Tělo se píše rovnou naformátované: označte text a pravým tlačítkem vyberte Tučně / Nadpis / Menší nadpis / Odrážky / Číslování / Obyčejný text; nebo ⌘B / Ctrl+B = tučně; „- “ na začátku řádku založí odrážky, „1. “ číslování (Enter pokračuje, Enter na prázdné položce ukončí); „# “ na začátku řádku udělá mezinadpis, „## “ menší (Enter za ním pokračuje obyčejným řádkem). Vložený text se vloží jako prostý (bez cizího formátování). ⌘+klik na odkaz ho otevře. ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání, změny se ukládají samy. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj.'],
+  ['<i class="nb">'+NOTE_ICON+'</i>','Poznámky','Malá ikonka vedle ToDo otevře plovoucí panel osobních poznámek (vidí je jen jejich autor, ukládají se do databáze). Nahoře napište nadpis a Enter založí poznámku (rovnou v režimu úprav). Ostatní poznámky jsou jen ke čtení a kopírování – nic se v nich omylem nepřepíše; úpravy zapne tužka ✎ u nadpisu (✓ nebo Esc je ukončí). Tělo se píše rovnou naformátované: označte text a pravým tlačítkem vyberte Tučně / Nadpis / Menší nadpis / Odrážky / Číslování / Obyčejný text; nebo ⌘B / Ctrl+B = tučně; „- “ na začátku řádku založí odrážky, „1. “ číslování (Enter pokračuje, Enter na prázdné položce ukončí); „# “ na začátku řádku udělá mezinadpis, „## “ menší (Enter za ním pokračuje obyčejným řádkem). Vložený text se vloží jako prostý (bez cizího formátování). ⌘+klik na odkaz ho otevře. ▸/▾ sbalí poznámku na jeden řádek, nad 3 poznámky je hledání, změny se ukládají samy. Esc zavře panel; otevřený spolu s ToDo se posune vlevo od něj.'],
   ['<span class="dec">⑂ Ano ?</span>','Rozhodovací bod a varianty','V detailu úkolu zaškrtněte „Tento úkol je rozhodnutí“ a pojmenujte varianty A/B (např. Ano/Ne) a která zatím platí (předpoklad). U navazujících úkolů pak v sekci „Varianta podle rozhodnutí“ vyberte toto rozhodnutí a zadejte termíny pro A i B – úkol se drží platné varianty, druhá se v grafu kreslí čárkovaně. Posunete‑li úkol v grafu, mění se termíny právě platné varianty. Až je rozhodnuto, v detailu rozhodovacího úkolu klepněte „Rozhodnuto: A/B“ – navazující úkoly se přepnou, čárkované varianty zmizí, do deníku se zapíše záznam. „Znovu otevřít“ vrátí stav předpokladu. Štítek ⑂ u názvu ukazuje platnou variantu (? = předpoklad, ✓ = rozhodnuto), štítek u navazujícího úkolu název platné varianty.'],
   ['🖼','Export grafu (PNG / PDF)','Menu ⋯ → „Export grafu“. Vyberete projekt a výřez „od úkolu – do úkolu“ (v pořadí harmonogramu; podúkoly posledního se přidají, nadřazené fáze jen při zaškrtnutí, hloubku lze omezit), období (předvyplní se podle úkolů), měřítko den/týden/měsíc a šířku levé tabulky. Výsledek je věrný výřez živého harmonogramu – stejné sloupce, osoby, stavy, varianty rozhodnutí, vazby i svislé linky; sbalené fáze zůstanou sbalené. Náhled je v dialogu. „Stáhnout PNG“ uloží obrázek ve dvojnásobném rozlišení (Chrome; v Safari použijte PDF), „Otevřít k tisku / PDF“ otevře stránku přizpůsobenou šířce A4 na šířku (volitelně na výšku).'],
   [HI.star+' '+HI.tri,'Priorita a důležitost','★ důležité (klepnutím). Trojúhelník: šedý bez priority → červený A → oranžový B → zelený C → bez. ⋯ u položky: termín (dnes/zítra/za týden), projekt a úkol, blokuje úkol, smazat.'],

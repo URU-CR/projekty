@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.19.4">
+<meta name="app-version" content="1.19.5">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -487,6 +487,12 @@ dialog.proj{width:min(760px,96vw)}
 #np .nt.open .nth .ntt{flex:1}
 #np .nth .ntt:focus{outline:none;background:var(--accent-soft)}
 #np .nth .pv{flex:1;min-width:0;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#np .nth .pen{border:0;background:none;color:var(--muted);font-size:14px;line-height:1;padding:2px 6px;border-radius:4px;cursor:pointer;flex:none}
+#np .nth .pen:hover{background:var(--accent-soft);color:var(--text)}
+#np .nth .pen.on{background:var(--accent);color:#fff}
+#np .nt.ed{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+#np .ntb[contenteditable="false"]{cursor:text;user-select:text;-webkit-user-select:text}
+#np .nth .ntt[readonly]{cursor:default}
 #np .nth .x{border:0;background:none;color:transparent;font-size:13px;padding:2px 6px;border-radius:4px;cursor:pointer;flex:none}
 #np .nt:hover .nth .x{color:var(--muted)}
 #np .nth .x:hover{color:var(--critical);background:var(--bg)}
@@ -663,7 +669,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.19.4">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.19.5">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -719,8 +725,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.19.4"></script>
-<script src="db.js?v=1.19.4"></script>
-<script src="app.js?v=1.19.4"></script>
+<script src="config.js?v=1.19.5"></script>
+<script src="db.js?v=1.19.5"></script>
+<script src="app.js?v=1.19.5"></script>
 </body>
 </html>

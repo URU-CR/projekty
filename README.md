@@ -124,3 +124,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.19.4 – Hlídání nové verze
 - `version.txt` v kořeni repa drží aktuální verzi; aplikace ho stahuje bez cache (po startu, každých 10 min a při návratu do záložky) a při rozdílu zobrazí lištu „K dispozici je nová verze – Obnovit“. Při každém vydání je nutné `version.txt` zvednout spolu s `APP_VERSION`.
+
+## 1.19.5 – Poznámky jen ke čtení, úpravy přes tužku
+- Těla i nadpisy poznámek jsou standardně jen ke čtení a kopírování (nic se omylem nepřepíše). Tužka ✎ u nadpisu rozbalené poznámky zapne úpravy jedné poznámky (modrý rámeček, ✓ / Esc / zavření panelu úpravy ukončí). Nová poznámka se otevře rovnou v úpravách.
