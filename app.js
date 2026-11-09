@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.8';
+const APP_VERSION='1.19.9';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -322,7 +322,7 @@ function render(){
   g.innerHTML=L+`<div class="right" style="width:${W}px"><div class="rhead"><div class="mrow">${M}</div><div class="drow">${D}</div>${DL}</div>
     <div class="rbody" style="width:${W}px;height:${Math.max(H,200)}px">${C}${B}<svg class="deps" width="${W}" height="${Math.max(H,200)}">${P}</svg></div></div>`;
   g.dataset.start=start; g.dataset.px=px;
-  if(sel){const r=$(`.lrow[data-id="${sel}"]`);if(r)r.classList.add('sel');else sel=null}hiDeps(sel);
+  if(sel){const r=$(`.lrow[data-id="${sel}"]`);if(r)r.classList.add('sel');else sel=null}hiDeps(depHiId&&depHiId===sel?sel:null);
   if(focusId){sel=focusId;const r=$(`.lrow[data-id="${focusId}"]`);if(r)r.classList.add('sel');const i=$(`.lrow[data-id="${focusId}"] input.nm`);if(i){i.focus();i.select()}focusId=null}
   if(focusTd){const i=focusTd.startsWith('td:')?$(`.lrow[data-td="${focusTd.slice(3)}"] input.tt`):$(`.lrow.todoadd[data-key="${focusTd}"] input.tt`);if(i)i.focus();focusTd=null}
 }
@@ -1068,7 +1068,7 @@ function dmark(t,p){if(p._draft||myRole(p)!=='lead')return'';if(t.milestone||pro
 function barMenu(id,x,y){const f=findTask(id);if(!f)return;ctx.dataset.t=Date.now();
   ctx.innerHTML=`<button data-op="edit">Detail úkolu</button>`;ctx.classList.add('open');ctx.style.left=Math.min(x,innerWidth-240)+'px';ctx.style.top=Math.min(y,innerHeight-90)+'px';ctx.dataset.id=id}
 let lastBarDown={id:null,t:0};
-g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('psum')||e.target.closest('[data-dchk],[data-qn]'))return;e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
+g.addEventListener('dblclick',e=>{const bar=e.target.closest('.bar');if(!bar||!bar.dataset.id||bar.classList.contains('psum')||e.target.closest('[data-dchk],[data-qn]'))return;hiDeps(bar.dataset.id);e.preventDefault();lastBarDown.t=0;openTask(bar.dataset.id)});
 g.addEventListener('click',e=>{const q=e.target.closest('[data-qn]');if(!q)return;e.stopPropagation();const f=findTask(q.dataset.qn);if(!f)return;if(!(myRole(f.p)==='lead'||taskWritable(f.t,f.p)))return;const r=q.getBoundingClientRect();openQn(q.dataset.qn,r.left,r.bottom)});
 function cycleCheck(id,mode){const f=findTask(id);if(!f||myRole(f.p)!=='lead')return;const t=f.t;const ref=todoRefOf(t);
   const toTodo=()=>{t.checked='';S.todos.push({id:uid(),owner:S.meId,text:'CHECK '+t.name,who:S.me||'',done:false,doneAt:'',due:TODAY,block:false,pri:0,imp:false,taskRef:t.id,ord:firstOrd()});toast('Přidáno do dnešního ToDo')};
@@ -1116,10 +1116,12 @@ g.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x0;
   else{const d=Math.max(1,diff(drag.start,drag.end)+1-dd);const ns=addDays(drag.end,-(d-1));drag.bar.style.left=(drag.left+diff(drag.start,ns)*px)+'px';drag.bar.style.width=d*px+'px';drag.ns=ns;drag.ne=drag.end}
   const dl=drag.bar.querySelector('.lbl i.dt');if(dl)dl.textContent=`${fmts(drag.ns)} – ${fmts(drag.ne)}`});
 // zvýraznění vazeb vybraného úkolu (předchůdci i následníci) + jejich barů
-function hiDeps(id){const g=$('#gantt');if(!g)return;g.querySelectorAll('.deps .hi').forEach(e=>e.classList.remove('hi'));g.querySelectorAll('.bar.dephi').forEach(e=>e.classList.remove('dephi'));if(!id)return;
+let depHiId=null,lastClick={id:null,t:0};
+function hiDeps(id){depHiId=id||null;const g=$('#gantt');if(!g)return;g.querySelectorAll('.deps .hi').forEach(e=>e.classList.remove('hi'));g.querySelectorAll('.bar.dephi').forEach(e=>e.classList.remove('dephi'));if(!id)return;
   const rel=new Set();g.querySelectorAll(`.deps [data-from="${id}"],.deps [data-to="${id}"]`).forEach(e=>{e.classList.add('hi');rel.add(e.dataset.from);rel.add(e.dataset.to)});rel.delete(id);
   rel.forEach(r=>{const b=g.querySelector(`.bar[data-id="${r}"]`);if(b)b.classList.add('dephi')})}
-const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r)r.classList.add("sel");hiDeps(sel)}};  // bez scrollIntoView – posun řádku pod kurzorem rozbíjel dvojklik
+const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){const nowc=Date.now();const again=sel===d.t.id&&depHiId===d.t.id&&nowc-lastClick.t>450;lastClick={id:d.t.id,t:nowc};  // druhý klik s odstupem na už vybraný bar = zrušit zvýraznění (rychlý druhý klik = dvojklik → detail)
+    $$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r)r.classList.add("sel");hiDeps(again?null:sel)}};  // bez scrollIntoView – posun řádku pod kurzorem rozbíjel dvojklik
 g.addEventListener('pointerup',endDrag);g.addEventListener('pointercancel',endDrag);document.addEventListener('pointerup',e=>{if(drag&&!e.target.closest('.gantt'))drag=null});
 document.addEventListener('keydown',e=>{if(e.key==='l'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();openDump()}
   if(e.key==='n'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();$('#quick').focus()}});
@@ -1264,7 +1266,7 @@ const HELP=[
   [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví: dny, hodiny, minuty, sekundy). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose) – zobrazí se jen po zapnutí pilulky „┆ Cizí termíny“ v liště, jako Vazby.'],
   [HI.chg,'Změny od kolegů','Žlutý štítek u úkolu a žlutý proužek řádku: co se změnilo, kdo, kdy (bublina). „Vzít na vědomí“ u štítku, nebo hromadně ve filtru „Nové změny“. Vedoucí může změnu vrátit. Vypnout lze v menu ⋯ (Sledování změn).'],
   [HI.ghost+' '+HI.hatch,'Posun termínu (nepřečtený)','Oranžový čárkovaný rámeček = původní rozsah, šrafování = ubrané dny, oranžový proužek = přidané dny, štítek „⟲ posun +3 d“ (bublina „Původně … → nyní …“). Zmizí po vzetí na vědomí.'],
-  [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní. Jedno klepnutí na bar zvýrazní modře jen vazby tohoto úkolu – šipky od předchůdců i k následníkům – a orámuje jejich bary; zvýraznění drží, dokud nevyberete jiný úkol.'],
+  [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní. Jedno klepnutí na bar zvýrazní modře jen vazby tohoto úkolu – šipky od předchůdců i k následníkům – a orámuje jejich bary; další klepnutí na tentýž bar zvýraznění zruší (rychlý dvojklik dál otevírá detail).'],
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
   [HI.link,'ToDo z kontroly','Položka „CHECK …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
