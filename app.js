@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.19.7';
+const APP_VERSION='1.19.8';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -316,13 +316,13 @@ function render(){
       const pred=findTask(did);if(!pred)continue;const pe=span(pred.t,pred.p).end;const bad=pred.t.milestone?pe>t.start:pe>=t.start;
       const x1=a.ms?a.x+12:a.x+a.w, y1=a.top+17, x2=b.ms?b.x-12:b.x, y2=b.top+17;
       const path=x2>=x1+16?`M${x1},${y1} H${x1+8} V${y2} H${x2-4}`:`M${x1},${y1} H${x1+8} V${y1+ROWH/2} H${x2-12} V${y2} H${x2-4}`;
-      P+=`<path class="${bad?'bad':''}" d="${path}"></path><polygon class="${bad?'bad':''}" points="${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}"></polygon>`;
+      P+=`<path class="${bad?'bad':''}" data-from="${did}" data-to="${t.id}" d="${path}"></path><polygon class="${bad?'bad':''}" data-from="${did}" data-to="${t.id}" points="${x2},${y2} ${x2-5},${y2-3} ${x2-5},${y2+3}"></polygon>`;
     }}
   const H=rows.length*ROWH;
   g.innerHTML=L+`<div class="right" style="width:${W}px"><div class="rhead"><div class="mrow">${M}</div><div class="drow">${D}</div>${DL}</div>
     <div class="rbody" style="width:${W}px;height:${Math.max(H,200)}px">${C}${B}<svg class="deps" width="${W}" height="${Math.max(H,200)}">${P}</svg></div></div>`;
   g.dataset.start=start; g.dataset.px=px;
-  if(sel){const r=$(`.lrow[data-id="${sel}"]`);if(r)r.classList.add('sel');else sel=null}
+  if(sel){const r=$(`.lrow[data-id="${sel}"]`);if(r)r.classList.add('sel');else sel=null}hiDeps(sel);
   if(focusId){sel=focusId;const r=$(`.lrow[data-id="${focusId}"]`);if(r)r.classList.add('sel');const i=$(`.lrow[data-id="${focusId}"] input.nm`);if(i){i.focus();i.select()}focusId=null}
   if(focusTd){const i=focusTd.startsWith('td:')?$(`.lrow[data-td="${focusTd.slice(3)}"] input.tt`):$(`.lrow.todoadd[data-key="${focusTd}"] input.tt`);if(i)i.focus();focusTd=null}
 }
@@ -739,7 +739,7 @@ function openProj(id){const p=proj(id);if(!p)return;const dlg=$('#pdlg');dlg.cla
 
 /* ---------- context menu ---------- */
 const ctx=$('#ctx');
-function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)||(!f.p._draft&&!taskWritable(f.t,f.p))){barMenu(id,x,y);return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');
+function openCtx(id,x,y){const f=findTask(id);if(!f)return;if(isRO(f.p)||(!f.p._draft&&!taskWritable(f.t,f.p))){barMenu(id,x,y);return}sel=id;$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));const r=$(`.lrow[data-id="${id}"]`);if(r)r.classList.add('sel');hiDeps(id);
   const t=f.t;const sibs=f.p.tasks.filter(x=>x.parent===t.parent);const k=sibs.indexOf(t);
   ctx.innerHTML=`<button data-op="edit">Detail úkolu <kbd>Enter</kbd></button><button data-op="unclear">${t.unclear?'Zrušit označení „k upřesnění“':'Označit „k upřesnění“ ?'}</button>${kidsOf(t,f.p).length&&myRole(f.p)==='lead'?'<button data-op="grp">Skupina (barva) pro celou fázi…</button>':''}<div class="sep"></div>
     <button data-op="add">Přidat úkol pod tento</button><button data-op="child">Přidat podúkol</button><div class="sep"></div>
@@ -1115,7 +1115,11 @@ g.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x0;
   else if(drag.mode==='r'){const d=Math.max(1,diff(drag.start,drag.end)+1+dd);drag.bar.style.width=d*px+'px';drag.ns=drag.start;drag.ne=addDays(drag.start,d-1)}
   else{const d=Math.max(1,diff(drag.start,drag.end)+1-dd);const ns=addDays(drag.end,-(d-1));drag.bar.style.left=(drag.left+diff(drag.start,ns)*px)+'px';drag.bar.style.width=d*px+'px';drag.ns=ns;drag.ne=drag.end}
   const dl=drag.bar.querySelector('.lbl i.dt');if(dl)dl.textContent=`${fmts(drag.ns)} – ${fmts(drag.ne)}`});
-const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r)r.classList.add("sel")}};  // bez scrollIntoView – posun řádku pod kurzorem rozbíjel dvojklik
+// zvýraznění vazeb vybraného úkolu (předchůdci i následníci) + jejich barů
+function hiDeps(id){const g=$('#gantt');if(!g)return;g.querySelectorAll('.deps .hi').forEach(e=>e.classList.remove('hi'));g.querySelectorAll('.bar.dephi').forEach(e=>e.classList.remove('dephi'));if(!id)return;
+  const rel=new Set();g.querySelectorAll(`.deps [data-from="${id}"],.deps [data-to="${id}"]`).forEach(e=>{e.classList.add('hi');rel.add(e.dataset.from);rel.add(e.dataset.to)});rel.delete(id);
+  rel.forEach(r=>{const b=g.querySelector(`.bar[data-id="${r}"]`);if(b)b.classList.add('dephi')})}
+const endDrag=e=>{if(!drag)return;const d=drag;drag=null;if(d.moved&&d.ns){d.t.start=d.ns;d.t.end=d.ne;commit()}else if(!d.moved&&e.type==='pointerup'){$$('.lrow.sel').forEach(r=>r.classList.remove('sel'));sel=d.t.id;const r=$(`.lrow[data-id="${d.t.id}"]`);if(r)r.classList.add("sel");hiDeps(sel)}};  // bez scrollIntoView – posun řádku pod kurzorem rozbíjel dvojklik
 g.addEventListener('pointerup',endDrag);g.addEventListener('pointercancel',endDrag);document.addEventListener('pointerup',e=>{if(drag&&!e.target.closest('.gantt'))drag=null});
 document.addEventListener('keydown',e=>{if(e.key==='l'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();openDump()}
   if(e.key==='n'&&!e.ctrlKey&&!e.metaKey&&!typing()&&!$('dialog[open]')){e.preventDefault();$('#quick').focus()}});
@@ -1260,7 +1264,7 @@ const HELP=[
   [HI.todayl+' '+HI.dl+' '+HI.ext,'Svislé linky','Čárkovaná červená = dnes. Plná červená s '+FLAME.replace('class="flame"','class="flame" style="color:var(--critical)"')+' = deadline projektu (Nastavení projektu; úkoly ho mohou přesahovat; volitelně odpočet v záhlaví: dny, hodiny, minuty, sekundy). Fialová čárkovaná = cizí termín (zaškrtnutí „Cizí termín“ v detailu úkolu/milníku; název v časové ose) – zobrazí se jen po zapnutí pilulky „┆ Cizí termíny“ v liště, jako Vazby.'],
   [HI.chg,'Změny od kolegů','Žlutý štítek u úkolu a žlutý proužek řádku: co se změnilo, kdo, kdy (bublina). „Vzít na vědomí“ u štítku, nebo hromadně ve filtru „Nové změny“. Vedoucí může změnu vrátit. Vypnout lze v menu ⋯ (Sledování změn).'],
   [HI.ghost+' '+HI.hatch,'Posun termínu (nepřečtený)','Oranžový čárkovaný rámeček = původní rozsah, šrafování = ubrané dny, oranžový proužek = přidané dny, štítek „⟲ posun +3 d“ (bublina „Původně … → nyní …“). Zmizí po vzetí na vědomí.'],
-  [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní.'],
+  [HI.deps,'Vazby','V detailu úkolu „Předchůdci“. Tenké šedé čárkované šipky; tlačítko „Vazby“ v liště je zvýrazní a ztlumí ostatní. Jedno klepnutí na bar zvýrazní modře jen vazby tohoto úkolu – šipky od předchůdců i k následníkům – a orámuje jejich bary; zvýraznění drží, dokud nevyberete jiný úkol.'],
   [HI.tdc,'Checklist úkolu','▸ u úkolu rozbalí podúkoly (ToDo úkolu); odznak hotovo/celkem – modrý s otevřenými, červený po termínu, šedý vše hotovo. ⛔ = položka blokuje dokončení. „Hotovost % počítat z checklistu“ v detailu.'],
   [HI.qm,'K upřesnění','Označení nejasného úkolu s otázkou; filtr „K upřesnění“; v pravém tlačítku zapnout/zrušit.'],
   [HI.link,'ToDo z kontroly','Položka „CHECK …“ v ToDo má vpravo kroužek s % plnění úkolu (název úkolu v bublině).'],
