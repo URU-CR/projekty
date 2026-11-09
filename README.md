@@ -127,3 +127,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.19.5 – Poznámky jen ke čtení, úpravy přes tužku
 - Těla i nadpisy poznámek jsou standardně jen ke čtení a kopírování (nic se omylem nepřepíše). Tužka ✎ u nadpisu rozbalené poznámky zapne úpravy jedné poznámky (modrý rámeček, ✓ / Esc / zavření panelu úpravy ukončí). Nová poznámka se otevře rovnou v úpravách.
+
+## 1.19.7 – Uložené výřezy exportu
+- V dialogu exportu řádek „Uložené výřezy“: „Uložit aktuální…“ uloží pod názvem projekt, od–do, hloubku, měřítko, levou tabulku, název a volby (období jen bylo‑li přepsáno ručně); výběr ze seznamu vše nastaví, „Smazat“ odstraní. Uloženo v prohlížeči (`V.picPresets`).
