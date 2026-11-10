@@ -1,6 +1,6 @@
 
 /* ---------- helpers ---------- */
-const APP_VERSION='1.20.0';
+const APP_VERSION='1.20.1';
 const g=document.getElementById('gantt');
 const PALETTE=['#2196f3','#1fb8c4','#1cb36d','#8bc34a','#e6b800','#f39a1e','#a0522d','#5c6bff','#9c5bd6','#e67ab0','#607d8b','#795548','#00897b','#3f51b5','#c0ca33','#ff8f00','#6d4c41','#455a64','#7e57c2','#26a69a','#d4a017','#5d8aa8','#8e9a3a','#b5651d'];
 const CRIT='var(--critical)';
@@ -155,7 +155,7 @@ function buildRows(){
     for(const [name,list] of buckets){const vis=list.filter(x=>(V.person?x.t.resp===V.person||(x.t.collab||[]).includes(V.person):true)&&(!V.status||matches(x.t,x.p)||false)&&(!V.group||x.t.group===V.group));
       if(!vis.length&&(V.person||V.status||V.group))continue;if(name===NOBODY&&!vis.length)continue;
       rows.push({type:'head',label:name,color:'',hint:vis.length+' úkolů'});
-      vis.sort((a,b)=>a.t.start<b.t.start?-1:1).forEach(x=>{rows.push({type:'task',t:x.t,p:x.p,level:0,group:false,collab:x.t.resp!==name});if(isOpen(x.t.id))todoRows(rows,x.t.todos,x.t.id,x.t,x.p,0)})}
+      vis.sort((a,b)=>a.t.start<b.t.start?-1:1).forEach(x=>{rows.push({type:'task',t:x.t,p:x.p,level:0,group:false,collab:x.t.resp!==name});if(isOpen(x.t.id)&&(x.t.todos||[]).length)todoRows(rows,x.t.todos,x.t.id,x.t,x.p,0)})}
     return rows;
   }
   for(const p of curProjects()){
@@ -168,7 +168,7 @@ function buildRows(){
       if(!matches(t,p)&&!descendants(t,p).some(k=>matches(k,p)))continue;
       const lv=depth(t,p);
       rows.push({type:'task',t,p,level:lv,group:kids.length>0});
-      const ot=origOf(t,p);if(ot?isOpen(ot.id):isOpen(t.id))todoRows(rows,(ot||t).todos,(ot||t).id,ot||t,p,lv);
+      const ot=origOf(t,p);if((ot?isOpen(ot.id):isOpen(t.id))&&((ot||t).todos||[]).length)todoRows(rows,(ot||t).todos,(ot||t).id,ot||t,p,lv);  // bez ToDo položek se rozbalený řádek nekreslí (po smazání poslední položky zůstával prázdný řádek)
     }
     if(!V.status&&!V.group&&!XP){rows.push({type:'inbox',key:'p:'+p.id,p,list:p.todos,label:'Inbox projektu'});if(isOpen('p:'+p.id))todoRows(rows,p.todos,'p:'+p.id,null,p,0)}
   }
