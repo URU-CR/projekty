@@ -130,3 +130,6 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.19.7 – Uložené výřezy exportu
 - V dialogu exportu řádek „Uložené výřezy“: „Uložit aktuální…“ uloží pod názvem projekt, od–do, hloubku, měřítko, levou tabulku, název a volby (období jen bylo‑li přepsáno ručně); výběr ze seznamu vše nastaví, „Smazat“ odstraní. Uloženo v prohlížeči (`V.picPresets`).
+
+## 1.20.0 – Příznak „Spěchá“
+- Nový příznak `tasks.rush` (migrace `030_rush.sql`): „⚡ Spěchá“ = časový tlak teď, nezávisle na „kritický“ (= důležitost pro projekt). Bar dostane černé šikmé pruhy (i milník, i kritický červený), před názvem v levé tabulce je ⚡; hotové úkoly se nepruhují. Pilulka „⚡ Spěchá“ v liště, zaškrtávátko v detailu vedle „Kritický úkol“, položky „⚡ Spěchá“ a „Kritický úkol“ v kontextovém menu řádku/baru. Import/export JSON přenáší.

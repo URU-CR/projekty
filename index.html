@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.19.9">
+<meta name="app-version" content="1.20.0">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -214,6 +214,11 @@ button{cursor:pointer}
 .bar.ms.done::before{background:var(--c)}
 .bar.crit:not(.done):not(.ms):not(.grp){background:var(--critical) !important}
 .bar.crit:not(.done) .prog{background:var(--gc)}
+.bar.rush:not(.ms)::after{content:'';position:absolute;inset:0;border-radius:4px;background:repeating-linear-gradient(135deg,rgba(0,0,0,.42) 0 4px,transparent 4px 13px);pointer-events:none;z-index:1}
+.bar.rush.ms::before{background-image:repeating-linear-gradient(135deg,rgba(0,0,0,.45) 0 3px,transparent 3px 9px)}
+.bar.rush.crit.ms:not(.done)::before{background:repeating-linear-gradient(135deg,rgba(0,0,0,.45) 0 3px,transparent 3px 9px),var(--critical)}
+.c-name .rushi{flex:none;font-size:12px;line-height:1;margin-right:1px;filter:saturate(1.2)}
+.pill.rush b{color:#b45309}
 .bar.crit.ms:not(.done)::before{background:var(--critical)}
 .bar.ms.done::after{content:"✓";position:absolute;left:0;right:0;top:0;line-height:24px;text-align:center;color:#fff;font-size:13px;font-weight:700}
 .bar.ms .h,.bar.ms .prog,.bar.ms .in{display:none}
@@ -677,7 +682,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.19.9">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.20.0">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -733,8 +738,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.19.9"></script>
-<script src="db.js?v=1.19.9"></script>
-<script src="app.js?v=1.19.9"></script>
+<script src="config.js?v=1.20.0"></script>
+<script src="db.js?v=1.20.0"></script>
+<script src="app.js?v=1.20.0"></script>
 </body>
 </html>
