@@ -133,3 +133,7 @@ V nastavení projektu lze zadat **Deadline** – finální termín (úkoly ho mo
 
 ## 1.20.0 – Příznak „Spěchá“
 - Nový příznak `tasks.rush` (migrace `030_rush.sql`): „⚡ Spěchá“ = časový tlak teď, nezávisle na „kritický“ (= důležitost pro projekt). Bar dostane černé šikmé pruhy (i milník, i kritický červený), před názvem v levé tabulce je ⚡; hotové úkoly se nepruhují. Pilulka „⚡ Spěchá“ v liště, zaškrtávátko v detailu vedle „Kritický úkol“, položky „⚡ Spěchá“ a „Kritický úkol“ v kontextovém menu řádku/baru. Import/export JSON přenáší.
+
+## 1.20.2 – Poznámky: pořadí tažením, Cmd+C
+- Úchyt ⠿ u nadpisu poznámky: přetažením nad/pod jinou poznámku se změní pořadí (ukládá se `sort`).
+- Globální zkratky harmonogramu (Cmd+C/V/D, Backspace = kopírovat/vložit/duplikovat/smazat vybraný úkol) se nespouštějí, když je označený text nebo když je výběr v panelu Poznámek/ToDo – Cmd+C v poznámkách tak kopíruje text (dřív potichu kopíroval vybraný úkol).

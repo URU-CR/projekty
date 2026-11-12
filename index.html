@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="app-version" content="1.20.1">
+<meta name="app-version" content="1.20.2">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Projekty – ÚRÚ ČR</title>
 <link rel="icon" href="favicon.ico?v=3" sizes="any">
@@ -494,6 +494,11 @@ dialog.proj{width:min(760px,96vw)}
 #np .nt{border:1px solid var(--line2);border-radius:7px;margin:5px 0;background:var(--bg)}
 #np .nt.open{background:var(--panel)}
 #np .nth{display:flex;align-items:center;gap:4px;padding:3px 4px 3px 2px}
+.ngrab{color:var(--muted);opacity:.45;cursor:grab;font-size:13px;padding:0 2px;flex:none;user-select:none;-webkit-user-select:none}
+#np .nt:hover .ngrab{opacity:.9}
+#np .nt.dragging{opacity:.4}
+#np .nt.dropb{box-shadow:0 -2px 0 0 var(--accent)}
+#np .nt.dropa{box-shadow:0 2px 0 0 var(--accent)}
 #np .nth .tog{border:0;background:none;color:var(--muted);width:20px;height:22px;cursor:pointer;border-radius:4px;font-size:12px;flex:none}
 #np .nth .tog:hover{background:var(--accent-soft);color:var(--text)}
 #np .nth .ntt{flex:0 1 auto;min-width:40%;border:0;background:none;font:inherit;font-weight:700;font-size:13px;padding:3px 4px;border-radius:4px;color:var(--text)}
@@ -682,7 +687,7 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 </head>
 <body>
 <header class="top">
-  <div class="brand" id="brand" title="verze 1.20.1">Projekty <span class="hint" id="who"></span></div>
+  <div class="brand" id="brand" title="verze 1.20.2">Projekty <span class="hint" id="who"></span></div>
   <nav class="tabs" id="tabs"></nav>
   <div class="tools">
     <button class="btn" id="by" title="Seskupit úkoly podle odpovědných (vypnuto = celý harmonogram)">Podle lidí</button>
@@ -738,8 +743,8 @@ body.proposer #todoBtn,body.proposer #by,body.proposer #quick,body.proposer .tab
 <dialog id="pdlg"></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="config.js?v=1.20.1"></script>
-<script src="db.js?v=1.20.1"></script>
-<script src="app.js?v=1.20.1"></script>
+<script src="config.js?v=1.20.2"></script>
+<script src="db.js?v=1.20.2"></script>
+<script src="app.js?v=1.20.2"></script>
 </body>
 </html>
